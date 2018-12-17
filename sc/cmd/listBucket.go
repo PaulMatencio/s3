@@ -11,28 +11,32 @@ import (
 
 // listBucketCmd represents the listBucket command
 var (
+	lbshort = "Command to list all your buckets"
 	listBucketCmd = &cobra.Command {
 		Use:   "listBucket",
-		Short: "list all your buckets",
+		Short: lbshort,
 		Long: ``,
 		Run: listBucket,
 	}
 	lbCmd = &cobra.Command {
 		Use:   "lb",
-		Short: "list all your buckets",
+		Short: lbshort,
 		Long: ``,
 		Run: listBucket,
 	}
 )
 
+
+
 func init() {
+
 	rootCmd.AddCommand(listBucketCmd)
 	rootCmd.AddCommand(lbCmd)
 }
 
 func listBucket(cmd *cobra.Command,args []string) {
 
-	lumber.Prefix(cmd.Name())
+	api.LumberPrefix(cmd)
 	svc := s3.New(api.CreateSession())
 	if result,err := api.ListBuckets(svc); err != nil {
 		lumber.Error("%v",err)
@@ -42,4 +46,5 @@ func listBucket(cmd *cobra.Command,args []string) {
 			lumber.Info("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
 		}
 	}
+
 }

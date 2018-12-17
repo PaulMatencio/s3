@@ -26,9 +26,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	cfgFile,logLevel,bucket,key	 string
-	verbose 			 bool
-	rootCmd = &cobra.Command{
+	cfgFile,logLevel,bucket,key 	 string
+	verbose, Debug		 bool
+	rootCmd = &cobra.Command {
 	Use:   "sc",
 	Short: "Scality S3 frontend commands",
 	Long: ``,
@@ -44,17 +44,30 @@ func Execute() {
 }
 
 func init() {
+
+
+	// persistent flags
+
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","V", false, "Enable verbose mode")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "L", "INFO","Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+
+	viper.BindPFlag("verbose",rootCmd.PersistentFlags().Lookup("verbose"))
+	viper.BindPFlag("log-level",rootCmd.PersistentFlags().Lookup("log-level"))
+
+
+	// local flags
+	rootCmd.Flags().StringVarP(&cfgFile,"config", "C","", "config file (default is $HOME/.sc.yaml)")
+
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sc.yaml)")
-	rootCmd.PersistentFlags().BoolVar(&verbose, "v", false, "Enable verbose mode")
-	rootCmd.PersistentFlags().String("log-level", logLevel, "Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
-
 	// init the logger
-	logLvl := lumber.LvlInt(viper.GetString("log-level"))
-	lumber.Prefix("[sc]")
+	// fmt.Println(cfgFile,logLevel, viper.GetString(logLevel))
+	logLvl := lumber.LvlInt(viper.GetString(logLevel))
+	lumber.Prefix("["+ rootCmd.Name()+"]")
 	lumber.Level(logLvl)
+
 }
+
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
