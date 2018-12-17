@@ -1,50 +1,45 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
 
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/jcelliott/lumber"
+	"github.com/s3/api"
 	"github.com/spf13/cobra"
 )
 
 // listBucketCmd represents the listBucket command
-var listBucketCmd = &cobra.Command{
-	Use:   "listBucket",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listBucket called")
-	},
-}
+var (
+	listBucketCmd = &cobra.Command {
+		Use:   "listBucket",
+		Short: "list all your buckets",
+		Long: ``,
+		Run: listBucket,
+	}
+	lbCmd = &cobra.Command {
+		Use:   "lb",
+		Short: "list all your buckets",
+		Long: ``,
+		Run: listBucket,
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(listBucketCmd)
+	rootCmd.AddCommand(lbCmd)
+}
 
-	// Here you will define your flags and configuration settings.
+func listBucket(cmd *cobra.Command,args []string) {
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listBucketCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listBucketCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	lumber.Prefix(cmd.Name())
+	svc := s3.New(api.CreateSession())
+	if result,err := api.ListBuckets(svc); err != nil {
+		lumber.Error("%v",err)
+	} else {
+		lumber.Info("Ownerof the bucket: %s", result.Owner)
+		for _, v := range result.Buckets {
+			lumber.Info("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
+		}
+	}
 }

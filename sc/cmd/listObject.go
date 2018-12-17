@@ -1,50 +1,57 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/jcelliott/lumber"
+	"github.com/s3/api"
 	"github.com/spf13/cobra"
 )
 
 // listObjectCmd represents the listObject command
 var listObjectCmd = &cobra.Command{
 	Use:   "listObject",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listObject called")
-	},
+	Short: "list Objects",
+	Long: ``,
+	Run: listObject,
 }
+
+var (
+	prefix string
+	limit  int64
+)
 
 func init() {
 	rootCmd.AddCommand(listObjectCmd)
+	listObjectCmd.Flags().StringVar(&bucket,"b","","the bucket name")
+	listObjectCmd.Flags().StringVar(&prefix,"prefix","","key prefix")
+	listObjectCmd.Flags().Int64Var(&limit,"limit",100,"limit the maxmimum number of objects")
+}
 
-	// Here you will define your flags and configuration settings.
+func listObject(cmd *cobra.Command,args []string) {
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listObjectCmd.PersistentFlags().String("foo", "", "A help for foo")
+	lumber.Prefix(cmd.Name())
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listObjectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	if len(bucket) == 0 {
+		lumber.Warn("Missing bucket - please provide the bucket for objects you'd like to list")
+	}
+
+	svc := s3.New(api.CreateSession())
+
+	input := &s3.ListObjectsInput{
+
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix),
+		MaxKeys: aws.Int64(limit),
+	}
+	// svc.ListObjectsRequest(input)
+	if result, err := svc.ListObjects(input); err == nil {
+		for _, v := range result.Contents {
+			lumber.Info("Key: %s - Size: %d ", *v.Key, *v.Size)
+		}
+	} else {
+		lumber.Error("%v",err)
+	}
+	lumber.Prefix("[sc]")
 }

@@ -1,85 +1,28 @@
-package s3Client
-
+package api
 import (
-	"bytes"
-	"github.com/minio/minio-go"
-	"io"
-	"os"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 )
+func GetObjects(svc *s3.S3, bucket string, key string) (*s3.GetObjectOutput,error){
 
-
-type S3GetRequest struct {
-	MinioC 	*minio.Client
-	Bucket 	string
-	Key 	string
-	Opts 	*minio.GetObjectOptions
-	Trace 	bool
-}
-
-
-
-func (r *S3GetRequest) SetS3Client(s3c *minio.Client) {
-	r.MinioC = s3c
-}
-
-
-func (r *S3GetRequest) SetBucketName(bucket string) {
-	r.Bucket = bucket
-}
-
-func (r *S3GetRequest) SetKey(key string) {
-	r.Bucket = key
-}
-
-func (r *S3GetRequest) SetPutOpts(options *minio.GetObjectOptions) {
-	r.Opts= options
-}
-
-func (r *S3GetRequest) SetTrace(trace bool) {
-	r.Trace = trace
-}
-
-func (r *S3GetRequest) S3BuildGetRequest(login *S3Login, bucket string, key string, options *minio.GetObjectOptions){
-	r.MinioC,r.Bucket,r.Key,r.Opts,r.Trace	=  login.MinioC,bucket,key,options,false
-	if TRACE {
-		r.Trace	= true
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	}
+
+	return svc.GetObject(input)
+
+
 }
 
-func(r *S3GetRequest) GetObject() (*bytes.Buffer, error) {
-	var (
-		object *minio.Object
-		err error
-	)
-	if r.Trace {
-		r.MinioC.TraceOn(os.Stdout)
+func GetObject( bucket string, key string) (*s3.GetObjectOutput,error){
+
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	}
-	if object,err = r.MinioC.GetObject(r.Bucket,r.Key,*r.Opts); err != nil {
-		return nil,err
-	}
-	defer object.Close()
-	return Stream(object)
+
+	return s3.New(CreateSession()).GetObject(input)
+
+
 }
-
-//  object is  io reader
-func Stream ( object io.Reader)  (*bytes.Buffer, error){
-	buffer:= make([]byte,BUFFERSIZE)
-	buf := new(bytes.Buffer)
-	for {
-
-		n, err := object.Read(buffer)
-		if err == nil || err == io.EOF {
-			buf.Write(buffer[:n])
-			if err == io.EOF {
-				buffer = buffer[:0] // clear the buffer fot the GC
-				return buf,nil
-			}
-		} else {
-			buffer = buffer[:0] // clear the buffer for the GC
-			return buf,err
-		}
-	}
-}
-
-
-
