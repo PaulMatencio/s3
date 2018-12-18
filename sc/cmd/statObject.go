@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/base64"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
@@ -15,16 +14,17 @@ var (
 	soshort = "Command to retrieve an object metadata"
 
 	statObjectCmd = &cobra.Command {
-		Use:   "statObject",
+		Use:   "statObj",
 		Short: soshort,
 		Long: ``,
 		Run: statObject,
 	}
 
 	headObjCmd = &cobra.Command {
-		Use:   "headObject",
+		Use:   "headObj",
 		Short: soshort,
 		Long: ``,
+		// Hidden: true,
 		Run: statObject,
 	}
 
@@ -32,6 +32,7 @@ var (
 		Use:   "ho",
 		Short: soshort,
 		Long: ``,
+		Hidden: true,
 		Run: statObject,
 	}
 
@@ -76,7 +77,6 @@ func statObject(cmd *cobra.Command,args []string) {
 	}
 
 	var (
-		usermd string
 		svc = s3.New(api.CreateSession())
 		result, err = api.StatObjects(svc, bucket, key)
 	)
@@ -103,12 +103,8 @@ func statObject(cmd *cobra.Command,args []string) {
 		lumber.Info("Key %s - Metadata %s : %s",key, k,*v)
 	}
 
-	if v,ok := result.Metadata["Usermd"];ok {
-		usermd = *v
-		if u,err := base64.StdEncoding.DecodeString(usermd); err == nil {
-			lumber.Info("%s", u)
-		}
-
+	if usermd,err  := utils.GetuserMeta(result.Metadata); err == nil {
+		lumber.Info("key:%s - User Metadata: %s", usermd)
 	}
 
 

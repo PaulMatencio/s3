@@ -29,6 +29,7 @@ var (
 		Use:   "mb",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 
@@ -36,6 +37,7 @@ var (
 		Use:   "cb",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 

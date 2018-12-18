@@ -13,8 +13,8 @@ func CreateSession() *session.Session {
 
 		if service == endpoints.S3ServiceID {
 			return endpoints.ResolvedEndpoint{
-				// URL:           "http://10.12.201.11",
-				URL : "http://127.0.0.1:9000",
+				URL:           "http://10.12.201.11",
+				// URL : "http://127.0.0.1:9000",
 				SigningRegion: "us-east-1",
 			}, nil
 		}

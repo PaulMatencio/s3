@@ -14,7 +14,7 @@ import (
 var (
 	loshort = "Command to list the objects of a bucket"
 	listObjectCmd = &cobra.Command{
-		Use:   "listObject",
+		Use:   "listObj",
 		Short: loshort,
 		Long: ``,
 		Run: listObject,
@@ -24,6 +24,7 @@ var (
 		Use:   "lo",
 		Short: loshort,
 		Long: ``,
+		Hidden: true,
 		Run: listObject,
 	}
 )

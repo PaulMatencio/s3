@@ -23,6 +23,7 @@ var (
 		Use:   "lb",
 		Short: lbshort,
 		Long: ``,
+		Hidden: true,
 		Run: listBucket,
 	}
 )

@@ -30,6 +30,7 @@ var (
 		Use:   "db",
 		Short: dbshort,
 		Long: ``,
+		Hidden: true,
 		Run:deleteBucket,
 	}
 
@@ -37,6 +38,7 @@ var (
 		Use:   "rb",
 		Short: dbshort,
 		Long: ``,
+		Hidden: true,
 		Run:deleteBucket,
 	}
 
