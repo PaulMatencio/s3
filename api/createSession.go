@@ -1,11 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/jcelliott/lumber"
-
 	// "github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -16,7 +13,8 @@ func CreateSession() *session.Session {
 
 		if service == endpoints.S3ServiceID {
 			return endpoints.ResolvedEndpoint{
-				URL:           "http://10.12.201.11",
+				// URL:           "http://10.12.201.11",
+				URL : "http://127.0.0.1:9000",
 				SigningRegion: "us-east-1",
 			}, nil
 		}
@@ -24,10 +22,8 @@ func CreateSession() *session.Session {
 
 	}
 
-	// logLevel := aws.LogLevel(1)
-	// endpoint := "http://127.0.0.1:9000"
 	logLevel := *aws.LogLevel(1)
-	fmt.Println(lumber.GetLevel())
+	// fmt.Println(lumber.GetLevel())
 	// logLevel = aws.LogDebug
 
 

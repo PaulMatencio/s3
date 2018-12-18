@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -37,8 +38,11 @@ func init() {
 
 	rootCmd.AddCommand(getObjectCmd)
 	rootCmd.AddCommand(getObjCmd)
+	rootCmd.MarkFlagRequired("bucket")
+	rootCmd.MarkFlagRequired("key")
 	initGoFlags(getObjectCmd)
 	initGoFlags(getObjCmd)
+
 
 }
 
@@ -48,7 +52,7 @@ func init() {
 func getObject(cmd *cobra.Command,args []string) {
 
 	// handle any missing args
-	api.LumberPrefix(cmd)
+	utils.LumberPrefix(cmd)
 
 	switch {
 

@@ -21,8 +21,5 @@ func GetObject( bucket string, key string) (*s3.GetObjectOutput,error){
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
-
 	return s3.New(CreateSession()).GetObject(input)
-
-
 }

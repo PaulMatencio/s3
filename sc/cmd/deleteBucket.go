@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -60,7 +61,7 @@ func init() {
 
 func deleteBucket(cmd *cobra.Command,args []string) (){
 
-	api.LumberPrefix(cmd)
+	utils.LumberPrefix(cmd)
 	if len(bucket) == 0 {
 		lumber.Warn("Missing bucket - please provide the bucket you'd like to delete")
 		return

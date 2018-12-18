@@ -28,15 +28,18 @@ import (
 var (
 	cfgFile,logLevel,bucket,key 	 string
 	verbose, Debug		 bool
+
 	rootCmd = &cobra.Command {
 	Use:   "sc",
 	Short: "Scality S3 frontend commands",
 	Long: ``,
+	TraverseChildren: true,
 })
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -45,23 +48,22 @@ func Execute() {
 
 func init() {
 
-
 	// persistent flags
 
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","V", false, "Enable verbose mode")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "L", "INFO","Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "INFO","Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
 
 	viper.BindPFlag("verbose",rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("log-level",rootCmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag("logLevel",rootCmd.PersistentFlags().Lookup("logLevel"))
 
+	// fmt.Println(verbose,logLevel)
 
 	// local flags
-	rootCmd.Flags().StringVarP(&cfgFile,"config", "C","", "config file (default is $HOME/.sc.yaml)")
+	rootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "config file (default is $HOME/.sc.yaml)")
 
 	cobra.OnInitialize(initConfig)
 
 	// init the logger
-	// fmt.Println(cfgFile,logLevel, viper.GetString(logLevel))
 	logLvl := lumber.LvlInt(viper.GetString(logLevel))
 	lumber.Prefix("["+ rootCmd.Name()+"]")
 	lumber.Level(logLvl)

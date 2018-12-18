@@ -1,50 +1,116 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package cmd
 
 import (
-	"fmt"
-
+	"encoding/base64"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/jcelliott/lumber"
+	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
-// statObjectCmd represents the statObject command
-var statObjectCmd = &cobra.Command{
-	Use:   "statObject",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+// getObjectCmd represents the getObject command
+var (
+	soshort = "Command to retrieve an object metadata"
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("statObject called")
-	},
+	statObjectCmd = &cobra.Command {
+		Use:   "statObject",
+		Short: soshort,
+		Long: ``,
+		Run: statObject,
+	}
+
+	headObjCmd = &cobra.Command {
+		Use:   "headObject",
+		Short: soshort,
+		Long: ``,
+		Run: statObject,
+	}
+
+	statObjCmd = &cobra.Command {
+		Use:   "ho",
+		Short: soshort,
+		Long: ``,
+		Run: statObject,
+	}
+
+)
+
+func initHoFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
+	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
 }
 
 func init() {
+
 	rootCmd.AddCommand(statObjectCmd)
+	rootCmd.AddCommand(statObjCmd)
+	rootCmd.AddCommand(headObjCmd)
+	rootCmd.MarkFlagRequired("bucket")
+	rootCmd.MarkFlagRequired("key")
+	initHoFlags(statObjectCmd)
+	initHoFlags(statObjCmd)
+	initHoFlags(headObjCmd)
 
-	// Here you will define your flags and configuration settings.
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statObjectCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statObjectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+
+
+//  statObject utilizes the api to get object
+
+func statObject(cmd *cobra.Command,args []string) {
+
+	// handle any missing args
+	utils.LumberPrefix(cmd)
+
+	switch {
+
+	case len(bucket) == 0:
+		lumber.Warn("Missing bucket - please provide the bucket for object you'd like to get")
+		return
+
+	case len(key) == 0:
+		lumber.Warn("Missing key - please provide the key for object you'd like to get")
+		return
+	}
+
+	var (
+		usermd string
+		svc = s3.New(api.CreateSession())
+		result, err = api.StatObjects(svc, bucket, key)
+	)
+
+	/* handle error */
+
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				lumber.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+			default:
+				lumber.Error("error [%v]",aerr.Error())
+			}
+		} else {
+			lumber.Error("[%v]",err.Error())
+		}
+		return
+	}
+
+
+	lumber.Info("Key %s ETag: %s  Content-Length:%d  Meta [%v]",key,*result.ETag,*result.ContentLength,result.Metadata)
+	for k,v := range result.Metadata {
+		lumber.Info("Key %s - Metadata %s : %s",key, k,*v)
+	}
+
+	if v,ok := result.Metadata["Usermd"];ok {
+		usermd = *v
+		if u,err := base64.StdEncoding.DecodeString(usermd); err == nil {
+			lumber.Info("%s", u)
+		}
+
+	}
+
+
+}
+

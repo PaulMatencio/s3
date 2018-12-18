@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,7 @@ func init() {
 
 func listBucket(cmd *cobra.Command,args []string) {
 
-	api.LumberPrefix(cmd)
+	utils.LumberPrefix(cmd)
 	svc := s3.New(api.CreateSession())
 	if result,err := api.ListBuckets(svc); err != nil {
 		lumber.Error("%v",err)

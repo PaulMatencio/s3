@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -29,14 +30,14 @@ var (
 
 var (
 	prefix string
-	limit  int64
+	maxKey  int64
 )
 
 func initLoFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
-	cmd.Flags().Int64VarP(&limit,"limit","l",100,"limit the maxmimum number of keys")
+	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys")
 
 }
 
@@ -44,17 +45,18 @@ func init() {
 
 	rootCmd.AddCommand(listObjectCmd)
 	rootCmd.AddCommand(loCmd)
+	rootCmd.MarkFlagRequired("bucket")
 	initLoFlags(listObjectCmd)
 	initLoFlags(loCmd)
 }
 
 func listObject(cmd *cobra.Command,args []string) {
 
-	api.LumberPrefix(cmd)
+	utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
 		lumber.Warn("Missing bucket - please provide the bucket for objects you'd like to list")
-		api.Return()
+		utils.Return()
 		return
 	}
 
@@ -63,7 +65,7 @@ func listObject(cmd *cobra.Command,args []string) {
 	input := &s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(prefix),
-		MaxKeys: aws.Int64(limit),
+		MaxKeys: aws.Int64(maxKey),
 	}
 
 	// svc.ListObjectsRequest(input)
