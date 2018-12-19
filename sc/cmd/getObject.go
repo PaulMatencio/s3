@@ -1,4 +1,3 @@
-
 package cmd
 
 import (
@@ -7,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"io"
@@ -87,10 +87,13 @@ func getObject(cmd *cobra.Command,args []string) {
 		return
 	}
 
-	// create an S3 session
-	svc := s3.New(api.CreateSession())
-	// get the object
-    result, err := api.GetObjects(svc, bucket, key)
+
+	req := datatype.GetObjRequest{
+		Service : s3.New(api.CreateSession()),
+		Bucket: bucket,
+		Key : key,
+	}
+	result, err := api.GetObjects(req)
 
 	if err != nil {
 
@@ -105,7 +108,7 @@ func getObject(cmd *cobra.Command,args []string) {
 			lumber.Error("[%v]",err.Error())
 		}
 	} else {
-		usermd, err = utils.GetuserMeta(result.Metadata)
+		usermd, err = utils.GetUserMeta(result.Metadata)
 		lumber.Info("Key: %s - User meta: %s ",key, usermd)
 		b, err := utils.ReadObject(result.Body)
 		if err == nil {
@@ -144,16 +147,24 @@ func fGetObject(cmd *cobra.Command,args []string) {
 		return
 	}
 
-    // Make the output directory if it does not exist
+	// Make the output directory if it does not exist
 
 	if _,err := os.Stat(output); os.IsNotExist(err) {
 		os.MkdirAll(output,0755)
 	}
 	pathname := output + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
-	//  create an S3 session
-	svc := s3.New(api.CreateSession())
+
+	//  build a request
+	req := datatype.GetObjRequest{
+		Service : s3.New(api.CreateSession()),
+		Bucket: bucket,
+		Key : key,
+	}
 	// get the object
-	result, err = api.GetObjects(svc, bucket, key);
+	result, err = api.GetObjects(req);
+
+
+
 	if err != nil {
 
 		if aerr, ok := err.(awserr.Error); ok {
@@ -167,7 +178,7 @@ func fGetObject(cmd *cobra.Command,args []string) {
 			lumber.Error("[%v]",err.Error())
 		}
 	} else {
-		usermd, err = utils.GetuserMeta(result.Metadata)
+		usermd, err = utils.GetUserMeta(result.Metadata)
 		lumber.Info("Object: %s - User meta: %s ",key,usermd)
 		if err = saveObject(result,pathname); err == nil {
 			lumber.Info("Object %s is downloaded to %s",key,pathname)
@@ -186,7 +197,7 @@ func saveObject(result *s3.GetObjectOutput, pathname string) (error) {
 		f  *os.File
 	)
 	if f,err = os.Create(pathname); err == nil {
-		 _,err = io.Copy(f, result.Body);
+		_,err = io.Copy(f, result.Body);
 	}
 	return err
 }
@@ -201,3 +212,4 @@ func writeObj(b *bytes.Buffer) {
 		lumber.Info("Error %v downloading object %s",err,key)
 	}
 }
+

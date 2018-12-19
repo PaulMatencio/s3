@@ -7,6 +7,7 @@ import (
 	"github.com/s3/api"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"github.com/s3/datatype"
 )
 
 // deleteBucketCmd represents the deleteBucket command
@@ -68,9 +69,15 @@ func deleteBucket(cmd *cobra.Command,args []string) (){
 		lumber.Warn(missingBucket)
 		return
 	}
-	svc := s3.New(api.CreateSession())
-	if _,err := api.DeleteBucket(svc,bucket); err != nil {
+
+	req := datatype.DeleteBucketRequest {
+		Service : s3.New(api.CreateSession()),
+		Bucket : bucket,
+
+	}
+	if _,err := api.DeleteBucket(req); err != nil {
 		lumber.Error("Delete bucket fails  [%v]",err)
 	}
 
 }
+

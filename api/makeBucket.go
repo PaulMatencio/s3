@@ -3,13 +3,15 @@ package api
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/datatype"
 )
 
-func MakeBucket(svc *s3.S3, bucket string ) (*s3.CreateBucketOutput,error){
+func MakeBucket(req datatype.MakeBucketRequest) (*s3.CreateBucketOutput,error){
+
 
 	input := &s3.CreateBucketInput{
-		Bucket: aws.String(bucket),
+		Bucket: aws.String(req.Bucket),
 	}
-	return svc.CreateBucket(input)
+	return req.Service.CreateBucket(input)
 
 }

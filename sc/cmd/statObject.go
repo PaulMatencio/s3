@@ -103,7 +103,7 @@ func statObject(cmd *cobra.Command,args []string) {
 		lumber.Info("Key %s - Metadata (k=v) %s=%s",key, k,*v)
 	}
 
-	if usermd,err  := utils.GetuserMeta(result.Metadata); err == nil {
+	if usermd,err  := utils.GetUserMeta(result.Metadata); err == nil {
 		lumber.Info("key:%s - User Metadata: %s", usermd)
 	}
 

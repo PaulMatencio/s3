@@ -1,16 +1,4 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
 
 package cmd
 
@@ -19,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"path/filepath"
@@ -59,7 +48,7 @@ var (
 func initPoFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
-	cmd.Flags().StringVarP(&datafile,"datafile","d","","the data file to upload")
+	cmd.Flags().StringVarP(&datafile,"datafile","f","","the data file to upload")
 	cmd.Flags().StringVarP(&metafile,"metafile","m","","the meta file to upload")
 }
 
@@ -73,70 +62,87 @@ func init() {
 
 
 func fPutObject(cmd *cobra.Command, args []string) {
-	utils.LumberPrefix(cmd)
+	start := utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
 		lumber.Warn(missingBucket)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 
 	if len(datafile) == 0 {
 		lumber.Warn(missingInputFile)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 	if len(datafile) == 0 {
 		lumber.Warn(missingMetaFile)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 
 	dir,key := filepath.Split(datafile)
 
 	/* todo */
-	usermd := dir
-	meta := make(map[string]*string)
-	meta["usermd"]= &usermd
+	meta := []byte(dir)
 
-	svc := s3.New(api.CreateSession())
 
-	api.FputObjects(svc,bucket,key,datafile,meta)
+	req:= datatype.FputObjRequest{
+		Service : s3.New(api.CreateSession()),
+		Bucket: bucket,
+		Key: key,
+		Inputfile: datafile,
+		Meta : meta,
 
-	utils.Return()
+	}
+
+	if result,err := api.FputObjects(req); err == nil {
+		lumber.Info("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
+	} else {
+		lumber.Error("fail to upload %s - error: %v",datafile,err)
+	}
+
+	utils.Return(start)
 
 }
 
 func putObject(cmd *cobra.Command, args []string) {
 	var buffer *bytes.Buffer
-	utils.LumberPrefix(cmd)
+	start := utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
 		lumber.Warn(missingBucket)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 
 	if len(datafile) == 0 {
 		lumber.Warn(missingInputFile)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 
 	dir,key := filepath.Split(datafile)
 
 	/* todo  meta*/
-	usermd := dir
-	meta := make(map[string]*string)
-	meta["usermd"]= &usermd
 
-	/*todo  data */
-
-	svc := s3.New(api.CreateSession())
+	/* todo */
+	meta := []byte(dir)
 
 
-	api.PutObjects(svc,bucket,key,buffer,meta)
+	req:= datatype.PutObjRequest{
+		Service : s3.New(api.CreateSession()),
+		Bucket: bucket,
+		Key: key,
+		Buffer: buffer,
+		Meta : meta,
+	}
 
-	utils.Return()
+	if result,err := api.PutObjects(req); err == nil {
+		lumber.Info("Successfuly upload file %s to  Bucket %s  - Etag : %s  - Expiration: %s ", datafile,bucket,*result.ETag,*result.Expiration)
+	} else {
+		lumber.Error("fail to upload %s - error: %v",datafile,err)
+	}
+	utils.Return(start)
 
 }

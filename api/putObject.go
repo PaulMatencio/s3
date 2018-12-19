@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/datatype"
+	"github.com/s3/utils"
 	"os"
 )
 
-func FputObjects(svc *s3.S3, bucket string, key string, filename string, meta map[string]*string) (*s3.PutObjectOutput,error){
+func FputObjects(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
 
-	f, err := os.Open(filename)
+
+	f, err := os.Open(req.Inputfile)
 	if err != nil {
 		fmt.Println(err)
 		return nil,err
@@ -26,27 +29,25 @@ func FputObjects(svc *s3.S3, bucket string, key string, filename string, meta ma
 	// read file content to buffer
 	f.Read(buffer)
 
-
 	input := &s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket: aws.String(req.Bucket),
+		Key:    aws.String(req.Key),
 		Body:   bytes.NewReader(buffer),
-		Metadata: meta,
+		Metadata: utils.BuildUserMeta(req.Meta),
 	}
-
-	return svc.PutObject(input)
-
-
+	return req.Service.PutObject(input)
 }
 
-func PutObjects(svc *s3.S3, bucket string, key string, buffer *bytes.Buffer, meta map[string]*string) (*s3.PutObjectOutput,error){
+
+func PutObjects(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 
 	input := &s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-		Body: bytes.NewReader(buffer.Bytes()),
-		Metadata:meta,
+		Bucket: aws.String(req.Bucket),
+		Key:    aws.String(req.Key),
+		Body: bytes.NewReader(req.Buffer.Bytes()),
+		Metadata: utils.BuildUserMeta(req.Meta),
 	}
-	return svc.PutObject(input)
+
+	return req.Service.PutObject(input)
 }
 

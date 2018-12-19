@@ -1,16 +1,18 @@
+
 package api
 
 import (
-"github.com/aws/aws-sdk-go/aws"
-"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/datatype"
 )
 
-func DeleteBucket(svc *s3.S3, bucket string ) (*s3.DeleteBucketOutput,error){
+func DeleteBucket(req datatype.DeleteBucketRequest ) (*s3.DeleteBucketOutput,error){
 
 	input := &s3.DeleteBucketInput {
-		Bucket: aws.String(bucket),
+		Bucket: aws.String(req.Bucket),
 	}
 
-	return svc.DeleteBucket(input)
+	return req.Service.DeleteBucket(input)
 
 }

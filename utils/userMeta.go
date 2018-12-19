@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"encoding/base64"
-	"github.com/aws/aws-sdk-go/service/s3"
+"encoding/base64"
+"github.com/aws/aws-sdk-go/service/s3"
 
 )
 
@@ -23,7 +23,7 @@ func GetuserMeta1(result *s3.GetObjectOutput) (string,error) {
 }
 
 
-func GetuserMeta(meta map[string]*string) (string,error) {
+func GetUserMeta(meta map[string]*string) (string,error) {
 
 	var (
 		err error
@@ -36,5 +36,14 @@ func GetuserMeta(meta map[string]*string) (string,error) {
 	} else {
 		return "",err
 	}
+
+}
+
+func BuildUserMeta(meta []byte) (map[string]*string) {
+
+	metad:= make(map[string]*string)
+	m := base64.StdEncoding.EncodeToString(meta)
+	metad["Usermd"] = &m
+	return metad
 
 }

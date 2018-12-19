@@ -5,8 +5,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+
 )
 
 // makeBucketCmd represents the makeBucket command
@@ -61,17 +63,20 @@ func init() {
 
 func makeBucket(cmd *cobra.Command,args []string) (){
 
-	utils.LumberPrefix(cmd)
+	start:= utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
 		lumber.Warn(missingBucket)
-		utils.Return()
+		utils.Return(start)
 		return
 	}
 
-	svc := s3.New(api.CreateSession())
+	req:= datatype.MakeBucketRequest{
+		Service: s3.New(api.CreateSession()),
+		Bucket: bucket,
+	}
 
-	if _,err := api.MakeBucket(svc,bucket); err != nil {
+	if _,err := api.MakeBucket(req); err != nil {
 
 		lumber.Error("Create Bucket fails [%v]",err)
 	}

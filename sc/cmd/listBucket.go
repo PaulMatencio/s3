@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
@@ -39,8 +40,11 @@ func init() {
 func listBucket(cmd *cobra.Command,args []string) {
 
 	utils.LumberPrefix(cmd)
-	svc := s3.New(api.CreateSession())
-	if result,err := api.ListBuckets(svc); err != nil {
+
+	req := datatype.ListBucketRequest{
+		Service:  s3.New(api.CreateSession()),
+	}
+	if result,err := api.ListBuckets(req); err != nil {
 		lumber.Error("%v",err)
 	} else {
 		lumber.Info("Ownerof the bucket: %s", result.Owner)

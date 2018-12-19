@@ -24,7 +24,7 @@ func CreateSession() *session.Session {
 
 	logLevel := *aws.LogLevel(1)
 	// fmt.Println(lumber.GetLevel())
-	// logLevel = aws.LogDebug
+	logLevel = aws.LogDebug
 
 
 	sess := session.Must(session.NewSession(&aws.Config{

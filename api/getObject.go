@@ -1,16 +1,18 @@
+
 package api
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/s3/datatype"
 )
-func GetObjects(svc *s3.S3, bucket string, key string) (*s3.GetObjectOutput,error){
+func GetObjects(req datatype.GetObjRequest) (*s3.GetObjectOutput,error){
 
 	input := &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket: aws.String(req.Bucket),
+		Key:    aws.String(req.Key),
 	}
 
-	return svc.GetObject(input)
+	return req.Service.GetObject(input)
 
 
 }
