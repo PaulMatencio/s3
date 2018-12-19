@@ -56,7 +56,7 @@ func listObject(cmd *cobra.Command,args []string) {
 	utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
-		lumber.Warn("Missing bucket - please provide the bucket for objects you'd like to list")
+		lumber.Warn(missingBucket)
 		utils.Return()
 		return
 	}

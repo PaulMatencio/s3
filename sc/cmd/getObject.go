@@ -47,7 +47,7 @@ func initGoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
 }
 
-func initPoFlags(cmd *cobra.Command) {
+func initFgoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
 	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
 	cmd.Flags().StringVarP(&output,"output","o","","the ouput directory you'like to save")
@@ -63,7 +63,7 @@ func init() {
 	rootCmd.MarkFlagRequired("key")
 	initGoFlags(getObjectCmd)
 	initGoFlags(getObjCmd)
-	initPoFlags(fgetObjCmd)
+	initFgoFlags(fgetObjCmd)
 
 
 }
@@ -79,11 +79,11 @@ func getObject(cmd *cobra.Command,args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn("Missing bucket - please provide the bucket for object you'd like to get")
+		lumber.Warn(missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn("Missing key - please provide the key for object you'd like to get")
+		lumber.Warn(missingKey)
 		return
 	}
 
@@ -132,15 +132,15 @@ func fGetObject(cmd *cobra.Command,args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn("Missing bucket - please provide the bucket for object you'd like to get")
+		lumber.Warn(missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn("Missing key - please provide the key for object you'd like to get")
+		lumber.Warn(missingKey)
 		return
 
 	case len(output) == 0:
-		lumber.Warn("Missing output directory - please provide the output directory you'd like to save the object")
+		lumber.Warn(missingOutputFolder)
 		return
 	}
 

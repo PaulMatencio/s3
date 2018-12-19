@@ -64,7 +64,7 @@ func makeBucket(cmd *cobra.Command,args []string) (){
 	utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
-		lumber.Warn("Missing bucket - please provide the bucket you 'd like to make")
+		lumber.Warn(missingBucket)
 		utils.Return()
 		return
 	}

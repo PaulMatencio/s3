@@ -65,7 +65,7 @@ func deleteBucket(cmd *cobra.Command,args []string) (){
 
 	utils.LumberPrefix(cmd)
 	if len(bucket) == 0 {
-		lumber.Warn("Missing bucket - please provide the bucket you'd like to delete")
+		lumber.Warn(missingBucket)
 		return
 	}
 	svc := s3.New(api.CreateSession())

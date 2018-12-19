@@ -68,11 +68,11 @@ func statObject(cmd *cobra.Command,args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn("Missing bucket - please provide the bucket for object you'd like to get")
+		lumber.Warn(missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn("Missing key - please provide the key for object you'd like to get")
+		lumber.Warn(missingKey)
 		return
 	}
 
@@ -87,7 +87,7 @@ func statObject(cmd *cobra.Command,args []string) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				lumber.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+				lumber.Warn("Error: [%v] -  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
 				lumber.Error("error [%v]",aerr.Error())
 			}
@@ -98,9 +98,9 @@ func statObject(cmd *cobra.Command,args []string) {
 	}
 
 
-	lumber.Info("Key %s ETag: %s  Content-Length:%d  Meta [%v]",key,*result.ETag,*result.ContentLength,result.Metadata)
+	lumber.Info("Key %s - ETag: %s - Content length:%d - Meta [%v]",key,*result.ETag,*result.ContentLength,result.Metadata)
 	for k,v := range result.Metadata {
-		lumber.Info("Key %s - Metadata %s : %s",key, k,*v)
+		lumber.Info("Key %s - Metadata (k=v) %s=%s",key, k,*v)
 	}
 
 	if usermd,err  := utils.GetuserMeta(result.Metadata); err == nil {

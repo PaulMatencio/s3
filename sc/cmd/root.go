@@ -28,6 +28,11 @@ import (
 var (
 	cfgFile,logLevel,bucket,key 	 string
 	verbose, Debug		 bool
+	missingBucket = "Missing bucket - please provide the bucket name"
+	missingKey = "Missing key - please provide the key of the object"
+	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
+	missingMetaFile ="Missing meta input file - please provide the meta file path (absolute or relative to current directory"
+	missingOutputFolder ="Missing output directory - please provide the output directory path( absolute or relative to current directory"
 
 	rootCmd = &cobra.Command {
 	Use:   "sc",

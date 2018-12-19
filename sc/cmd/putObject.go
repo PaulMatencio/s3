@@ -15,36 +15,128 @@
 package cmd
 
 import (
-	"fmt"
-
+	"bytes"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/jcelliott/lumber"
+	"github.com/s3/api"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 // putObjectCmd represents the putObject command
-var putObjectCmd = &cobra.Command{
-	Use:   "putObject",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+var (
+	poshort = "Command to upload an object"
+	datafile,metafile string
+	fPutObjectCmd = &cobra.Command{
+		Use:   "fPutObj",
+		Short: poshort,
+		Long: ``,
+		Run: fPutObject,
+	}
+	putObjectCmd = &cobra.Command{
+		Use:   "putObj",
+		Short: poshort,
+		Long: ``,
+		Run: putObject,
+	}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("putObject called")
-	},
+	fPoCmd = &cobra.Command{
+		Use:   "fPo",
+		Short: poshort,
+		Long: ``,
+		Hidden: true,
+		Run: fPutObject,
+	}
+	poCmd = &cobra.Command{
+		Use:   "po",
+		Short: poshort,
+		Long: ``,
+		Run: putObject,
+	}
+)
+
+func initPoFlags(cmd *cobra.Command) {
+
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
+	cmd.Flags().StringVarP(&datafile,"datafile","d","","the data file to upload")
+	cmd.Flags().StringVarP(&metafile,"metafile","m","","the meta file to upload")
 }
 
 func init() {
-	rootCmd.AddCommand(putObjectCmd)
 
-	// Here you will define your flags and configuration settings.
+	rootCmd.AddCommand(fPutObjectCmd)
+	rootCmd.AddCommand(fPoCmd)
+	initPoFlags(fPutObjectCmd)
+	initPoFlags(fPoCmd)
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// putObjectCmd.PersistentFlags().String("foo", "", "A help for foo")
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// putObjectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func fPutObject(cmd *cobra.Command, args []string) {
+	utils.LumberPrefix(cmd)
+
+	if len(bucket) == 0 {
+		lumber.Warn(missingBucket)
+		utils.Return()
+		return
+	}
+
+	if len(datafile) == 0 {
+		lumber.Warn(missingInputFile)
+		utils.Return()
+		return
+	}
+	if len(datafile) == 0 {
+		lumber.Warn(missingMetaFile)
+		utils.Return()
+		return
+	}
+
+	dir,key := filepath.Split(datafile)
+
+	/* todo */
+	usermd := dir
+	meta := make(map[string]*string)
+	meta["usermd"]= &usermd
+
+	svc := s3.New(api.CreateSession())
+
+	api.FputObjects(svc,bucket,key,datafile,meta)
+
+	utils.Return()
+
+}
+
+func putObject(cmd *cobra.Command, args []string) {
+	var buffer *bytes.Buffer
+	utils.LumberPrefix(cmd)
+
+	if len(bucket) == 0 {
+		lumber.Warn(missingBucket)
+		utils.Return()
+		return
+	}
+
+	if len(datafile) == 0 {
+		lumber.Warn(missingInputFile)
+		utils.Return()
+		return
+	}
+
+	dir,key := filepath.Split(datafile)
+
+	/* todo  meta*/
+	usermd := dir
+	meta := make(map[string]*string)
+	meta["usermd"]= &usermd
+
+	/*todo  data */
+
+	svc := s3.New(api.CreateSession())
+
+
+	api.PutObjects(svc,bucket,key,buffer,meta)
+
+	utils.Return()
+
 }
