@@ -17,6 +17,7 @@ var (
 		Use:   "statObj",
 		Short: soshort,
 		Long: ``,
+		Hidden: true,
 		Run: statObject,
 	}
 
@@ -24,15 +25,14 @@ var (
 		Use:   "headObj",
 		Short: soshort,
 		Long: ``,
-		// Hidden: true,
+		Hidden: true,
 		Run: statObject,
 	}
 
 	statObjCmd = &cobra.Command {
-		Use:   "ho",
+		Use:   "gom",
 		Short: soshort,
 		Long: ``,
-		Hidden: true,
 		Run: statObject,
 	}
 
@@ -87,24 +87,24 @@ func statObject(cmd *cobra.Command,args []string) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				lumber.Warn("Error: [%v] -  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+				log.Warn("Error: [%v] -  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				lumber.Error("error [%v]",aerr.Error())
+				log.Error("error [%v]",aerr.Error())
 			}
 		} else {
-			lumber.Error("[%v]",err.Error())
+			log.Error("[%v]",err.Error())
 		}
 		return
 	}
 
 
-	lumber.Info("Key %s - ETag: %s - Content length:%d - Meta [%v]",key,*result.ETag,*result.ContentLength,result.Metadata)
+	log.Info("Key %s - ETag: %s - Content length:%d - Meta [%v]",key,*result.ETag,*result.ContentLength,result.Metadata)
 	for k,v := range result.Metadata {
-		lumber.Info("Key %s - Metadata (k=v) %s=%s",key, k,*v)
+		log.Info("Key %s - Metadata (k=v) %s=%s",key, k,*v)
 	}
 
 	if usermd,err  := utils.GetUserMeta(result.Metadata); err == nil {
-		lumber.Info("key:%s - User Metadata: %s", usermd)
+		log.Info("key:%s - User Metadata: %s", usermd)
 	}
 
 

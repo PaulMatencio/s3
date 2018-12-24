@@ -23,6 +23,7 @@ var (
 		Use:   "getObj",
 		Short: goshort,
 		Long: ``,
+		Hidden: true,
 		Run: getObject,
 	}
 
@@ -30,13 +31,12 @@ var (
 		Use:   "go",
 		Short: goshort,
 		Long: ``,
-		Hidden:true,
 		Run: getObject,
 	}
 
 	fgetObjCmd = &cobra.Command {
-		Use:   "fGetObj",
-		Short: goshort,
+		Use:   "fgo",
+		Short: "Command to download an objet ",
 		Long: ``,
 		Run: fGetObject,
 	}
@@ -135,15 +135,15 @@ func fGetObject(cmd *cobra.Command,args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn(missingBucket)
+		log.Warn(missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn(missingKey)
+		log.Warn(missingKey)
 		return
 
 	case len(output) == 0:
-		lumber.Warn(missingOutputFolder)
+		log.Warn(missingOutputFolder)
 		return
 	}
 
@@ -170,20 +170,20 @@ func fGetObject(cmd *cobra.Command,args []string) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				lumber.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+				log.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				lumber.Error("error [%v]",aerr.Error())
+				log.Error("error [%v]",aerr.Error())
 			}
 		} else {
-			lumber.Error("[%v]",err.Error())
+			log.Error("[%v]",err.Error())
 		}
 	} else {
 		usermd, err = utils.GetUserMeta(result.Metadata)
-		lumber.Info("Object: %s - User meta: %s ",key,usermd)
+		log.Info("Object: %s - User meta: %s ",key,usermd)
 		if err = saveObject(result,pathname); err == nil {
-			lumber.Info("Object %s is downloaded to %s",key,pathname)
+			log.Info("Object %s is downloaded to %s",key,pathname)
 		} else {
-			lumber.Error("Saving %s Error %v ",key,err)
+			log.Error("Saving %s Error %v ",key,err)
 		}
 	}
 }
@@ -207,9 +207,9 @@ func writeObj(b *bytes.Buffer) {
 
 	pathname := output + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
 	if err:= ioutil.WriteFile(pathname,b.Bytes(),0644); err == nil {
-		lumber.Info("Object %s is downloaded to %s",key,pathname)
+		log.Info("Object %s is downloaded to %s",key,pathname)
 	} else {
-		lumber.Info("Error %v downloading object %s",err,key)
+		log.Info("Error %v downloading object %s",err,key)
 	}
 }
 

@@ -15,26 +15,28 @@ import (
 
 // putObjectCmd represents the putObject command
 var (
-	poshort = "Command to upload an object"
+	pfshort = "Command to upload a file"
+	poshort = "Command to upload a buffer"
 	datafile,metafile string
 	fPutObjectCmd = &cobra.Command{
 		Use:   "fPutObj",
-		Short: poshort,
+		Short: pfshort,
 		Long: ``,
+		Hidden: true,
 		Run: fPutObject,
 	}
 	putObjectCmd = &cobra.Command{
 		Use:   "putObj",
 		Short: poshort,
 		Long: ``,
+		Hidden: true,
 		Run: putObject,
 	}
 
 	fPoCmd = &cobra.Command{
-		Use:   "fPo",
-		Short: poshort,
+		Use:   "fpo",
+		Short: pfshort,
 		Long: ``,
-		Hidden: true,
 		Run: fPutObject,
 	}
 	poCmd = &cobra.Command{
@@ -45,7 +47,7 @@ var (
 	}
 )
 
-func initPoFlags(cmd *cobra.Command) {
+func initPfFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
 	cmd.Flags().StringVarP(&datafile,"datafile","f","","the data file to upload")
@@ -56,8 +58,9 @@ func init() {
 
 	rootCmd.AddCommand(fPutObjectCmd)
 	rootCmd.AddCommand(fPoCmd)
-	initPoFlags(fPutObjectCmd)
-	initPoFlags(fPoCmd)
+	//rootCmd.AddCommand(putObjectCmd)
+	initPfFlags(fPutObjectCmd)
+	initPfFlags(fPoCmd)
 }
 
 
@@ -117,7 +120,7 @@ func putObject(cmd *cobra.Command, args []string) {
 	}
 
 	if len(datafile) == 0 {
-		lumber.Warn(missingInputFile)
+		log.Warn(missingInputFile)
 		utils.Return(start)
 		return
 	}
@@ -139,9 +142,9 @@ func putObject(cmd *cobra.Command, args []string) {
 	}
 
 	if result,err := api.PutObjects(req); err == nil {
-		lumber.Info("Successfuly upload file %s to  Bucket %s  - Etag : %s  - Expiration: %s ", datafile,bucket,*result.ETag,*result.Expiration)
+		log.Info("Successfuly upload file %s to  Bucket %s  - Etag : %s  - Expiration: %s ", datafile,bucket,*result.ETag,*result.Expiration)
 	} else {
-		lumber.Error("fail to upload %s - error: %v",datafile,err)
+		log.Error("fail to upload %s - error: %v",datafile,err)
 	}
 	utils.Return(start)
 

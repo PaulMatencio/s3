@@ -18,6 +18,7 @@ var (
 		Use:   "listObj",
 		Short: loshort,
 		Long: ``,
+		Hidden: true,
 		Run: listObject,
 	}
 
@@ -25,7 +26,6 @@ var (
 		Use:   "lo",
 		Short: loshort,
 		Long: ``,
-		Hidden: true,
 		Run: listObject,
 	}
 )
@@ -35,6 +35,7 @@ var (
 	maxKey  int64
 	marker  string
 	delimiter string
+	loop  bool
 )
 
 func initLoFlags(cmd *cobra.Command) {
@@ -44,6 +45,7 @@ func initLoFlags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys")
 	cmd.Flags().StringVarP(&marker,"marker","M","","list starts with this key")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","list delimiter")
+	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop with next marker")
 }
 
 func init() {
@@ -56,6 +58,7 @@ func init() {
 }
 
 func listObject(cmd *cobra.Command,args []string) {
+
 	start:= time.Now()
 	utils.LumberPrefix(cmd)
 
@@ -73,25 +76,40 @@ func listObject(cmd *cobra.Command,args []string) {
     	Marker : marker,
 
 	}
+	for {
+		var (
+			nextmarker string
+		 	result  *s3.ListObjectsOutput
+			err error
+		)
+		if result, err = api.ListObject(req); err == nil {
 
-	if result,err := api.ListObject(req); err == nil {
+			if l := len(result.Contents); l > 0 {
 
-		if l := len(result.Contents); l > 0 {
+				for _, v := range result.Contents {
+					log.Info("Key: %s - Size: %d ", *v.Key, *v.Size)
+				}
 
-			for _, v := range result.Contents {
-				lumber.Info("Key: %s - Size: %d ", *v.Key, *v.Size)
+				if *result.IsTruncated {
+
+					nextmarker = *result.Contents[l-1].Key
+					log.Info("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
+				}
+
+			} else {
+				log.Info("List returns no object from %s", bucket)
 			}
-
-			if *result.IsTruncated {
-
-				nextmarker := *result.Contents[l-1].Key
-				lumber.Info("Truncated %v  - Next marker : %s ",*result.IsTruncated, nextmarker)
-			}
-
 		} else {
-			lumber.Info("List returns no object from %s",bucket)
+			log.Error("%v", err)
+			break
 		}
-	} else {
-		lumber.Error("%v",err)
+
+		if loop && *result.IsTruncated {
+			req.Marker = nextmarker
+		} else {
+			break
+		}
 	}
+
+	utils.Return(start)
 }

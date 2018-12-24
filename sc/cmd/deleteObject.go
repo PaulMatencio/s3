@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
@@ -27,7 +26,7 @@ import (
 var  (
 
 	deleteObjectCmd = &cobra.Command{
-		Use:   "deleteObj",
+		Use:   "do",
 		Short: "Command to delete an object",
 		Long: ``,
 		Run: deleteObject,
@@ -52,6 +51,7 @@ func init() {
 
 	rootCmd.AddCommand(deleteObjectCmd)
 	rootCmd.AddCommand(delObjectCmd)
+
 	initDoFlags(deleteObjectCmd)
 	initDoFlags(delObjectCmd)
 
@@ -65,11 +65,11 @@ func deleteObject(cmd *cobra.Command, args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn(missingBucket)
+		log.Warn(missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn(missingKey)
+		log.Warn(missingKey)
 		return
 	}
 
@@ -80,8 +80,8 @@ func deleteObject(cmd *cobra.Command, args []string) {
 	}
 
 	if _,err := api.DeleteObjects(req); err == nil {
-		lumber.Info("Object %s is removed from %s",key,bucket)
+		log.Info("Object %s is removed from %s",key,bucket)
 	} else {
-		lumber.Error("%v",err)
+		log.Error("%v",err)
 	}
 }

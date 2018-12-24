@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
@@ -18,13 +17,13 @@ var (
 		Use:   "listBucket",
 		Short: lbshort,
 		Long: ``,
+		Hidden: true,
 		Run: listBucket,
 	}
 	lbCmd = &cobra.Command {
 		Use:   "lb",
 		Short: lbshort,
 		Long: ``,
-		Hidden: true,
 		Run: listBucket,
 	}
 )
@@ -39,18 +38,19 @@ func init() {
 
 func listBucket(cmd *cobra.Command,args []string) {
 
-	utils.LumberPrefix(cmd)
+	start:= utils.LumberPrefix(cmd)
 
 	req := datatype.ListBucketRequest{
 		Service:  s3.New(api.CreateSession()),
 	}
 	if result,err := api.ListBuckets(req); err != nil {
-		lumber.Error("%v",err)
+		log.Error("%v",err)
 	} else {
-		lumber.Info("Ownerof the bucket: %s", result.Owner)
+		log.Info("Ownerof the bucket: %s", result.Owner)
 		for _, v := range result.Buckets {
-			lumber.Info("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
+			log.Info("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
 		}
 	}
+	utils.Return(start)
 
 }

@@ -3,12 +3,10 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
-
 )
 
 // makeBucketCmd represents the makeBucket command
@@ -18,6 +16,7 @@ var (
 		Use:   "makeBucket",
 		Short: mbshort,
 		Long: ``,
+		Hidden:true,
 		Run:makeBucket,
 	}
 
@@ -25,13 +24,13 @@ var (
 		Use:   "createBucket",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 	mbCmd = &cobra.Command{
 		Use:   "mb",
 		Short: mbshort,
 		Long: ``,
-		Hidden: true,
 		Run:makeBucket,
 	}
 
@@ -39,7 +38,6 @@ var (
 		Use:   "cb",
 		Short: mbshort,
 		Long: ``,
-		Hidden: true,
 		Run:makeBucket,
 	}
 
@@ -66,7 +64,7 @@ func makeBucket(cmd *cobra.Command,args []string) (){
 	start:= utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
-		lumber.Warn(missingBucket)
+		log.Warn(missingBucket)
 		utils.Return(start)
 		return
 	}
@@ -78,7 +76,8 @@ func makeBucket(cmd *cobra.Command,args []string) (){
 
 	if _,err := api.MakeBucket(req); err != nil {
 
-		lumber.Error("Create Bucket fails [%v]",err)
+		log.Error("Create Bucket fails [%v]",err)
 	}
+	utils.Return(start)
 
 }
