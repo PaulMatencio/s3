@@ -26,7 +26,7 @@ var (
 		Run: fPutObject,
 	}
 	putObjectCmd = &cobra.Command{
-		Use:   "putObj",
+		Use:   "putobj",
 		Short: poshort,
 		Long: ``,
 		Hidden: true,
@@ -34,7 +34,7 @@ var (
 	}
 
 	fPoCmd = &cobra.Command{
-		Use:   "fpo",
+		Use:   "fputobj",
 		Short: pfshort,
 		Long: ``,
 		Run: fPutObject,

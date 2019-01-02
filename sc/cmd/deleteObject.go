@@ -29,14 +29,14 @@ var  (
 		Use:   "do",
 		Short: "Command to delete an object",
 		Long: ``,
+		Hidden: true,
 		Run: deleteObject,
 	}
 
 	delObjectCmd = &cobra.Command{
-		Use:   "delObj",
+		Use:   "rmobj",
 		Short: "Command to delete an object",
 		Long: ``,
-		Hidden: true,
 		Run: deleteObject,
 	}
 

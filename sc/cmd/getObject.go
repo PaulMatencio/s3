@@ -12,18 +12,19 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 // getObjectCmd represents the getObject command
 var (
 	goshort = "Command to retrieve an object"
-	output   string
+	// odir   string
 	getObjectCmd = &cobra.Command {
-		Use:   "getObj",
+		Use:   "getobj",
 		Short: goshort,
 		Long: ``,
-		Hidden: true,
+
 		Run: getObject,
 	}
 
@@ -31,11 +32,12 @@ var (
 		Use:   "go",
 		Short: goshort,
 		Long: ``,
+		Hidden: true,
 		Run: getObject,
 	}
 
 	fgetObjCmd = &cobra.Command {
-		Use:   "fgo",
+		Use:   "fgetObj",
 		Short: "Command to download an objet ",
 		Long: ``,
 		Run: fGetObject,
@@ -50,7 +52,7 @@ func initGoFlags(cmd *cobra.Command) {
 func initFgoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
 	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
-	cmd.Flags().StringVarP(&output,"output","o","","the ouput directory you'like to save")
+	cmd.Flags().StringVarP(&odir,"odir","o","","the ouput directory you'like to save")
 
 }
 
@@ -142,17 +144,16 @@ func fGetObject(cmd *cobra.Command,args []string) {
 		log.Warn(missingKey)
 		return
 
-	case len(output) == 0:
+	case len(odir) == 0:
 		log.Warn(missingOutputFolder)
 		return
 	}
 
 	// Make the output directory if it does not exist
+	pdir = filepath.Join(utils.GetHomeDir(),odir)
+	utils.MakeDir(pdir)
 
-	if _,err := os.Stat(output); os.IsNotExist(err) {
-		os.MkdirAll(output,0755)
-	}
-	pathname := output + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
+	pathname := filepath.Join(pdir,strings.Replace(key,string(os.PathSeparator),"_",-1))
 
 	//  build a request
 	req := datatype.GetObjRequest{
@@ -196,16 +197,18 @@ func saveObject(result *s3.GetObjectOutput, pathname string) (error) {
 		err error
 		f  *os.File
 	)
+
 	if f,err = os.Create(pathname); err == nil {
 		_,err = io.Copy(f, result.Body);
 	}
+
 	return err
 }
 
 
 func writeObj(b *bytes.Buffer) {
 
-	pathname := output + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
+	pathname := pdir + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
 	if err:= ioutil.WriteFile(pathname,b.Bytes(),0644); err == nil {
 		log.Info("Object %s is downloaded to %s",key,pathname)
 	} else {

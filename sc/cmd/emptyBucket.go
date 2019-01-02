@@ -16,10 +16,9 @@ import (
 var (
 	ebshort = "Command to delete multiple objects"
 	eBucketCmd = &cobra.Command{
-		Use:   "deleteObjects",
+		Use:   "rmobjs",
 		Short: ebshort,
 		Long: ``,
-		Hidden: true,
 		Run: deleteObjects,
 	}
 
@@ -27,6 +26,7 @@ var (
 		Use:   "rmo",
 		Short: ebshort,
 		Long: ``,
+		Hidden: true,
 		Run: deleteObjects,
 	}
 
@@ -34,6 +34,7 @@ var (
 		Use:   "dmo",
 		Short: ebshort,
 		Long: ``,
+		Hidden: true,
 		Run: deleteObjects,
 	}
 )
@@ -85,7 +86,7 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 		nextmarker string
 		result  *s3.ListObjectsOutput
 		err error
-		rd Rd
+		// rd Rd
 		l  int
 	)
 	for {
@@ -106,8 +107,12 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 						Key:     *v.Key,
 					}
 					go func(request datatype.DeleteObjRequest) {
+
+						rd := Rd{
+							Key : del.Key,
+						}
 						rd.Result, rd.Err = api.DeleteObjects(del)
-						rd.Key = del.Key
+						del = datatype.DeleteObjRequest{} // reset the structure to free memory
 						ch <- &rd
 
 					}(del)
@@ -118,17 +123,23 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 				for ok:=true;ok;ok=!done {
 					select {
 					case rd := <-ch:
+
 						T++
+
 						if rd.Err != nil {
 							log.Error("Error %v deleting %s", rd.Err, rd.Key)
 						} else {
 							// lumber.Trace("Key %s is deleted", rd.Key)
 						}
+
+						rd = &Rd{} // reset the structure to free memory
+
 						if T == N {
 							//utils.Return(start)
 							log.Info("Deleting .... %d objects ",N)
 							done = true
 						}
+
 					case <-time.After(50 * time.Millisecond):
 						fmt.Printf("w")
 					}

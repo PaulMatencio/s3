@@ -13,10 +13,10 @@ import (
 var (
 	mbshort = "Command to create a bucket"
 	makeBucketCmd = &cobra.Command{
-		Use:   "makeBucket",
+		Use:   "mkbucket",
 		Short: mbshort,
 		Long: ``,
-		Hidden:true,
+		// Hidden:true,
 		Run:makeBucket,
 	}
 
@@ -31,6 +31,7 @@ var (
 		Use:   "mb",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 
@@ -38,6 +39,7 @@ var (
 		Use:   "cb",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 

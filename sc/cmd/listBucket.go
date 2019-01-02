@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	// "bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
@@ -14,14 +15,15 @@ import (
 var (
 	lbshort = "Command to list all your buckets"
 	listBucketCmd = &cobra.Command {
-		Use:   "listBucket",
+		Use:   "listbucket",
 		Short: lbshort,
-		Long: ``,
 		Hidden: true,
+		Long: ``,
+		// Hidden: true,
 		Run: listBucket,
 	}
 	lbCmd = &cobra.Command {
-		Use:   "lb",
+		Use:   "lsbucket",
 		Short: lbshort,
 		Long: ``,
 		Run: listBucket,

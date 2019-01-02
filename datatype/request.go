@@ -67,3 +67,9 @@ type DeleteObjRequest struct {
 	Key          string
 
 }
+
+type StatObjRequest struct {
+	Service  *s3.S3
+	Bucket    string
+	Key       string
+}

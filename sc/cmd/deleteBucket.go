@@ -14,7 +14,7 @@ var (
 	dbshort =  "Command to delete a bucket"
 
 	deleteBucketCmd = &cobra.Command{
-		Use:   "deleteBucket",
+		Use:   "deletebucket",
 		Short: dbshort,
 		Long: ``,
 		Hidden: true,
@@ -22,22 +22,23 @@ var (
 	}
 
 	removeBucketCmd = &cobra.Command{
-		Use:   "removeBucket",
+		Use:   "rmbucket",
 		Short: dbshort,
 		Long: ``,
-		Hidden: true,
 		Run:deleteBucket,
 	}
 	rbCmd = &cobra.Command{
 		Use:   "db",
 		Short: dbshort,
 		Long: ``,
+		Hidden: true,
 		Run:deleteBucket,
 	}
 
 	dbCmd = &cobra.Command{
 		Use:   "rb",
 		Short: dbshort,
+		Hidden: true,
 		Long: ``,
 		Run:deleteBucket,
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
@@ -14,10 +15,10 @@ var (
 	soshort = "Command to retrieve an object metadata"
 
 	statObjectCmd = &cobra.Command {
-		Use:   "statObj",
+		Use:   "statobj",
 		Short: soshort,
 		Long: ``,
-		Hidden: true,
+		// Hidden: true,
 		Run: statObject,
 	}
 
@@ -25,13 +26,14 @@ var (
 		Use:   "headObj",
 		Short: soshort,
 		Long: ``,
-		Hidden: true,
+		// Hidden: true,
 		Run: statObject,
 	}
 
 	statObjCmd = &cobra.Command {
 		Use:   "gom",
 		Short: soshort,
+		Hidden: true,
 		Long: ``,
 		Run: statObject,
 	}
@@ -77,8 +79,13 @@ func statObject(cmd *cobra.Command,args []string) {
 	}
 
 	var (
-		svc = s3.New(api.CreateSession())
-		result, err = api.StatObjects(svc, bucket, key)
+
+		req = datatype.StatObjRequest{
+			Service:  s3.New(api.CreateSession()),
+			Bucket: bucket,
+			Key: key,
+		}
+		result, err = api.StatObjects(req)
 	)
 
 	/* handle error */

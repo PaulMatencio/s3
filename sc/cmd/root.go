@@ -16,6 +16,7 @@ var (
 	cfgFile,logLevel,bucket,key 	 string
 	verbose, Debug,autoCompletion		 bool
 	log          = lumber.NewConsoleLogger(lumber.INFO)
+	odir,pdir  string
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingKey = "Missing key - please provide the key of the object"
@@ -49,7 +50,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "INFO","Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
 	rootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "sc config file; default $HOME/.sc/config.yaml")
-	rootCmd.Flags().BoolVarP(&autoCompletion,"autoCompletion", "",true, "generate bash auto completion")
+	rootCmd.Flags().BoolVarP(&autoCompletion,"autoCompletion", "",false, "generate bash auto completion")
 
 
 	// bind application flags to viper key for future viper.Get()
