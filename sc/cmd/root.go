@@ -3,20 +3,23 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/jcelliott/lumber"
 	"github.com/mitchellh/go-homedir"
+	"github.com/s3/gLog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	cfgFile,logLevel,bucket,key 	 string
+	cfgFile,bucket,key,metaEx 	 string
 	verbose, Debug,autoCompletion		 bool
-	log          = lumber.NewConsoleLogger(lumber.INFO)
+	// log          = lumber.NewConsoleLogger(lumber.INFO)
+
 	odir,pdir  string
+	loglevel int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingKey = "Missing key - please provide the key of the object"
@@ -48,29 +51,25 @@ func init() {
 	// persistent flags
 
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","v", false, "verbose output")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "INFO","Output level of logs (TRACE, DEBUG, INFO, WARN, ERROR, FATAL)")
+	rootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 0,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
 	rootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "sc config file; default $HOME/.sc/config.yaml")
-	rootCmd.Flags().BoolVarP(&autoCompletion,"autoCompletion", "",false, "generate bash auto completion")
-
+	rootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "g",false, "generate bash auto completion")
 
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
 
 	viper.BindPFlag("verbose",rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("logLevel",rootCmd.PersistentFlags().Lookup("logLevel"))
+	viper.BindPFlag("loglevel",rootCmd.PersistentFlags().Lookup("loglevel"))
+	viper.BindPFlag("autoCompletion",rootCmd.PersistentFlags().Lookup("autoCompletion"))
 	// read and init the config with  viper
 	cobra.OnInitialize(initConfig)
-
-	// init the application logger
-	// logLvl := lumber.LvlInt(viper.GetString(logLevel))
-
-	log.Prefix("["+ rootCmd.Name()+"]")
 
 
 }
 
 
 // initConfig reads in config file and ENV variables if set.
+
 func initConfig() {
 	var configPath string
 	if cfgFile != "" {
@@ -80,28 +79,53 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
-        configPath = filepath.Join(home,".sc")
-		viper.AddConfigPath(configPath) // path to look for the config file
-		viper.SetConfigName("config")  // set the config file
-	}
 
+		configPath = filepath.Join("/etc/sc") // call multiple times to add many search paths
+		viper.AddConfigPath(configPath)            // another path to look for the config file
+
+        configPath = filepath.Join(home,".sc")
+		viper.AddConfigPath(configPath)            // path to look for the config file
+
+		viper.AddConfigPath(".")               // optionally look for config in the working directory
+		viper.SetConfigName("config")          // name of the config file without the extension
+		viper.SetConfigType("yaml")
+	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Info("Using config file: %s", viper.ConfigFileUsed())
+		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}  else {
-		log.Warn("Error %v  reading config file %s",err,viper.ConfigFileUsed())
-		log.Info("AWS sdk shared config will be used if present ")
+		log.Printf("Error %v  reading config file %s",err,viper.ConfigFileUsed())
+		log.Printf("AWS sdk shared config will be used if present ")
+	}
+	// setLogLevel()
+	gLog.InitLog("",rootCmd.Name(),setLogLevel())
+	gLog.Info.Printf("Logging level : %d",loglevel)
+
+	if  autoCompletion {
+		autoCompScript := filepath.Join(configPath,"bash_completion")
+		rootCmd.GenBashCompletionFile(autoCompScript)
+		gLog.Info.Printf("Generate bash completion script %s",autoCompScript)
+	}
+	if metaEx = viper.GetString("meta.extension"); metaEx == "" {
+		metaEx = "md"
 	}
 
-	if autoCompletion {
+}
 
-		rootCmd.GenBashCompletionFile(filepath.Join(configPath,"bash_completion"))
-		
+func setLogLevel() (int) {
+
+	if loglevel == 0 {
+		loglevel = viper.GetInt("logging.log_level")
 	}
+
+	if verbose {
+		loglevel= 4
+	}
+	return loglevel
+
 }

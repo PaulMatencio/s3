@@ -2,73 +2,61 @@ package cmd
 
 import (
 	"fmt"
+	// "github.com/golang/gLog"
+	"github.com/s3/gLog"
+	"path/filepath"
+	// "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
-	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
-	"path/filepath"
 	"time"
 )
 
 
 var (
-	gmshort = "Command to retieve multiple objects metadata"
-	gmetaCmd = &cobra.Command{
-		Use:   "statObjects",
-		Short: gmshort,
+	getObjsShort = "Command to download multiple objects from a bucket"
+	getobjectsCmd = &cobra.Command{
+		Use:   "getObjects",
+		Short: getObjsShort,
 		Long: ``,
 		Hidden: true,
-		Run: statObjects,
+		Run: downloadObjects,
 	}
 
-	gmCmd = &cobra.Command{
-		Use:   "statObjs",
-		Short: gmshort,
+	getobjsCmd = &cobra.Command{
+		Use:   "getObjs",
+		Short: getObjsShort,
 		Long: ``,
-		Run: statObjects,
+		Run: downloadObjects,
 	}
-
-	hmCmd = &cobra.Command{
-		Use:   "headObjs",
-		Short: gmshort,
-		Long: ``,
-		Run: statObjects,
-	}
-
-
-
 )
-/*
-type  Rd struct {
-	Key string
-	Result   *s3.HeadObjectOutput
-	Err error
-}
-*/
+
+
 
 func init() {
 
-	rootCmd.AddCommand(gmetaCmd)
-	rootCmd.AddCommand(gmCmd)
+	rootCmd.AddCommand(getobjectsCmd)
+	rootCmd.AddCommand(getobjsCmd)
 	rootCmd.MarkFlagRequired("bucket")
 
-	initLoFlags(gmetaCmd)
-	initLoFlags(gmCmd)
-	gmetaCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
-	gmCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+	initLoFlags(getobjectsCmd)
+	initLoFlags(getobjsCmd)
+	getobjectsCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+	getobjsCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+
 }
 
 
-func statObjects(cmd *cobra.Command,args []string) {
+func downloadObjects(cmd *cobra.Command,args []string) {
 
 	var (
 		start= utils.LumberPrefix(cmd)
 		N,T = 0,0
 		total int64 = 0
 	)
-	
+
 	if len(bucket) == 0 {
 
 		gLog.Warning.Printf("%s",missingBucket)
@@ -88,16 +76,16 @@ func statObjects(cmd *cobra.Command,args []string) {
 		MaxKey : maxKey,
 		Marker : marker,
 	}
-	ch:= make(chan *datatype.Rh)
+	ch:= make(chan *datatype.Ro)
+
 	var (
 		nextmarker string
 		result  *s3.ListObjectsOutput
 		err error
-		// rd Rd
 		l  int
 	)
 
-    svc  := s3.New(api.CreateSession()) // create another service point for  getting metadata
+	svc  := s3.New(api.CreateSession()) /* create a new service for downloading object*/
 
 	for {
 
@@ -111,44 +99,45 @@ func statObjects(cmd *cobra.Command,args []string) {
 
 				for _, v := range result.Contents {
 
-					head := datatype.StatObjRequest{
+					get := datatype.GetObjRequest{
 						// Service: req.Service,
 						Service: svc,
 						Bucket:  req.Bucket,
 						Key:     *v.Key,
 					}
-					go func(request datatype.StatObjRequest) {
+					go func(request datatype.GetObjRequest) {
 
-						rd := datatype.Rh{
-							Key : head.Key,
+						rd := datatype.Ro{
+							Key : get.Key,
 						}
-						rd.Result, rd.Err = api.StatObjects(head)
+						rd.Result, rd.Err = api.GetObjects(get)
 
 						ch <- &rd
 
-					}(head)
+					}(get)
 
 				}
 
 				done:= false
 
 				for ok:=true;ok;ok=!done {
-
 					select {
+
 					case rd := <-ch:
 						T++
-						procStatResult(rd)
+						procGetResult(rd)
+
 						if T == N {
-							gLog.Info.Printf("Getting metadata of %d objects ",N)
+							gLog.Info.Printf("Getting %d objects ",N)
 							done = true
 						}
+
 					case <-time.After(50 * time.Millisecond):
 						fmt.Printf("w")
 					}
 				}
 
 			}
-
 		} else {
 			gLog.Error.Printf("ListObjects err %v",err)
 			break
@@ -165,12 +154,11 @@ func statObjects(cmd *cobra.Command,args []string) {
 			req.Marker = nextmarker
 
 		} else {
-			gLog.Info.Printf("Total number of objects returned: %d",total)
+			gLog.Info.Printf("Total number of objects downloaded: %d",total)
 			break
 		}
 	}
 
 	utils.Return(start)
 }
-
 

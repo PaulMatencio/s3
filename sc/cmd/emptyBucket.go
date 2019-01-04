@@ -3,6 +3,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/s3/gLog"
+
 	// "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
@@ -16,7 +18,7 @@ import (
 var (
 	ebshort = "Command to delete multiple objects"
 	eBucketCmd = &cobra.Command{
-		Use:   "rmobjs",
+		Use:   "rmObjs",
 		Short: ebshort,
 		Long: ``,
 		Run: deleteObjects,
@@ -55,7 +57,7 @@ func init() {
 func deleteObjects(cmd *cobra.Command,args []string) {
 
 	var (
-		start= time.Now()
+		start= utils.LumberPrefix(cmd)
 		N,T = 0,0
 	)
 
@@ -65,11 +67,10 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 		Err error
 	}
 
-	utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
 
-		log.Warn(missingBucket)
+		gLog.Warning.Printf("%s",missingBucket)
 		utils.Return(start)
 		return
 	}
@@ -127,7 +128,7 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 						T++
 
 						if rd.Err != nil {
-							log.Error("Error %v deleting %s", rd.Err, rd.Key)
+							gLog.Error.Printf("Error %v deleting %s", rd.Err, rd.Key)
 						} else {
 							// lumber.Trace("Key %s is deleted", rd.Key)
 						}
@@ -136,7 +137,7 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 
 						if T == N {
 							//utils.Return(start)
-							log.Info("Deleting .... %d objects ",N)
+							gLog.Info.Printf("Deleting .... %d objects ",N)
 							done = true
 						}
 
@@ -146,17 +147,17 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 				}
 
 			}  else {
-				log.Info("Bucket %s is empty", bucket)
+				gLog.Warning.Printf("Bucket %s is empty", bucket)
 			}
 		} else {
-			log.Error("ListObjects err %v",err)
+			gLog.Error.Printf("ListObjects err %v",err)
 			break
 		}
 
 		if *result.IsTruncated {
 
 			nextmarker = *result.Contents[l-1].Key
-			log.Info("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
+			gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 
 		}
 

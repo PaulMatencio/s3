@@ -1,16 +1,14 @@
 package cmd
 
 import (
-	"bytes"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/jcelliott/lumber"
+	"github.com/golang/glog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
+	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
-	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,10 +16,10 @@ import (
 
 // getObjectCmd represents the getObject command
 var (
-	goshort = "Command to retrieve an object"
+	goshort = "Command to get an object"
 	// odir   string
 	getObjectCmd = &cobra.Command {
-		Use:   "getobj",
+		Use:   "getObj",
 		Short: goshort,
 		Long: ``,
 
@@ -38,7 +36,7 @@ var (
 
 	fgetObjCmd = &cobra.Command {
 		Use:   "fgetObj",
-		Short: "Command to download an objet ",
+		Short: "Command to download an objet to a file",
 		Long: ``,
 		Run: fGetObject,
 	}
@@ -81,11 +79,11 @@ func getObject(cmd *cobra.Command,args []string) {
 	switch {
 
 	case len(bucket) == 0:
-		lumber.Warn(missingBucket)
+		gLog.Warning.Printf("%s",missingBucket)
 		return
 
 	case len(key) == 0:
-		lumber.Warn(missingKey)
+		gLog.Warning.Printf("%s",missingKey)
 		return
 	}
 
@@ -102,23 +100,21 @@ func getObject(cmd *cobra.Command,args []string) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				lumber.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+				gLog.Warning.Printf("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				lumber.Error("error [%v]",aerr.Error())
+				gLog.Error.Printf("error [%v]",aerr.Error())
 			}
 		} else {
-			lumber.Error("[%v]",err.Error())
+			gLog.Error.Printf("[%v]",err.Error())
 		}
 	} else {
 		usermd, err = utils.GetUserMeta(result.Metadata)
-		lumber.Info("Key: %s - User meta: %s ",key, usermd)
+		gLog.Info.Printf("Key: %s - User meta: %s ",key, usermd)
 		b, err := utils.ReadObject(result.Body)
 		if err == nil {
-			lumber.Info("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*result.ETag,*result.ContentLength,b.Len())
+			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*result.ETag,*result.ContentLength,b.Len())
 		}
-
 	}
-
 }
 
 func fGetObject(cmd *cobra.Command,args []string) {
@@ -128,24 +124,25 @@ func fGetObject(cmd *cobra.Command,args []string) {
 		err  error
 		result *s3.GetObjectOutput
 		usermd string
+		start = utils.LumberPrefix(cmd)
 
 	)
 	// handle any missing args
-	utils.LumberPrefix(cmd)
+
 
 
 	switch {
 
 	case len(bucket) == 0:
-		log.Warn(missingBucket)
+		glog.Warningf("%s",missingBucket)
 		return
 
 	case len(key) == 0:
-		log.Warn(missingKey)
+		glog.Warningf("%s",missingKey)
 		return
 
 	case len(odir) == 0:
-		log.Warn(missingOutputFolder)
+		glog.Warningf("%s",missingOutputFolder)
 		return
 	}
 
@@ -171,48 +168,28 @@ func fGetObject(cmd *cobra.Command,args []string) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				log.Warn("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
+				gLog.Warning.Printf("Error: [%v]  Error: [%v]",s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				log.Error("error [%v]",aerr.Error())
+				gLog.Error.Printf("error [%v]",aerr.Error())
 			}
 		} else {
-			log.Error("[%v]",err.Error())
+			gLog.Error.Printf("[%v]",err.Error())
 		}
 	} else {
 		usermd, err = utils.GetUserMeta(result.Metadata)
-		log.Info("Object: %s - User meta: %s ",key,usermd)
-		if err = saveObject(result,pathname); err == nil {
-			log.Info("Object %s is downloaded to %s",key,pathname)
+		gLog.Info.Printf("Object: %s - User meta: %s ",key,usermd)
+		if err = utils.SaveObject(result,pathname); err == nil {
+			gLog.Info.Printf("Object %s is downloaded to %s",key,pathname)
 		} else {
-			log.Error("Saving %s Error %v ",key,err)
+			gLog.Error.Printf("Saving %s Error %v ",key,err)
 		}
 	}
+	utils.Return(start)
 }
 
 
 
-func saveObject(result *s3.GetObjectOutput, pathname string) (error) {
-
-	var (
-		err error
-		f  *os.File
-	)
-
-	if f,err = os.Create(pathname); err == nil {
-		_,err = io.Copy(f, result.Body);
-	}
-
-	return err
-}
 
 
-func writeObj(b *bytes.Buffer) {
 
-	pathname := pdir + string(os.PathSeparator) + strings.Replace(key,string(os.PathSeparator),"_",-1)
-	if err:= ioutil.WriteFile(pathname,b.Bytes(),0644); err == nil {
-		log.Info("Object %s is downloaded to %s",key,pathname)
-	} else {
-		log.Info("Error %v downloading object %s",err,key)
-	}
-}
 

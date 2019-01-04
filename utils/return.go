@@ -1,12 +1,12 @@
 package utils
 
 import (
-	"github.com/jcelliott/lumber"
+	"github.com/s3/gLog"
 	"time"
 )
 
 func Return(start time.Time) {
-	lumber.Info("Elapsed time %s",time.Since(start))
-	LumberPrefix(nil)
+	gLog.Info.Printf("Elapsed time %s",time.Since(start))
+	// LumberPrefix(nil)
 }
 

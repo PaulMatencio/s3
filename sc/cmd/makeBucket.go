@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/gLog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
@@ -13,7 +14,7 @@ import (
 var (
 	mbshort = "Command to create a bucket"
 	makeBucketCmd = &cobra.Command{
-		Use:   "mkbucket",
+		Use:   "mkBucket",
 		Short: mbshort,
 		Long: ``,
 		// Hidden:true,
@@ -24,7 +25,12 @@ var (
 		Use:   "createBucket",
 		Short: mbshort,
 		Long: ``,
-		Hidden: true,
+		Run:makeBucket,
+	}
+	mkBucketCmd = &cobra.Command{
+		Use:   "makeBucket",
+		Short: mbshort,
+		Long: ``,
 		Run:makeBucket,
 	}
 	mbCmd = &cobra.Command{
@@ -66,7 +72,7 @@ func makeBucket(cmd *cobra.Command,args []string) (){
 	start:= utils.LumberPrefix(cmd)
 
 	if len(bucket) == 0 {
-		log.Warn(missingBucket)
+		gLog.Warning.Printf("%s",missingBucket)
 		utils.Return(start)
 		return
 	}
@@ -78,7 +84,7 @@ func makeBucket(cmd *cobra.Command,args []string) (){
 
 	if _,err := api.MakeBucket(req); err != nil {
 
-		log.Error("Create Bucket fails [%v]",err)
+		gLog.Error.Printf("Create Bucket fails [%v]",err)
 	}
 	utils.Return(start)
 

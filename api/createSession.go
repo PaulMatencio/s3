@@ -10,10 +10,14 @@ import (
 
 func CreateSession() *session.Session {
 
-	var sess     *session.Session
-	logLevel := *aws.LogLevel(1)  // fmt.Println(lumber.GetLevel()) logLevel = aws.LogDebug
+	var (
+		sess     *session.Session
+		loglevel  = *aws.LogLevel(1)
+	)
 
-	// set the
+	if viper.GetInt("loglevel") == 5 {
+		loglevel = aws.LogDebug
+	}
 
 
 	if viper.ConfigFileUsed() == ""  {
@@ -38,7 +42,7 @@ func CreateSession() *session.Session {
 			EndpointResolver: endpoints.ResolverFunc(myCustomResolver),
 			//Endpoint: &endpoint,
 			S3ForcePathStyle: aws.Bool(true),
-			LogLevel: aws.LogLevel(logLevel),
+			LogLevel: aws.LogLevel(loglevel),
 
 		}))
 
@@ -54,7 +58,7 @@ func CreateSession() *session.Session {
 			Endpoint:         aws.String(viper.GetString("sc_url")),
 			Credentials:      credentials.NewStaticCredentials(viper.GetString("sc_access_key_id"), viper.GetString("sc_secret_access_key"), ""),
 			S3ForcePathStyle: aws.Bool(true),
-			LogLevel:         aws.LogLevel(logLevel),
+			LogLevel:         aws.LogLevel(loglevel),
 
 		})
 	}

@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/gLog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
@@ -14,15 +15,15 @@ var (
 	dbshort =  "Command to delete a bucket"
 
 	deleteBucketCmd = &cobra.Command{
-		Use:   "deletebucket",
+		Use:   "delBucket",
 		Short: dbshort,
 		Long: ``,
-		Hidden: true,
+		// Hidden: true,
 		Run:deleteBucket,
 	}
 
 	removeBucketCmd = &cobra.Command{
-		Use:   "rmbucket",
+		Use:   "rmBucket",
 		Short: dbshort,
 		Long: ``,
 		Run:deleteBucket,
@@ -64,9 +65,11 @@ func init() {
 
 func deleteBucket(cmd *cobra.Command,args []string) (){
 
-	utils.LumberPrefix(cmd)
+	start := utils.LumberPrefix(cmd)
+
 	if len(bucket) == 0 {
-		log.Warn(missingBucket)
+
+		gLog.Warning.Printf("%s",missingBucket)
 		return
 	}
 
@@ -76,8 +79,9 @@ func deleteBucket(cmd *cobra.Command,args []string) (){
 
 	}
 	if _,err := api.DeleteBucket(req); err != nil {
-		log.Error("Delete bucket fails  [%v]",err)
+		gLog.Error.Printf("Delete bucket fails  [%v]",err)
 	}
+	utils.Return(start)
 
 }
 

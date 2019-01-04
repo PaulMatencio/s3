@@ -39,6 +39,8 @@ func FputObjects(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
 }
 
 
+
+
 func PutObjects(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 
 	input := &s3.PutObjectInput{

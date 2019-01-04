@@ -3,19 +3,20 @@ package cmd
 
 import (
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/jcelliott/lumber"
+	"github.com/s3/gLog"
+
+	// "github.com/golang/gLog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 // listObjectCmd represents the listObject command
 var (
-	loshort = "Command to list the objects of a bucket"
+	loshort = "Command to list the objects in a specific bucket"
 	listObjectCmd = &cobra.Command{
-		Use:   "lsobjs",
+		Use:   "lsObjs",
 		Short: loshort,
 		Long: ``,
 		// Hidden: true,
@@ -59,12 +60,13 @@ func init() {
 }
 
 func listObject(cmd *cobra.Command,args []string) {
-
-	start:= time.Now()
-	utils.LumberPrefix(cmd)
+	var (
+		start = utils.LumberPrefix(cmd)
+		total int64 = 0
+	)
 
 	if len(bucket) == 0 {
-		lumber.Warn(missingBucket)
+		gLog.Warning.Printf("%s",missingBucket)
 		utils.Return(start)
 		return
 	}
@@ -75,7 +77,7 @@ func listObject(cmd *cobra.Command,args []string) {
     	Prefix : prefix,
     	MaxKey : maxKey,
     	Marker : marker,
-
+    	Delimiter: delimiter,
 	}
 	for {
 		var (
@@ -86,28 +88,32 @@ func listObject(cmd *cobra.Command,args []string) {
 		if result, err = api.ListObject(req); err == nil {
 
 			if l := len(result.Contents); l > 0 {
-
+				total += int64(l)
 				for _, v := range result.Contents {
-					log.Info("Key: %s - Size: %d ", *v.Key, *v.Size)
+					gLog.Info.Printf("Key: %s - Size: %d ", *v.Key, *v.Size)
 				}
 
 				if *result.IsTruncated {
 
 					nextmarker = *result.Contents[l-1].Key
-					log.Info("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
+					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 				}
 
-			} else {
-				log.Info("List returns no object from %s", bucket)
+
 			}
+			/*else {
+				gLog.Warning.Printf("List returns no object from %s", bucket)
+			}
+			*/
 		} else {
-			log.Error("%v", err)
+			gLog.Error.Printf("%v", err)
 			break
 		}
 
 		if loop && *result.IsTruncated {
 			req.Marker = nextmarker
 		} else {
+			gLog.Info.Printf("Total number of objects returned: %d",total)
 			break
 		}
 	}

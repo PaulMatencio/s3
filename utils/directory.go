@@ -1,6 +1,5 @@
 package utils
 
-
 import (
 	"os"
 	"runtime"
@@ -15,4 +14,11 @@ func GetHomeDir() string {
 		return home
 	}
 	return os.Getenv("HOME")
+}
+
+
+func MakeDir(dir string) {
+	if _,err:= os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir,0755)
+	}
 }

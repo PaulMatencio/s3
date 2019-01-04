@@ -5,17 +5,20 @@ package cmd
 import (
 	// "bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
+	// "github.com/golang/glog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
+	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+
 )
 
 // listBucketCmd represents the listBucket command
 var (
 	lbshort = "Command to list all your buckets"
 	listBucketCmd = &cobra.Command {
-		Use:   "listbucket",
+		Use:   "listBucket",
 		Short: lbshort,
 		Hidden: true,
 		Long: ``,
@@ -23,7 +26,7 @@ var (
 		Run: listBucket,
 	}
 	lbCmd = &cobra.Command {
-		Use:   "lsbucket",
+		Use:   "lsBucket",
 		Short: lbshort,
 		Long: ``,
 		Run: listBucket,
@@ -46,11 +49,11 @@ func listBucket(cmd *cobra.Command,args []string) {
 		Service:  s3.New(api.CreateSession()),
 	}
 	if result,err := api.ListBuckets(req); err != nil {
-		log.Error("%v",err)
+		gLog.Error.Printf("%v",err)
 	} else {
-		log.Info("Ownerof the bucket: %s", result.Owner)
+		gLog.Info.Printf("Ownerof the bucket: %s", result.Owner)
 		for _, v := range result.Buckets {
-			log.Info("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
+			gLog.Info.Printf("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
 		}
 	}
 	utils.Return(start)
