@@ -14,7 +14,7 @@ import (
 
 // listObjectCmd represents the listObject command
 var (
-	loshort = "Command to list the objects in a specific bucket"
+	loshort = "Command to list specific or every object of a bucket"
 	listObjectCmd = &cobra.Command{
 		Use:   "lsObjs",
 		Short: loshort,
@@ -42,19 +42,19 @@ var (
 
 func initLoFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
-	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys")
-	cmd.Flags().StringVarP(&marker,"marker","M","","list starts with this key")
-	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","list delimiter")
-	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop with next marker")
+	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
+	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
+	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
 }
 
 func init() {
 
-	rootCmd.AddCommand(listObjectCmd)
-	rootCmd.AddCommand(loCmd)
-	rootCmd.MarkFlagRequired("bucket")
+	RootCmd.AddCommand(listObjectCmd)
+	RootCmd.AddCommand(loCmd)
+	RootCmd.MarkFlagRequired("bucket")
 	initLoFlags(listObjectCmd)
 	initLoFlags(loCmd)
 }

@@ -14,7 +14,7 @@ import (
 
 
 var (
-	gmshort = "Command to retieve multiple objects metadata"
+	gmshort = "Command to retieve some of the metadata of specific or every object in the bucket"
 	gmetaCmd = &cobra.Command{
 		Use:   "statObjects",
 		Short: gmshort,
@@ -37,8 +37,6 @@ var (
 		Run: statObjects,
 	}
 
-
-
 )
 /*
 type  Rd struct {
@@ -50,14 +48,16 @@ type  Rd struct {
 
 func init() {
 
-	rootCmd.AddCommand(gmetaCmd)
-	rootCmd.AddCommand(gmCmd)
-	rootCmd.MarkFlagRequired("bucket")
+	RootCmd.AddCommand(gmetaCmd)
+	RootCmd.AddCommand(gmCmd)
+	RootCmd.AddCommand(hmCmd)
+	RootCmd.MarkFlagRequired("bucket")
 
 	initLoFlags(gmetaCmd)
 	initLoFlags(gmCmd)
-	gmetaCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
-	gmCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+	initLoFlags(hmCmd)
+	gmetaCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
+	gmCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
 }
 
 
@@ -122,7 +122,7 @@ func statObjects(cmd *cobra.Command,args []string) {
 						rd := datatype.Rh{
 							Key : head.Key,
 						}
-						rd.Result, rd.Err = api.StatObjects(head)
+						rd.Result, rd.Err = api.StatObject(head)
 
 						ch <- &rd
 

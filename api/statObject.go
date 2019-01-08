@@ -4,7 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/s3/datatype"
 )
-func StatObjects(req datatype.StatObjRequest) (*s3.HeadObjectOutput,error){
+func StatObject(req datatype.StatObjRequest) (*s3.HeadObjectOutput,error){
 
 	input := &s3.HeadObjectInput{
 

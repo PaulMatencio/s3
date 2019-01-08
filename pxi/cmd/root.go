@@ -1,4 +1,3 @@
-
 package cmd
 
 import (
@@ -14,26 +13,24 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var (
-	cfgFile,bucket,key,metaEx 	 string
-	verbose, Debug,autoCompletion 	 bool
+	cfgFile,bucket,metaEx 	 string
+	verbose, Debug,autoCompletion,test 	 bool
 	// log          = lumber.NewConsoleLogger(lumber.INFO)
 
-	odir,pdir  string
+	odir,pdir,ifile  string
 	loglevel,profiling int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
-	missingKey = "Missing key - please provide the key of the object"
 	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
-	missingMetaFile ="Missing meta input file - please provide the meta file path (absolute or relative to current directory"
 	missingOutputFolder ="Missing output directory - please provide the output directory path( absolute or relative to current directory)"
 	missingInputFolder ="Missing input directory - please provide the input directory path( absolute or relative to current directory)"
 
 	RootCmd = &cobra.Command {
-		Use:   "sc",
-		Short: "Scality S3 frontend commands",
+		Use:   "pxi",
+		Short: "pxi migration tools",
 		Long: ``,
 		TraverseChildren: true,
-})
+	})
 
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -56,7 +53,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "sc config file; default $HOME/.sc/config.yaml")
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
-
+	RootCmd.PersistentFlags().BoolVarP(&test,"test","t",false,"test mode")
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
 
@@ -88,7 +85,7 @@ func initConfig() {
 		configPath = filepath.Join("/etc/sc") // call multiple times to add many search paths
 		viper.AddConfigPath(configPath)            // another path to look for the config file
 
-        configPath = filepath.Join(home,".sc")
+		configPath = filepath.Join(home,".sc")
 		viper.AddConfigPath(configPath)            // path to look for the config file
 
 		viper.AddConfigPath(".")               // optionally look for config in the working directory
@@ -110,7 +107,7 @@ func initConfig() {
 	gLog.Info.Printf("Logging level : %d",loglevel)
 
 	if  autoCompletion {
-		autoCompScript := filepath.Join(configPath,"sc_bash_completion")
+		autoCompScript := filepath.Join(configPath,"pxi_bash_completion")
 		RootCmd.GenBashCompletionFile(autoCompScript)
 		gLog.Info.Printf("Generate bash completion script %s to",autoCompScript)
 	}

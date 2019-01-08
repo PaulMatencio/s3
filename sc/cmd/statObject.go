@@ -30,7 +30,7 @@ var (
 	}
 
 	statObjCmd = &cobra.Command {
-		Use:   "gom",
+		Use:   "ho",
 		Short: soshort,
 		Hidden: true,
 		Long: ``,
@@ -40,18 +40,18 @@ var (
 )
 
 func initHoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
-	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
-	cmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
+	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object you'd like to check")
+	cmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
 }
 
 func init() {
 
-	rootCmd.AddCommand(statObjectCmd)
-	rootCmd.AddCommand(statObjCmd)
-	rootCmd.AddCommand(headObjCmd)
-	rootCmd.MarkFlagRequired("bucket")
-	rootCmd.MarkFlagRequired("key")
+	RootCmd.AddCommand(statObjectCmd)
+	RootCmd.AddCommand(statObjCmd)
+	RootCmd.AddCommand(headObjCmd)
+	RootCmd.MarkFlagRequired("bucket")
+	RootCmd.MarkFlagRequired("key")
 	initHoFlags(statObjectCmd)
 	initHoFlags(statObjCmd)
 	initHoFlags(headObjCmd)
@@ -85,7 +85,7 @@ func statObject(cmd *cobra.Command,args []string) {
 			Bucket: bucket,
 			Key: key,
 		}
-		result, err = api.StatObjects(req)
+		result, err = api.StatObject(req)
 	)
 
 	/* handle error */

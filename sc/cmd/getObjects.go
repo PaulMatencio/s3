@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 	// "github.com/golang/gLog"
 	"github.com/s3/gLog"
 	"path/filepath"
@@ -16,20 +17,20 @@ import (
 
 
 var (
-	getObjsShort = "Command to download multiple objects from a bucket"
+	getObjsShort = "Command to download some or all  objects and their metadata to a specific directory"
 	getobjectsCmd = &cobra.Command{
 		Use:   "getObjects",
 		Short: getObjsShort,
 		Long: ``,
 		Hidden: true,
-		Run: downloadObjects,
+		Run: getObjects,
 	}
 
 	getobjsCmd = &cobra.Command{
 		Use:   "getObjs",
 		Short: getObjsShort,
 		Long: ``,
-		Run: downloadObjects,
+		Run: getObjects,
 	}
 )
 
@@ -37,19 +38,19 @@ var (
 
 func init() {
 
-	rootCmd.AddCommand(getobjectsCmd)
-	rootCmd.AddCommand(getobjsCmd)
-	rootCmd.MarkFlagRequired("bucket")
+	RootCmd.AddCommand(getobjectsCmd)
+	RootCmd.AddCommand(getobjsCmd)
+	RootCmd.MarkFlagRequired("bucket")
 
 	initLoFlags(getobjectsCmd)
 	initLoFlags(getobjsCmd)
-	getobjectsCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
-	getobjsCmd.Flags().StringVarP(&odir,"odir","o","","the output directory relative to the home directory")
+	getobjectsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you'd like to save")
+	getobjsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you's like to save")
 
 }
 
 
-func downloadObjects(cmd *cobra.Command,args []string) {
+func getObjects(cmd *cobra.Command,args []string) {
 
 	var (
 		start= utils.LumberPrefix(cmd)
@@ -69,6 +70,23 @@ func downloadObjects(cmd *cobra.Command,args []string) {
 		utils.MakeDir(pdir)
 	}
 
+	//
+
+	if profiling >0  {
+		go func() {
+			for {
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
+				// debug.FreeOSMemory()
+				gLog.Info.Printf("PROFILING: System memory %d MB",float64(m.Sys) / 1024 / 1024)
+				gLog.Info.Printf("PROFILING: Heap allocation %d MB",float64(m.HeapAlloc) / 1024 / 1024)
+				gLog.Info.Printf("PROFILING: Total allocation %d MB",float64(m.TotalAlloc) / 1024 / 1024)
+				time.Sleep(time.Duration(profiling) * time.Second)
+
+			}
+		}()
+	}
+
 	req := datatype.ListObjRequest{
 		Service : s3.New(api.CreateSession()),
 		Bucket: bucket,
@@ -85,7 +103,7 @@ func downloadObjects(cmd *cobra.Command,args []string) {
 		l  int
 	)
 
-	svc  := s3.New(api.CreateSession()) /* create a new service for downloading object*/
+	// svc  := s3.New(api.CreateSession()) /* create a new service for downloading object*/
 
 	for {
 
@@ -100,8 +118,8 @@ func downloadObjects(cmd *cobra.Command,args []string) {
 				for _, v := range result.Contents {
 
 					get := datatype.GetObjRequest{
-						// Service: req.Service,
-						Service: svc,
+						Service: req.Service,
+						// Service: svc,
 						Bucket:  req.Bucket,
 						Key:     *v.Key,
 					}
@@ -110,25 +128,23 @@ func downloadObjects(cmd *cobra.Command,args []string) {
 						rd := datatype.Ro{
 							Key : get.Key,
 						}
-						rd.Result, rd.Err = api.GetObjects(get)
-
+						rd.Result, rd.Err = api.GetObject(get)
+						get = datatype.GetObjRequest{} // reset the get structure for GC
 						ch <- &rd
 
 					}(get)
-
 				}
 
 				done:= false
 
 				for ok:=true;ok;ok=!done {
 					select {
-
-					case rd := <-ch:
+					case rg := <-ch:
 						T++
-						procGetResult(rd)
+						procGetResult(rg)
 
 						if T == N {
-							gLog.Info.Printf("Getting %d objects ",N)
+							gLog.Info.Printf("%d objects are downloaded from bucket %s",N,bucket)
 							done = true
 						}
 
@@ -136,7 +152,6 @@ func downloadObjects(cmd *cobra.Command,args []string) {
 						fmt.Printf("w")
 					}
 				}
-
 			}
 		} else {
 			gLog.Error.Printf("ListObjects err %v",err)

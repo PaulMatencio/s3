@@ -13,8 +13,17 @@ type GetObjRequest struct {
 
 }
 
-type PutObjRequest struct {
+type CopyObjRequest struct {
 
+	Service 	*s3.S3
+	Sbucket 	string
+	Tbucket     string
+	Skey   		string
+	Tkey        string
+
+}
+
+type PutObjRequest struct {
 	Service     *s3.S3
 	Bucket       string
 	Key          string
@@ -23,7 +32,6 @@ type PutObjRequest struct {
 }
 
 type FputObjRequest struct {
-
 	Service     *s3.S3
 	Bucket       string
 	Key          string
@@ -32,7 +40,6 @@ type FputObjRequest struct {
 }
 
 type ListObjRequest struct {
-
 	Service 	*s3.S3
 	Bucket       string
 	Prefix       string
@@ -42,34 +49,33 @@ type ListObjRequest struct {
 }
 
 type ListBucketRequest struct {
-
 	Service 	*s3.S3
 }
 
 type MakeBucketRequest struct {
-
 	Service 	*s3.S3
 	Bucket string
-
 }
 
+
 type DeleteBucketRequest struct {
-
 	Service 	*s3.S3
-	Bucket       string
-
+	Bucket string
 }
 
 type DeleteObjRequest struct {
-
 	Service 	*s3.S3
 	Bucket       string
 	Key          string
-
 }
 
 type StatObjRequest struct {
 	Service  *s3.S3
 	Bucket    string
 	Key       string
+}
+
+type StatBucketRequest struct {
+	Service 	*s3.S3
+	Bucket      string
 }

@@ -5,14 +5,14 @@ import (
 	"github.com/s3/datatype"
 )
 
-func ListBuckets(req datatype.ListBucketRequest) (*s3.ListBucketsOutput, error){
+func ListBucket(req datatype.ListBucketRequest) (*s3.ListBucketsOutput, error){
 
 	input := &s3.ListBucketsInput{}
 	return  req.Service.ListBuckets(input)
 
 }
 
-
+/*
 func ListBucket() (*s3.ListBucketsOutput, error){
 
 	svc := s3.New(CreateSession())
@@ -20,4 +20,5 @@ func ListBucket() (*s3.ListBucketsOutput, error){
 	return  svc.ListBuckets(input)
 
 }
+*/
 

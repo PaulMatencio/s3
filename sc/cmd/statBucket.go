@@ -1,0 +1,75 @@
+
+
+package cmd
+
+import (
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/api"
+	"github.com/s3/datatype"
+	"github.com/s3/gLog"
+	"github.com/s3/utils"
+	"github.com/spf13/cobra"
+)
+
+// statBucketCmd represents the statBucket command
+var statBucketCmd = &cobra.Command{
+	Use:   "statBucket",
+	Short: "Command to verify if a bucket exist",
+	Long: ``,
+	Run: func(cmd *cobra.Command, args []string) {
+		statBucket(cmd,args)
+	},
+}
+
+func initHbFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
+
+}
+
+func init() {
+
+	RootCmd.AddCommand(statBucketCmd)
+	RootCmd.MarkFlagRequired("bucket")
+	initHoFlags(statBucketCmd)
+
+}
+//  statObject utilizes the api to get object
+
+func statBucket(cmd *cobra.Command,args []string) {
+
+	// handle any missing args
+	utils.LumberPrefix(cmd)
+
+	switch {
+
+	case len(bucket) == 0:
+		gLog.Warning.Printf("%s",missingBucket)
+		return
+	}
+
+	var (
+
+		req = datatype.StatBucketRequest{
+			Service:  s3.New(api.CreateSession()),
+			Bucket: bucket,
+		}
+		_, err = api.StatBucket(req)
+	)
+
+	/* handle error */
+
+	if err != nil {
+
+		if aerr, ok := err.(awserr.Error); ok {
+			gLog.Info.Printf("Bucket %s %v",bucket,aerr.Code())
+		} else {
+			gLog.Error.Println(err.Error())
+		}
+	} else {
+		gLog.Info.Printf("Bucket %s exists",bucket)
+	}
+
+}
+
+

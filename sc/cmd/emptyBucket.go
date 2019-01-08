@@ -44,10 +44,10 @@ var (
 
 func init() {
 
-	rootCmd.AddCommand(eBucketCmd)
-	rootCmd.AddCommand(ebCmd)
-	rootCmd.AddCommand(ebCmd1)
-	rootCmd.MarkFlagRequired("bucket")
+	RootCmd.AddCommand(eBucketCmd)
+	RootCmd.AddCommand(ebCmd)
+	RootCmd.AddCommand(ebCmd1)
+	RootCmd.MarkFlagRequired("bucket")
 
 	initLoFlags(eBucketCmd)
 	initLoFlags(ebCmd)

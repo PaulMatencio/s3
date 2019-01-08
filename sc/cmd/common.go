@@ -44,6 +44,18 @@ func procGetResult(rd *datatype.Ro) {
 }
 
 
+func procPutResult(rd *datatype.Rp) {
+
+	if rd.Err != nil {
+		procS3Error(rd.Err)
+	} else {
+		gLog.Trace.Printf("file %s from %s has been sucessfully uploaded to bucket %s",rd.Key,rd.Idir, bucket)
+	}
+
+	rd = &datatype.Rp{}
+}
+
+
 func procS3Error(err error) {
 
 	if aerr, ok := err.(awserr.Error); ok {
@@ -72,7 +84,7 @@ func procS3Object(rd *datatype.Ro) {
 
 		pathname := filepath.Join(pdir,strings.Replace(rd.Key,string(os.PathSeparator),"_",-1))
 		if err := utils.SaveObject(rd.Result,pathname); err == nil {
-			gLog.Trace.Printf("Object %s is downloaded to %s",key,pathname)
+			gLog.Trace.Printf("Object %s is downloaded  from %s to %s",key,bucket,pathname)
 		} else {
 			gLog.Error.Printf("Saving %s Error %v ",key,err)
 		}
@@ -82,3 +94,4 @@ func procS3Object(rd *datatype.Ro) {
 
 	}
 }
+

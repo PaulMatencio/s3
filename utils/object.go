@@ -51,3 +51,4 @@ func WriteObj(b *bytes.Buffer,pathname string) {
 		gLog.Info.Printf("Error %v downloading object",err)
 	}
 }
+

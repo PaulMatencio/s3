@@ -53,13 +53,13 @@ var (
 
 func initMbFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket you'd like to create")
 }
 
 func init() {
 
-	rootCmd.AddCommand(makeBucketCmd)
-	rootCmd.AddCommand(mbCmd)
+	RootCmd.AddCommand(makeBucketCmd)
+	RootCmd.AddCommand(mbCmd)
 	initMbFlags(makeBucketCmd)
 	initMbFlags(createBucketCmd)
 	initMbFlags(mbCmd)

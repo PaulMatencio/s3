@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/s3/datatype"
 )
-func GetObjects(req datatype.GetObjRequest) (*s3.GetObjectOutput,error){
+func GetObject(req datatype.GetObjRequest) (*s3.GetObjectOutput,error){
 
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(req.Bucket),
@@ -17,6 +17,7 @@ func GetObjects(req datatype.GetObjRequest) (*s3.GetObjectOutput,error){
 
 }
 
+/*
 func GetObject( bucket string, key string) (*s3.GetObjectOutput,error){
 
 	input := &s3.GetObjectInput{
@@ -25,3 +26,4 @@ func GetObject( bucket string, key string) (*s3.GetObjectOutput,error){
 	}
 	return s3.New(CreateSession()).GetObject(input)
 }
+*/

@@ -5,14 +5,14 @@ package cmd
 import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/gLog"
-	"github.com/jcelliott/lumber"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
+	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // putObjectCmd represents the putObject command
@@ -51,15 +51,15 @@ var (
 
 func initPfFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name")
-	cmd.Flags().StringVarP(&datafile,"datafile","f","","the data file to upload")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of  the bucket")
+	cmd.Flags().StringVarP(&datafile,"datafile","f","","the file you 'd like to  upload")
 	// cmd.Flags().StringVarP(&metafile,"metafile","m","","the meta file to upload")
 }
 
 func init() {
 
-	rootCmd.AddCommand(fPutObjectCmd)
-	rootCmd.AddCommand(fPoCmd)
+	RootCmd.AddCommand(fPutObjectCmd)
+	RootCmd.AddCommand(fPoCmd)
 	//rootCmd.AddCommand(putObjectCmd)
 	initPfFlags(fPutObjectCmd)
 	initPfFlags(fPoCmd)
@@ -70,8 +70,6 @@ func fPutObject(cmd *cobra.Command, args []string) {
 
 	var (
 	start = utils.LumberPrefix(cmd)
-	meta []byte
-	err error
 	)
 
 	if len(bucket) == 0 {
@@ -86,24 +84,32 @@ func fPutObject(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	/*
-	if len(metafile) == 0 {
-		lumber.Warn(missingMetaFile)
-		utils.Return(start)
-		return
-	}
-	*/
 	cwd,_:= os.Getwd()
 	datafile = filepath.Join(cwd,datafile)
-	metafile = datafile+".md"
-	_,key := filepath.Split(datafile)
 
+	if result,err := fPutObj(datafile); err == nil {
+		gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
+	} else {
+		gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
+	}
+
+	utils.Return(start)
+
+}
+
+func fPutObj(datafile string) (*s3.PutObjectOutput,error) {
+
+	var (
+
+		metafile = datafile+"."+ metaEx
+		_,key = filepath.Split(datafile)
+		meta []byte
+		err error
+	)
 
 	if  meta,err  = utils.ReadFile(metafile); err != nil || len(meta) == 0 {
 		gLog.Warning.Printf("no user metadata %s",metafile)
 	}
-
-	gLog.Info.Printf("%s %s",meta,metafile)
 
 	req:= datatype.FputObjRequest{
 		Service : s3.New(api.CreateSession()),
@@ -113,15 +119,7 @@ func fPutObject(cmd *cobra.Command, args []string) {
 		Meta : meta,
 
 	}
-
-	if result,err := api.FputObjects(req); err == nil {
-		lumber.Info("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
-	} else {
-		lumber.Error("fail to upload %s - error: %v",datafile,err)
-	}
-
-	utils.Return(start)
-
+	return api.FputObject(req)
 }
 
 func putObject(cmd *cobra.Command, args []string) {
@@ -129,9 +127,6 @@ func putObject(cmd *cobra.Command, args []string) {
 	var (
 		//buffer *bytes.Buffer
 		start = utils.LumberPrefix(cmd)
-		meta []byte
-		data []byte
-
 	)
 
 	if len(bucket) == 0 {
@@ -148,12 +143,31 @@ func putObject(cmd *cobra.Command, args []string) {
 
 	cwd,_:= os.Getwd()
 	datafile = filepath.Join(cwd,datafile)
-	metafile = datafile+".md"
-	_,key := filepath.Split(datafile)
+	if result,err := putObj(datafile); err == nil {
+		gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
+	} else {
+		gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
+	}
 
+	utils.Return(start)
+
+}
+
+
+func putObj(datafile string) (*s3.PutObjectOutput,error) {
+
+	var (
+
+		metafile = datafile+"."+ metaEx
+		_,key = filepath.Split(datafile)
+		meta []byte
+		data []byte
+		err error
+		start = time.Now()
+	)
 
 	// read Meta file into meta []byte
-	if  meta,err  := utils.ReadFile(metafile); err != nil || len(meta) == 0 {
+	if  meta,err  = utils.ReadFile(metafile); err != nil || len(meta) == 0 {
 		gLog.Info.Printf("no user metadata  %s",metafile)
 	}
 
@@ -174,13 +188,5 @@ func putObject(cmd *cobra.Command, args []string) {
 
 	}
 
-	if result,err := api.PutObjects(req); err == nil {
-		gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s  - Expiration: %s ", datafile,bucket,*result.ETag,*result.Expiration)
-	} else {
-		gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
-	}
-
-	utils.Return(start)
-
+	return api.PutObject(req)
 }
-

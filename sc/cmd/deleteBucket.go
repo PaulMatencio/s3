@@ -47,15 +47,15 @@ var (
 )
 
 func initRbFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the bucket name to get the object")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the buket to be deleted")
 }
 
 func init() {
 
-	rootCmd.AddCommand(deleteBucketCmd)
-	rootCmd.AddCommand(dbCmd)
-	rootCmd.AddCommand(removeBucketCmd)
-	rootCmd.AddCommand(rbCmd)
+	RootCmd.AddCommand(deleteBucketCmd)
+	RootCmd.AddCommand(dbCmd)
+	RootCmd.AddCommand(removeBucketCmd)
+	RootCmd.AddCommand(rbCmd)
 	initRbFlags(deleteBucketCmd)
 	initRbFlags(removeBucketCmd)
 	initRbFlags(rbCmd)

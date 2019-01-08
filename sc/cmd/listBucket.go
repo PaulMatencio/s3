@@ -37,8 +37,8 @@ var (
 
 func init() {
 
-	rootCmd.AddCommand(listBucketCmd)
-	rootCmd.AddCommand(lbCmd)
+	RootCmd.AddCommand(listBucketCmd)
+	RootCmd.AddCommand(lbCmd)
 }
 
 func listBucket(cmd *cobra.Command,args []string) {
@@ -48,10 +48,10 @@ func listBucket(cmd *cobra.Command,args []string) {
 	req := datatype.ListBucketRequest{
 		Service:  s3.New(api.CreateSession()),
 	}
-	if result,err := api.ListBuckets(req); err != nil {
+	if result,err := api.ListBucket(req); err != nil {
 		gLog.Error.Printf("%v",err)
 	} else {
-		gLog.Info.Printf("Ownerof the bucket: %s", result.Owner)
+		gLog.Info.Printf("Owner of the buckets: %s", result.Owner)
 		for _, v := range result.Buckets {
 			gLog.Info.Printf("Bucket Name: %s - Creation date: %s", *v.Name, v.CreationDate)
 		}

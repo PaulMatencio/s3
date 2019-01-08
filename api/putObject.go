@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-func FputObjects(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
+func FputObject(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
 
 
 	f, err := os.Open(req.Inputfile)
@@ -41,7 +41,7 @@ func FputObjects(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
 
 
 
-func PutObjects(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
+func PutObject(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(req.Bucket),

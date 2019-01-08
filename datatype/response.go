@@ -14,3 +14,11 @@ type  Ro struct {
 	Result   *s3.GetObjectOutput
 	Err error
 }
+
+type  Rp struct {
+
+	Idir string
+	Key string
+	Result   *s3.PutObjectOutput
+	Err error
+}
