@@ -9,6 +9,7 @@ import (
 	"github.com/s3/utils"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -52,27 +53,40 @@ func ST33ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 			var pathname string
 			/* read the input buffer */
 			lp := len(v.PxiId)
+			KEY := v.PxiId;
+
 			if v.PxiId[lp-2:lp-1] == "P" {
 				/* Get the document */
 				s:= 0
+				KEY = utils.Reverse(KEY)
 				for p:= 0; p < int(v.Pages); p++ {
 					var image = PxiImg {}
+
 					l,err = image.BuildTiffImage(buf,l)
 
-					// image, k = buildTiffImage(buf, l)
+					npages,_ := strconv.Atoi(string(image.NumPages))
 
-					//l = k
+					if npages !=  int(v.Pages) {
+						gLog.Error.Printf("Key = %s - conval pxiid = %s image pxiid= %s  - PAGES= %d  npages= %d ",KEY, v.PxiId, image.PxiId,v.Pages,npages)
+						// os.Exit(100)
+						image = PxiImg {}
+						l,err = image.BuildTiffImage(buf,l)
+					}
+
+
 					s += image.Img.Len()
-
-					gLog.Trace.Println("ST33 ", v.PxiId,v.Pages,   "---" , string(image.PxiId),string(image.NumPages),image.Img.Len())
+					gLog.Trace.Printf("ST33  Key:%s numPages:%d PxiId:%s Page number:%s   ImageLength:%d",v.PxiId,v.Pages,string(image.PxiId),string(image.PageNum),image.Img.Len())
+					// gLog.Trace.Println("ST33 ", v.PxiId,v.Pages,   "---" , string(image.PxiId),string(image.NumPages),image.Img.Len())
 					pathname = filepath.Join(odir, v.PxiId + "." +  string(image.PageNum))
 					if !test {
-						WriteImgToFile(pathname, image.Img)
-						if p == 0 {
+						if err := utils.WriteFile(pathname,image.Img.Bytes(),0644);err != nil {
+							gLog.Fatal.Printf("Error %v writing data file %s ",err,pathname)
+						}
+						if string(image.PageNum) == "0001" {
 							if usermd, err := buildUserMeta(v); err == nil {
 								pathname += ".md"
 								if err:= ioutil.WriteFile(pathname,[]byte(usermd),0644); err != nil {
-									gLog.Error.Printf("Error %v writing %s ",err,pathname)
+									gLog.Fatal.Printf("Error %v writing metadata file %s ",err,pathname)
 								}
 							}
 						}

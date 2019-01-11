@@ -15,7 +15,7 @@ var (
 
 	st33TFCmd = &cobra.Command{
 		Use:   "st33ToFiles",
-		Short: "Command to extract ST33 documents and output to files",
+		Short: "Command to extract ST33 PXI documents and write to files",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			st33ToFiles(cmd,args)

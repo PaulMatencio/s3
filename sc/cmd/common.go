@@ -26,7 +26,8 @@ func procStatResult(rd *datatype.Rh) {
 func procS3Meta(key string, meta map[string]*string) {
 
 	if len(odir) == 0 {
-		utils.PrintUserMeta(key, meta)
+		// utils.PrintUserMeta(key, meta)
+		utils.PrintPxiMeta(key, meta)
 	} else {
 		pathname := filepath.Join(pdir,strings.Replace(key,string(os.PathSeparator),"_",-1)+".md")
 		utils.WriteUserMeta(meta,pathname)
@@ -75,9 +76,10 @@ func procS3Object(rd *datatype.Ro) {
 
 	if len(odir) == 0 {
 		utils.PrintUserMeta(rd.Key, rd.Result.Metadata)
+		utils.PrintPxiMeta(rd.Key, rd.Result.Metadata)
 		b, err := utils.ReadObject(rd.Result.Body)
 		if err == nil {
-			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d", key, *rd.Result.ETag, *rd.Result.ContentLength, b.Len())
+			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d", rd.Key, *rd.Result.ETag, *rd.Result.ContentLength, b.Len())
 		}
 
 	} else {
@@ -89,6 +91,7 @@ func procS3Object(rd *datatype.Ro) {
 			gLog.Error.Printf("Saving %s Error %v ",key,err)
 		}
 		pathname += ".md"
+
 		utils.WriteUserMeta(rd.Result.Metadata,pathname)
 
 

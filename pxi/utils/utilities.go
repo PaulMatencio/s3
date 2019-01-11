@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/moses/user/files/lib"
-	"github.com/s3Client/lib"
+	"github.com/s3/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -213,13 +213,13 @@ func GetMagic( id string) (string){
  */
 
 
-func WriteImgToFile(filePath string ,img *bytes.Buffer){
+func WriteImgToFile(pathname string ,img *bytes.Buffer){
 	// log.Println("write",filePath)
-	dir,_ := filepath.Split(filePath)
+	dir,_ := filepath.Split(pathname)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.MkdirAll(dir, s3Client.DIRMODE)
+		os.MkdirAll(dir, 0755)
 	}
-	files.Check(files.WriteFile(filePath, img.Bytes(), s3Client.FILEMODE))
+	files.Check(utils.WriteFile(pathname, img.Bytes(), 0644))
 }
 
 

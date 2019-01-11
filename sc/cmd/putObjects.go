@@ -67,7 +67,6 @@ func putObjects(cmd *cobra.Command, args []string) {
 	if !async {
 		putfObjs(idir)
 	} else {
-
 		putfObjsAsync(idir)
 	}
 

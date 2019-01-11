@@ -38,6 +38,38 @@ func GetUserMeta(meta map[string]*string) (string,error) {
 
 }
 
+func GetPxiMeta(meta map[string]*string) (string,error) {
+
+	var (
+		err error
+
+	)
+
+	if v,ok := meta["Pages"];ok {
+		return *v,err
+	} else {
+		return "",err
+	}
+
+}
+
+
+/*
+func GetPxiMeta(meta map[string]*string) (string,error) {
+
+	var (
+		err error
+	)
+
+	if v,ok := meta["Pages"];ok {
+
+		return *v,err
+	} else {
+		return "",err
+	}
+
+}
+*/
 
 func BuildUserMeta(meta []byte) (map[string]*string) {
 
@@ -57,23 +89,57 @@ func WriteUserMeta(meta map[string]*string,pathname string ) {
 		err    error
 	)
 
-	if usermd,err  = GetUserMeta(meta); err == nil {
+	if usermd,err  = GetUserMeta(meta); err == nil && len(usermd) > 0 {
 		if err:= ioutil.WriteFile(pathname,[]byte(usermd),0644); err != nil {
 			gLog.Error.Printf("Error %v writing %s ",err,pathname)
 		}
 
 	}
 
+
+
+}
+
+func WritePxiMeta(meta map[string]*string,pathname string ) {
+
+	var (
+		usermd string
+		err    error
+	)
+
+	if usermd,err  = GetPxiMeta(meta); err == nil && len(usermd) > 0 {
+		if err:= ioutil.WriteFile(pathname,[]byte(usermd),0644); err != nil {
+			gLog.Error.Printf("Error %v writing %s ",err,pathname)
+		}
+
+	}
+
+
+
 }
 
 
 func PrintUserMeta(key string, meta  map[string]*string) {
 
-	for k,v := range meta {
-		gLog.Trace.Printf("Key %s - Metadata (k=v) %s=%s",key, k,*v)
+
+	for k,_ := range meta {
+		// gLog.Trace.Printf("Key %s - Usermeta %s=%s",key, k,*v)
+		if k == "Usermd" {
+
+			if usermd,err  := GetUserMeta(meta); err == nil {
+				gLog.Info.Printf("key:%s - User metadata: %s", key, usermd)
+			}
+		}
 	}
 
-	if usermd,err  := GetUserMeta(meta); err == nil {
-		gLog.Info.Printf("key:%s - User Metadata: %s", key, usermd)
+}
+
+func PrintPxiMeta(key string, meta  map[string]*string) {
+
+	for k,v := range meta {
+		if k == "Pages" {
+			gLog.Info.Printf("Key %s - Pxi metadata %s=%s", key, k, *v)
+		}
 	}
+
 }

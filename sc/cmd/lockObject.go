@@ -20,26 +20,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// readConvalCmd represents the readConval command
-var readConvalCmd = &cobra.Command{
-	Use:   "readConval",
-	Short: "Read the control file of the ST33 data file",
+// lockObjectCmd represents the lockObject command
+var lockObjectCmd = &cobra.Command{
+	Use:   "lockObject",
+	Short: "Command to lock an object" ,
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("readConval called")
+		fmt.Println("lockObject called")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(readConvalCmd)
+	RootCmd.AddCommand(lockObjectCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// readConvalCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// lockObjectCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// readConvalCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// lockObjectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

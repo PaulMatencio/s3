@@ -23,13 +23,8 @@ import (
 // st33ToS3Cmd represents the st33ToS3 command
 var st33ToS3Cmd = &cobra.Command{
 	Use:   "st33ToS3",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Command to extract ST33 PXI documents and upload to S3",
+	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("st33ToS3 called")
 	},
