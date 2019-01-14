@@ -28,6 +28,7 @@ type PutObjRequest struct {
 	Bucket       string
 	Key          string
 	Buffer       *bytes.Buffer
+	Usermd      map[string]string
 	Meta        []byte
 }
 
@@ -36,6 +37,7 @@ type FputObjRequest struct {
 	Bucket       string
 	Key          string
 	Inputfile     string
+	Usermd       map[string]string
 	Meta         []byte
 }
 

@@ -2,25 +2,10 @@ package utils
 
 import (
 	"encoding/base64"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/gLog"
 	"io/ioutil"
 )
 
-func GetuserMeta1(result *s3.GetObjectOutput) (string,error) {
-
-	var (
-		err error
-		u []byte
-	)
-
-	if v,ok := result.Metadata["Usermd"];ok {
-		u,err =  base64.StdEncoding.DecodeString(*v)
-		return string(u),err
-	} else {
-		return "",err
-	}
-}
 
 func GetUserMeta(meta map[string]*string) (string,error) {
 
@@ -53,23 +38,19 @@ func GetPxiMeta(meta map[string]*string) (string,error) {
 
 }
 
+func BuildUsermd(usermd map[string]string) (map[string]*string) {
 
-/*
-func GetPxiMeta(meta map[string]*string) (string,error) {
-
-	var (
-		err error
-	)
-
-	if v,ok := meta["Pages"];ok {
-
-		return *v,err
-	} else {
-		return "",err
+	metad := make(map[string]*string)
+	for k,v := range usermd {
+		V:= v     /*
+		             Circumvent  a Go pointer  problem  => &v points to same address for every k
+		          */
+		metad[k] = &V
 	}
-
+	return metad
 }
-*/
+
+
 
 func BuildUserMeta(meta []byte) (map[string]*string) {
 
@@ -123,7 +104,6 @@ func PrintUserMeta(key string, meta  map[string]*string) {
 
 
 	for k,_ := range meta {
-		// gLog.Trace.Printf("Key %s - Usermeta %s=%s",key, k,*v)
 		if k == "Usermd" {
 
 			if usermd,err  := GetUserMeta(meta); err == nil {
