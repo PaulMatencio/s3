@@ -54,7 +54,7 @@ var (
 func initPfFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of  the bucket")
-	cmd.Flags().StringVarP(&datafile,"datafile","f","","the file you 'd like to  upload")
+	cmd.Flags().StringVarP(&datafile,"datafile","i","","the data file you 'd like to  upload")
 	// cmd.Flags().StringVarP(&metafile,"metafile","m","","the meta file to upload")
 }
 
@@ -72,6 +72,7 @@ func fPutObject(cmd *cobra.Command, args []string) {
 
 	var (
 	start = utils.LumberPrefix(cmd)
+	svc  *s3.S3
 	)
 
 	if len(bucket) == 0 {
@@ -88,8 +89,9 @@ func fPutObject(cmd *cobra.Command, args []string) {
 
 	cwd,_:= os.Getwd()
 	datafile = filepath.Join(cwd,datafile)
+	svc      = s3.New(api.CreateSession())
 
-	if result,err := fPutObj(datafile); err == nil {
+	if result,err := fPutObj(svc ,datafile); err == nil {
 		gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
 	} else {
 		gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
@@ -99,30 +101,34 @@ func fPutObject(cmd *cobra.Command, args []string) {
 
 }
 
-func fPutObj(datafile string) (*s3.PutObjectOutput,error) {
+// called by fputObj command
+func fPutObj(svc *s3.S3 , datafile string) (*s3.PutObjectOutput,error) {
 
 	var (
 
 		metafile = datafile+"."+ metaEx
 		_,key = filepath.Split(datafile)
-		meta []byte
+		usermd = map[string]string{}
 		err error
+
 	)
 
-	if  meta,err  = utils.ReadFile(metafile); err != nil || len(meta) == 0 {
-		gLog.Warning.Printf("no user metadata %s",metafile)
+	if  usermd,err  = utils.ReadUsermd(metafile); err != nil  {
+		gLog.Error.Printf("Error %v reading meta data file %s",err,metafile)
 	}
 
 	req:= datatype.FputObjRequest{
-		Service : s3.New(api.CreateSession()),
+		// Service : s3.New(api.CreateSession()),
+		Service: svc,
 		Bucket: bucket,
 		Key: key,
 		Inputfile: datafile,
-		Meta : meta,
+		Usermd : usermd,
 
 	}
-	return api.FputObject(req)
+	return api.FputObject2(req)
 }
+
 
 func putObject(cmd *cobra.Command, args []string) {
 

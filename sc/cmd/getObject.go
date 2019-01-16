@@ -71,7 +71,8 @@ func init() {
 //  getObject utilizes the api to get object
 
 func getObject(cmd *cobra.Command,args []string) {
-	var usermd string
+
+
 	// handle any missing args
 	utils.LumberPrefix(cmd)
 
@@ -107,8 +108,9 @@ func getObject(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("[%v]",err.Error())
 		}
 	} else {
-		usermd, err = utils.GetUserMeta(result.Metadata)
-		gLog.Info.Printf("Key: %s - User meta: %s ",key, usermd)
+
+		utils.PrintUsermd(req.Key,result.Metadata)
+
 		b, err := utils.ReadObject(result.Body)
 		if err == nil {
 			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*result.ETag,*result.ContentLength,b.Len())
@@ -122,7 +124,7 @@ func fGetObject(cmd *cobra.Command,args []string) {
 
 		err  error
 		result *s3.GetObjectOutput
-		usermd string
+
 		start = utils.LumberPrefix(cmd)
 
 	)
@@ -175,13 +177,16 @@ func fGetObject(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("[%v]",err.Error())
 		}
 	} else {
-		usermd, err = utils.GetUserMeta(result.Metadata)
-		gLog.Info.Printf("Object: %s - User meta: %s ",key,usermd)
+
+
+
 		if err = utils.SaveObject(result,pathname); err == nil {
 			gLog.Info.Printf("Object %s is downloaded to %s",key,pathname)
 		} else {
 			gLog.Error.Printf("Saving %s Error %v ",key,err)
 		}
+		// utils.PrintUsermd(req.Key,result.Metadata)
+		utils.WriteUsermd(result.Metadata,pathname+".md")
 	}
 	utils.Return(start)
 }

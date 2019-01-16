@@ -23,14 +23,13 @@ func procStatResult(rd *datatype.Rh) {
 
 }
 
-func procS3Meta(key string, meta map[string]*string) {
+func procS3Meta(key string, metad map[string]*string) {
 
 	if len(odir) == 0 {
-		// utils.PrintUserMeta(key, meta)
-		utils.PrintPxiMeta(key, meta)
+		utils.PrintUsermd(key,metad)
 	} else {
 		pathname := filepath.Join(pdir,strings.Replace(key,string(os.PathSeparator),"_",-1)+".md")
-		utils.WriteUserMeta(meta,pathname)
+		utils.WriteUserMeta(metad,pathname)
 	}
 }
 
@@ -75,8 +74,8 @@ func procS3Error(err error) {
 func procS3Object(rd *datatype.Ro) {
 
 	if len(odir) == 0 {
-		utils.PrintUserMeta(rd.Key, rd.Result.Metadata)
-		utils.PrintPxiMeta(rd.Key, rd.Result.Metadata)
+
+		utils.PrintUsermd(rd.Key,rd.Result.Metadata)
 		b, err := utils.ReadObject(rd.Result.Body)
 		if err == nil {
 			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d", rd.Key, *rd.Result.ETag, *rd.Result.ContentLength, b.Len())
@@ -85,15 +84,17 @@ func procS3Object(rd *datatype.Ro) {
 	} else {
 
 		pathname := filepath.Join(pdir,strings.Replace(rd.Key,string(os.PathSeparator),"_",-1))
+
 		if err := utils.SaveObject(rd.Result,pathname); err == nil {
 			gLog.Trace.Printf("Object %s is downloaded  from %s to %s",key,bucket,pathname)
 		} else {
 			gLog.Error.Printf("Saving %s Error %v ",key,err)
 		}
-		pathname += ".md"
 
-		utils.WriteUserMeta(rd.Result.Metadata,pathname)
-
+		if len(rd.Result.Metadata)  > 0 {
+			pathname += ".md"
+			utils.WriteUsermd(rd.Result.Metadata, pathname)
+		}
 
 	}
 }

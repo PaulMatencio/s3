@@ -79,6 +79,8 @@ func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 									if err = WriteUsermd(usermd,pathname); err != nil {
 										gLog.Error.Printf("Error writing user metadata %v",err)
 									}
+								} else {
+									gLog.Error.Printf("Error building user metadata %v",err)
 								}
 							}
 						}
@@ -101,7 +103,7 @@ func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 				}
 
 				if l,err  = pxiblob.BuildPxiBlob(buf,l); err == nil {
-					pathname = filepath.Join(odir, "BLOB", pxiblob.Key)+".1"
+					pathname = filepath.Join(odir, pxiblob.Key)+".1"
 
 					if !test {
 						WriteImgToFile(pathname, pxiblob.Blob)
@@ -110,6 +112,8 @@ func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 							if err = WriteUsermd(usermd,pathname); err != nil {
 								gLog.Error.Printf("Error writing user metadata %v",err)
 							}
+						} else {
+							gLog.Error.Printf("Error building user metadata %v",err)
 						}
 					}
 

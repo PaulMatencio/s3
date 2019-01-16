@@ -3,6 +3,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
@@ -75,10 +77,11 @@ func putObjects(cmd *cobra.Command, args []string) {
 
 func putfObjs(idir string) {
 
+	svc      := s3.New(api.CreateSession())
 	if fis,err := utils.ReadDataDir(idir); err == nil {
 		for _,fi := range fis {
 			datafile := filepath.Join(idir,fi.Name())
-			if result,err := fPutObj(datafile); err == nil {
+			if result,err := fPutObj(svc,datafile); err == nil {
 				gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
 			} else {
 				gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
@@ -100,6 +103,7 @@ func putfObjsAsync(idir string) {
 			N = len(fis)
 			max = int(maxKey)
 			m,n,t int
+			svc  = s3.New(api.CreateSession())
 		)
 
 		for k:=0; k < N; k += max {
@@ -121,7 +125,7 @@ func putfObjsAsync(idir string) {
 						Idir: idir,
 					}
 
-					rp.Result, rp.Err = fPutObj(filepath.Join(idir, key))
+					rp.Result, rp.Err = fPutObj(svc,filepath.Join(idir, key))
 					ch <- &rp
 
 				}(key)

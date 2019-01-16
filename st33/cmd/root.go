@@ -54,6 +54,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
 	RootCmd.PersistentFlags().BoolVarP(&test,"test","t",false,"test mode")
+
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
 

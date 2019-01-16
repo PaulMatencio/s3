@@ -1,23 +1,23 @@
 
-package pxi
+package st33
 
 import (
 	"bytes"
-	"encoding/base64"
-	json2 "encoding/json"
+	"log"
+	"os"
+	"runtime"
+	"runtime/debug"
+
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/utils"
+	"strconv"
 
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3Client/lib"
-	"log"
-
-	"runtime"
-	"runtime/debug"
 	"time"
 
 	"strings"
@@ -30,7 +30,7 @@ type PutS3Response struct {
 	Error   S3Error
 }
 
-func ST332S3(infile string,  bucket  string , test bool)  (int ,int, error){
+func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 
 	var (
 
@@ -40,17 +40,18 @@ func ST332S3(infile string,  bucket  string , test bool)  (int ,int, error){
 		numdocs,numpages,S	int=0,0,0
 	)
 
-	/* go routine to check memory usage every 10 seconds */
-	go func() {
-		for {
-			var m runtime.MemStats
-			runtime.ReadMemStats(&m)
-			debug.FreeOSMemory()
-			log.Println("Systenm memory:",float64(m.Sys) / 1024 / 1024)
-			log.Println("Heap allocation",float64(m.HeapAlloc) / 1024 / 1024)
-			time.Sleep(20 * time.Second)
-		}
-	}()
+	if profiling > 0 {
+		go func() {
+			for {
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
+				debug.FreeOSMemory()
+				log.Println("Systenm memory:", float64(m.Sys)/1024/1024)
+				log.Println("Heap allocation", float64(m.HeapAlloc)/1024/1024)
+				time.Sleep(time.Duration(profiling) * time.Second)
+			}
+		}()
+	}
 
 	/* Check the existence of the control file */
 	conval = &[]Conval{}
@@ -68,94 +69,99 @@ func ST332S3(infile string,  bucket  string , test bool)  (int ,int, error){
 	conVal := *conval
 
 	svc :=  s3.New(api.CreateSession())
-	/* read ST33  file */
+
+	req  := datatype.PutObjRequest {
+		Service: svc,
+		Bucket: bucket,
+	}
 
 	abuf, err := utils.ReadBuffer(infile)
 	defer 	abuf.Reset()
 	buf		:= abuf.Bytes()
-	// log.Println(infile,len(buf))
-
 	if err == nil {
+
 		var (
 			Numdocs 	int = len(conVal)
 			l		int64 = 0
 		)
+
 		gLog.Info.Printf("Number of documents to upload %d",Numdocs)
 
-		req  := datatype.PutObjRequest {
-			Service: svc,
-		}
-
 		for _, v := range conVal {
+			gLog.Trace.Printf("Uploading document %s  number of pages %d",v.PxiId,v.Pages)
+			lp := len(v.PxiId)
+			KEY := v.PxiId;
+			if v.PxiId[lp-2:lp-1] == "P" {
 
-			var image = PxiImg{}
-			req.Key = v.PxiId
-			// PAGES := v.Pages
-			gLog.Info.Printf("Uploading document %s  number of pages %d",req.Key,v.Pages)
-			lp := len(req.Key)
+				KEY = utils.Reverse(KEY)
 
-			if req.Key[lp-2:lp-1] == "P" {
-				/* Get the document */
 				s:= 0
-
 				for p:= 0; p < int(v.Pages); p++ {
-
-					gLog.Info.Println(req.Key,len(buf),l)
-					// build the Tiff image
-					l,err = image.BuildTiffImage(buf,l)
+					// set the key of the s3 object
+					req.Key = KEY
+					// reset user metadata
+					req.Usermd = map[string]string{}
+					// extract the image
+					image,k,_ := GetPage(v, buf, l)
+					l = k
 					s += image.Img.Len()
+					// update docsize with the actual image size
 					v.DocSize= uint32(image.Img.Len())
 					S += int(v.DocSize)
-					// build user metadata only the first page
-					// user meta is derived from the conval value
-					if p == 0 {
-						if usermd, err := buildUserMeta(v); err == nil {
-							req.Meta = usermd
+					 // build the user metadata for the first page only
+					pagenum, _ := strconv.Atoi(string(image.PageNum))
+
+					if pagenum == 1 {
+						if usermd, err := BuildUsermd(v); err == nil {
+							req.Usermd= usermd
 						}
 					}
 
-					req.Key =  req.Key + "." + string(image.PageNum)
+					// complete the request to write to S3
+					req.Key =  req.Key + "." + strconv.Itoa(pagenum)
 					req.Buffer = image.Img
 
-					if err:= writeToS3(req,test); err != nil {
-						gLog.Error.Printf("PutObject Key: %s  Error: %v",req.Key,err)
+					if _,err:= writeToS3(req); err != nil {
+						gLog.Fatal.Printf("PutObject Key: %s  Error: %v",req.Key,err)
+						os.Exit(100)
 					}
+					// reset the image
+					image.Img.Reset()
 
-					image.Img.Reset() /* reset the previous image buffer */
 				}
+
 				numpages += int(v.Pages)
 				numdocs++
 
 			} else {
 
 				var pxiblob = pxiBlob {
-					Key : req.Key,
+					Key : utils.Reverse(KEY),
 					Record: v.Records,
 					Blob  :	 new(bytes.Buffer),
 				}
 
-				gLog.Info.Println(req.Key,len(buf),l,v.Records)
+				gLog.Trace.Println(req.Key,len(buf),l,v.Records)
 
 				if l,err  = pxiblob.BuildPxiBlob(buf,l); err == nil {
 
-
 					v.DocSize= uint32(pxiblob.Blob.Len())
 					S += int(v.DocSize)
-
-					// user metadata is derived from the conval value
-					if usermd,err:= buildUserMeta(v); err == nil {
-						req.Meta = usermd
+					if usermd,err:= BuildUsermd(v); err == nil {
+						req.Usermd = usermd
 					}
 
 					req.Buffer = pxiblob.Blob
 					req.Bucket = bucket
-					req.Key = pxiblob.Key
+					req.Key = pxiblob.Key+".1"
 
-					if err:= writeToS3(req,test); err != nil {
-						gLog.Error.Printf("PutObject Key: %s  Error: %v",req.Key,err)
+					if _,err:= writeToS3(req); err != nil {
+						gLog.Fatal.Printf("PutObject Key: %s  Error: %v",req.Key,err)
+						os.Exit(100)
 					}
 
 					pxiblob.Blob.Reset()
+
 					numpages++
 					numdocs++
 				}
@@ -163,13 +169,12 @@ func ST332S3(infile string,  bucket  string , test bool)  (int ,int, error){
 		}
 	}
 
-	//  lookup table
 	gLog.Info.Printf("Number of uploaded documents %d - Number of uploaded pages %d",numdocs,numpages)
 	return numpages,numdocs,err
 }
 
 
-func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Error)  {
+func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Error)  {
 
 	var (
 
@@ -213,11 +218,9 @@ func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Err
 			return 0,0,ErrKey
 		}
 	}
+
 	conVal := *conval
-
-
 	/* read ST33  file */
-
 	abuf, err := utils.ReadBuffer(infile)
 	defer 	abuf.Reset()
 	buf		:= abuf.Bytes()
@@ -245,44 +248,50 @@ func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Err
 			start1 := time.Now()
 			for _, v := range conVal[p:q] {
 
-				var image = PxiImg{}
-				//KEY := v.PxiId;
-				lp := len(v.PxiId);S1= 0
-				if v.PxiId[lp-2:lp-1] == "P" {
+				KEY := v.PxiId;
+				lp := len(KEY);S1= 0
+				if KEY[lp-2:lp-1] == "P" {
 					// s:= 0
 					N += int(v.Pages)
 					for p := 0; p < int(v.Pages); p++ {
 						// extract tiff image
-						if l, err = image.BuildTiffImage(buf, l); err == nil {
-							//s += image.Img.Len()
-							numpages++
+						image,k,err := GetPage(v,buf,l)
 
-							go func(image PxiImg, v Conval) {
+						if err == nil {
+
+							numpages++
+							v.DocSize = uint32(image.Img.Len()) // update the document size
+
+							go func(key string, image PxiImg, v Conval) {
 
 								req := datatype.PutObjRequest{
 									Service: svc,
 									Bucket: bucket,
-									Key : v.PxiId+"."+string(image.PageNum),
 								}
 
-								//enrich user meta data
-								v.DocSize = uint32(image.Img.Len())
+								pagenum, _ := strconv.Atoi(string(image.PageNum))
+								if pagenum == 1 {
+									if usermd, err := BuildUsermd(v); err == nil {
+										req.Usermd = usermd
+									}
+								}
+								// complete building  the request before writing to S3
+								req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum)
+								req.Buffer = image.Img
+
 								S += int(v.DocSize)
 								S1 += int(v.DocSize)
-								// build user metadata
-								if usermd, err := buildUserMeta(v); err == nil {
-									req.Meta = usermd
-								}
 
-								err := writeToS3(req, test)
+								_,err := writeToS3(req)
 								s3Error := S3Error{Key: req.Key, Err: err}
 
 								image.Img.Reset() /* reset the previous image buffer */
 								// send message to go routine listener
 
 								ch <- &PutS3Response{bucket, req.Key, s3Error}
-							}(image, v)
+							}(KEY,image, v)
 						}
+						l =k
 					}
 					numdocs++
 				} else {
@@ -294,34 +303,37 @@ func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Err
 					}
 
 					if l, err = pxiblob.BuildPxiBlob(buf, l); err == nil {
+
 						N++
 						numpages++
 						numdocs++
-						go func(pxiblob pxiBlob, v Conval) {
+						v.DocSize = uint32(pxiblob.Blob.Len())
+
+						go func(key string, pxiblob pxiBlob, v Conval) {
 
 							req := datatype.PutObjRequest{
 								Service: svc,
 								Bucket: bucket,
-								Key : v.PxiId,
+								Key : utils.Reverse(key)+".1",
 								Buffer: pxiblob.Blob,
 							}
-							v.DocSize = uint32(pxiblob.Blob.Len())
+
 							S += int(v.DocSize)
 							S1 += int(v.DocSize)
 							// build user metadata
-							if usermd, err := buildUserMeta(v); err == nil {
-								req.Meta = usermd
+							if usermd, err := BuildUsermd(v); err == nil {
+								req.Usermd = usermd
 							}
 							// build put object request
 							// Write to S3 and save the return status
-							err := writeToS3(req, test)
+							_,err := writeToS3(req)
 							s3Error := S3Error{Key: pxiblob.Key, Err: err}
 							//Reset the Blob Content
 							pxiblob.Blob.Reset()
 							// Send a message to go routine listener
 							ch <- &PutS3Response{bucket, pxiblob.Key, s3Error}
 
-						}(pxiblob, v)
+						}(KEY, pxiblob, v)
 					}else {
 						gLog.Error.Printf("Error %v",err)
 					}
@@ -330,6 +342,7 @@ func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Err
 			}
 
 			/* wait for the completion of all put objects*/
+
 			done:= false
 			for ok:=true;ok;ok=!done {
 				select {
@@ -388,33 +401,20 @@ func ST332S3Async(infile string,  bucket  string, test bool)  (int, int, []S3Err
 }
 
 
+func writeToS3( r datatype.PutObjRequest) (*s3.PutObjectOutput,error){
+	gLog.Trace.Println("Write to ", r.Bucket, r.Key,r.Buffer.Len())
+	return api.PutObject2(r)
+}
 
+/*
 func writeToS3( r datatype.PutObjRequest, test bool) error{
 	var err error
 	gLog.Trace.Println("Write to ", r.Bucket, r.Key)
 	if (!test) {
-		if _, err := api.PutObject(r); err != nil {
+		if _, err := api.PutObject2(r); err != nil {
 			gLog.Error.Printf("Put key %s error %v", r.Key, err)
 		}
 	}
 	return err
 }
-
-
-
-func buildUsermd(conval Conval) (map[string]string,error)  {
-	var (
-		err 	error
-		usermd = make(map[string]string)
-	)
-
-	if jsonB,err  := json2.Marshal(conval); err == nil {
-		usermd["Usermd"] = base64.StdEncoding.EncodeToString(jsonB)
-
-	}
-	return usermd,err
-}
-
-func buildUserMeta(conval Conval) ([]byte,error)  {
-	return json2.Marshal(conval)
-}
+*/

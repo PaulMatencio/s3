@@ -72,6 +72,11 @@ func Getuint32(in []byte) uint32 {
 	return uint32(out)
 }
 
+func Getuint16(in []byte) uint16 {
+	out, _ := strconv.Atoi(string(in))
+	return uint16(out)
+}
+
 /*
 		6 bytes
  */
@@ -160,7 +165,8 @@ func SetTiffImageStripByteCount(buffer *bytes.Buffer,enc binary.ByteOrder, total
 /*
 		12 bytes
  */
-func SetTiffImageXresolution(buffer *bytes.Buffer,enc binary.ByteOrder) error{
+
+func SetTiffImageXresolution(buffer *bytes.Buffer, enc binary.ByteOrder) error{
 	err := binary.Write(buffer, enc, uint16(tXResolution)) // Xresolution
 	err = binary.Write(buffer, enc, uint16(dtRational))   // rational
 	err = binary.Write(buffer, enc, uint32(1))
@@ -171,22 +177,23 @@ func SetTiffImageXresolution(buffer *bytes.Buffer,enc binary.ByteOrder) error{
 /*
 		12 bytes
  */
+
 func SetTiffImageYresolution(buffer *bytes.Buffer,enc binary.ByteOrder) error {
 	err := binary.Write(buffer, enc, uint16(tYResolution)) // Yresolution
 	err = binary.Write(buffer, enc, uint16(dtRational))   // rational
 	err = binary.Write(buffer, enc, uint32(1))
-	err = binary.Write(buffer, enc, uint32(yoffset)) //
+	err = binary.Write(buffer, enc, uint32(yoffset))
 	return err
 }
 
 /*
 			12 bytes
  */
-func SetTiffImageResolutionUnit(buffer *bytes.Buffer,enc binary.ByteOrder) error {
+func SetTiffImageResolutionUnit(buffer *bytes.Buffer,resolution []byte,enc binary.ByteOrder) error {
 	err := binary.Write(buffer, enc, uint16(tResolutionUnit)) // resolution Unit
 	err = binary.Write(buffer, enc, uint16(dtShort))         //  value
 	err = binary.Write(buffer, enc, uint32(1))
-	err = binary.Write(buffer, enc, uint16(3)) //  cm
+	err = binary.Write(buffer, enc, uint16(2)) //  2 instead of 3
 	err = binary.Write(buffer, enc, uint16(0))
 	return err
 }
@@ -245,6 +252,7 @@ func BuildUsermd(v Conval) (map[string]string,error)  {
 
 	return metad,err
 }
+
 
 func WriteUsermd(metad map[string]string,pathname string)  (error){
 

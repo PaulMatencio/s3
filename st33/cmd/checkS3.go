@@ -13,12 +13,12 @@ import (
 )
 
 // readConvalCmd represents the readConval command
-var checkConvalCmd = &cobra.Command{
-	Use:   "checkS3",
+var checkS3Cmd = &cobra.Command{
+	Use:   "chkS3",
 	Short: "Command to check if all the  Tiff images and Blobs of a given st33 data file have been migrated to a S3 bucket",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		checkConval(cmd,args)
+		checkS3(cmd,args)
 	},
 }
 
@@ -33,13 +33,13 @@ func initCvFlags(cmd *cobra.Command) {
 
 func init() {
 
-	RootCmd.AddCommand(checkConvalCmd)
-	initCvFlags(checkConvalCmd)
+	RootCmd.AddCommand(checkS3Cmd)
+	initCvFlags(checkS3Cmd)
 
 
 }
 
-func checkConval(cmd *cobra.Command, args []string) {
+func checkS3(cmd *cobra.Command, args []string) {
 
 	var (
 		pages,w  int=0,0

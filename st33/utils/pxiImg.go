@@ -62,7 +62,7 @@ func (image *PxiImg) BuildTiffImage(buf []byte, l int64) (int64,error) {
 	// buf1 = bytes.NewReader(buf[l+4 : l+6])
 	_ = binary.Read(bytes.NewReader(buf[l+4 : l+6]), Big, &rdw)
 
-	gLog.Trace.Println("TIFF Buffer pointer=>",len(buf),l,bdw,rdw)
+	gLog.Trace.Printf("TIFF Buffer pointer => %d x'%X' %d %d ",len(buf),l,bdw,rdw)
 
 	k := l      /* save begininng of the record */
 	l = l + 8   /* skip BDW and RDW of the record*/
@@ -95,13 +95,14 @@ func (image *PxiImg) BuildTiffImage(buf []byte, l int64) (int64,error) {
 	image.PageNum	= st33[17:21]
 	image.RefNum	= st33[34:41]
 	image.NumPages 	= st33[76:80]
-	image.DataType	= st33[180:182]
+	image.DataType	= st33[180:181]
 
 	/*
 		comp_meth := st33[181:183]
 		k_fac := st33[183:185]
 		Resolution := st33[185:187]
 	*/
+	Resolution := st33[185:187]
 	sFrH 	:= st33[187:190]
 	sFrW 	:= st33[190:193]
 	nlFrH 	:= st33[193:197]
@@ -153,25 +154,25 @@ func (image *PxiImg) BuildTiffImage(buf []byte, l int64) (int64,error) {
 	var img2 = new(bytes.Buffer)
 
 
-	_ = SetTiffImageXresolution(img2, enc)    //  image X resolution
+	_ = SetTiffImageXresolution(img2,enc)    //  image X resolution
 	_ = SetTiffImageYresolution(img2, enc)    //  image Y resolution
-	_ = SetTiffImageResolutionUnit(img2, enc) //  image resolution Unit
+	_ = SetTiffImageResolutionUnit(img2, Resolution, enc) //  image resolution Unit
 
 	_ = binary.Write(img2, enc, uint32(0)) // next IFD = 0
 
-	_ = binary.Write(img2, enc, Getuint32(nlFrW)*10) // Xresolution value
-	_ = binary.Write(img2, enc, Getuint32(sFrW))
+	_ = binary.Write(img2, enc, Getuint32(nlFrW)*25) // Xresolution value
+	 _ = binary.Write(img2, enc, Getuint32(sFrW))
 
-	_ = binary.Write(img2, enc, Getuint32(nlFrH)*10) // Yresoluton value
+	_ = binary.Write(img2, enc, Getuint32(nlFrH)*25) // Yresoluton value
 	_ = binary.Write(img2, enc, Getuint32(sFrH))
 
 	/*
 	  For every record of the document
 
 		-	SKip BDW,RDW of the record
-		-	Get the length ( 2 bytes) of the sub image (  l + 250)
-		- 	Read the sub image
-	  	- 	Append  the sub image to the final image  --> img2
+		-	Get the length ( 2 bytes) of the partial image (  l + 250)
+		- 	Read the  next  partial image
+	  	- 	Append  the partial image to the  image  --> img2
 	*/
 
 	imageL := 0 // Total length of the image

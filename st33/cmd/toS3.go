@@ -59,7 +59,9 @@ func toS3Func(cmd *cobra.Command, args []string) {
 	}
 	gLog.Info.Printf("Processing input file %s",ifile)
 	if !async {
-		st33.TooS3(ifile, bucket,profiling)
+		numpages,numdocs,err := st33.TooS3(ifile, bucket,profiling)
+		gLog.Info.Printf("%d documents/ %d pages were processed - error ",numdocs,numpages,err)
+
 	} else {
 		st33.ToS3Async(ifile,bucket,profiling)
 	}

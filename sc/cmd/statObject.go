@@ -94,6 +94,7 @@ func statObject(cmd *cobra.Command,args []string) {
 		procS3Error(err)
 
 	} else {
+
 		procS3Meta(key, result.Metadata)
 	}
 

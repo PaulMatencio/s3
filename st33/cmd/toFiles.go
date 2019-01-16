@@ -52,7 +52,8 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 	}
 
 	gLog.Info.Printf("Processing input file %s",ifile)
-	st33.ToFiles(ifile,odir,test)
+	numpages,numdocs,_ :=  st33.ToFiles(ifile,odir,test)
+	gLog.Info.Printf("%d documents/ %d pages were processed",numdocs,numpages)
 
 }
 

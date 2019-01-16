@@ -2,48 +2,90 @@
 package cmd
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/st33/utils"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 )
 
 // readConvalCmd represents the readConval command
-var readConvalCmd = &cobra.Command{
+var (
+	ofile string
+	lsCtrlCmd = &cobra.Command{
 	Use:   "lsCtrl",
 	Short: "Command to list a control file",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		readConval(cmd,args)
+		listConval(cmd,args)
 	},
-}
+})
+
 
 func initLvFlags(cmd *cobra.Command) {
 
-	// cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
-	cmd.Flags().StringVarP(&ifile,"ifile","i","","ST33 Conval input file")
-	// cmd.Flags().StringVarP(&odir,"ofile","o","","output file")
+	cmd.Flags().StringVarP(&ifile,"ifile","i","","ST33 input control file")
+	cmd.Flags().StringVarP(&ofile,"ofile","o","","the output file relative to the home directory")
 }
 
 
 func init() {
 
-	RootCmd.AddCommand(readConvalCmd)
-	initLvFlags(readConvalCmd)
+	RootCmd.AddCommand(lsCtrlCmd)
+	initLvFlags(lsCtrlCmd)
 
 
 }
 
-func readConval(cmd *cobra.Command, args []string) {
+func listConval(cmd *cobra.Command, args []string) {
+
+	var (
+
+		home,pathname,file  string
+		of *os.File
+		err error
+		w  *bufio.Writer
+	)
+
+
 	if len(ifile) == 0 {
 		gLog.Info.Printf("%s",missingInputFile)
 		return
 	}
+	if len(ofile) != 0 {
+
+        home = utils.GetHomeDir()
+        pathname = filepath.Join(home,ofile)
+        if _,err = os.Stat(pathname); os.IsNotExist(err) {
+        	os.Create(pathname)
+		}
+		if of, err = os.OpenFile(pathname, os.O_APPEND|os.O_WRONLY, 0644); err != nil {
+			gLog.Warning.Printf("Error %v opening file %s",pathname,err)
+			os.Exit(1)
+		} else {
+			w = bufio.NewWriter(of)
+			defer of.Close()
+		}
+	}
+
+	_,file = filepath.Split(ifile)
 
 	if c,err:=  st33.BuildConvalArray(ifile); err == nil {
 		for k, v := range *c {
-			gLog.Info.Println(k, utils.Reverse(v.PxiId),v.PxiId, v.Pages)
+			if len(ofile) == 0 {
+				gLog.Info.Printf("%d %s %s %d",k, v.PxiId, utils.Reverse(v.PxiId), v.Pages)
+			} else {
+				fmt.Fprintln(w, file, k, v.PxiId, utils.Reverse(v.PxiId), v.Pages)
+			}
 		}
+		 if w != nil {
+			 w.Flush()
+		 }
+
+
 	} else {
 		gLog.Error.Println(err)
 	}
