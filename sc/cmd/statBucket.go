@@ -15,7 +15,7 @@ import (
 // statBucketCmd represents the statBucket command
 var statBucketCmd = &cobra.Command{
 	Use:   "statBucket",
-	Short: "Command to verify if a bucket exist",
+	Short: "Command to verify if a  given bucket exist",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		statBucket(cmd,args)

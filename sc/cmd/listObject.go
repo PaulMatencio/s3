@@ -14,7 +14,7 @@ import (
 
 // listObjectCmd represents the listObject command
 var (
-	loshort = "Command to list specific or every object of a bucket"
+	loshort = "Command to list multiple objects of a given bucket"
 	listObjectCmd = &cobra.Command{
 		Use:   "lsObjs",
 		Short: loshort,

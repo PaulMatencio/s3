@@ -11,7 +11,7 @@ import (
 
 // getObjectCmd represents the getObject command
 var (
-	soshort = "Command to retrieve an object metadata"
+	soshort = "Command to  verify if a given object exist and display the object metadata"
 
 	statObjectCmd = &cobra.Command {
 		Use:   "statObj",

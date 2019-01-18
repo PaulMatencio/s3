@@ -27,10 +27,10 @@ import (
 var  (
 
 	deleteObjectCmd = &cobra.Command{
-		Use:   "do",
+		Use:   "delObj",
 		Short: "Command to delete an object",
 		Long: ``,
-		Hidden: true,
+	//	Hidden: true,
 		Run: deleteObject,
 	}
 

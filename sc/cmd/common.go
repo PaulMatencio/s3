@@ -33,6 +33,7 @@ func procS3Meta(key string, metad map[string]*string) {
 	}
 }
 
+
 func procGetResult(rd *datatype.Ro) {
 
 	if rd.Err != nil {

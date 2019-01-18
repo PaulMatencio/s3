@@ -17,7 +17,7 @@ import (
 
 
 var (
-	getObjsShort = "Command to download some or all  objects and their metadata to a specific directory"
+	getObjsShort = "Command to download concurrently nultiple  objects and their metadata to a given directory"
 	getobjectsCmd = &cobra.Command{
 		Use:   "getObjects",
 		Short: getObjsShort,

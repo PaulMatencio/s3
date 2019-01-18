@@ -17,16 +17,17 @@ import (
 var (
 	idir string
 	async bool
+	pobjshort =  "Command to upload multiple objects and their user metadata from a given directory to a bucket"
 	putObjectsCmd = &cobra.Command {
 		Use:   "putObjects",
-		Short: "Command to upload objects and their user metadata from a specific directory",
+		Short: pobjshort,
 		Long: ``,
 		Hidden: true,
 		Run: putObjects,
 	}
 	putObjsCmd = &cobra.Command {
 		Use:   "putObjs",
-		Short: "Command to upload obbjects and their user metadata from a specific directory",
+		Short: pobjshort,
 		Long: ``,
 		Run: putObjects,
 	}

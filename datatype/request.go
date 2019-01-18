@@ -50,6 +50,7 @@ type ListObjRequest struct {
 	Delimiter     string
 }
 
+
 type ListBucketRequest struct {
 	Service 	*s3.S3
 }
@@ -80,4 +81,32 @@ type StatObjRequest struct {
 type StatBucketRequest struct {
 	Service 	*s3.S3
 	Bucket      string
+}
+
+type GetBucketPolicyRequest struct {
+	Service 	*s3.S3
+	Bucket      string
+}
+
+type GetBucketAclRequest struct {
+	Service 	*s3.S3
+	Bucket      string
+}
+
+type GetObjAclRequest struct {
+
+	Service 	*s3.S3
+	Bucket 		string
+	Key    		string
+
+}
+
+type PutBucketAclRequest struct {
+
+	Service 	*s3.S3
+	Bucket 		string
+	// Key         string
+
+	ACL  		acl
+
 }

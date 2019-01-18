@@ -25,6 +25,7 @@ var (
 		Use:   "createBucket",
 		Short: mbshort,
 		Long: ``,
+		Hidden: true,
 		Run:makeBucket,
 	}
 	mkBucketCmd = &cobra.Command{

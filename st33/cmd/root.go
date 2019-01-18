@@ -104,8 +104,9 @@ func initConfig() {
 		log.Printf("AWS sdk shared config will be used if present ")
 	}
 	// setLogLevel()
-	gLog.InitLog("",RootCmd.Name(),setLogLevel())
-	gLog.Info.Printf("Logging level : %d",loglevel)
+	logOutput:= getLogOutput()
+	gLog.InitLog(RootCmd.Name(),setLogLevel(),logOutput)
+	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
 	if  autoCompletion {
 		autoCompScript := filepath.Join(configPath,"st33_bash_completion")
@@ -128,5 +129,10 @@ func setLogLevel() (int) {
 		loglevel= 4
 	}
 	return loglevel
+
+}
+
+func getLogOutput() (string) {
+	return viper.GetString("logging.output" )
 
 }

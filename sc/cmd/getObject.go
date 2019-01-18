@@ -15,7 +15,7 @@ import (
 
 // getObjectCmd represents the getObject command
 var (
-	goshort = "Command to get an object"
+	goshort = "Command to fetch an object from a given bucket"
 	// odir   string
 	getObjectCmd = &cobra.Command {
 		Use:   "getObj",
@@ -35,7 +35,7 @@ var (
 
 	fgetObjCmd = &cobra.Command {
 		Use:   "fgetObj",
-		Short: "Command to download an objet to a file",
+		Short: "Command to download an objet from a given bucket to a file",
 		Long: ``,
 		Run: fGetObject,
 	}

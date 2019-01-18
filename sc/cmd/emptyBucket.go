@@ -16,7 +16,7 @@ import (
 
 
 var (
-	ebshort = "Command to delete multiple objects"
+	ebshort = "Command to delete multiple objects  concurrently"
 	eBucketCmd = &cobra.Command{
 		Use:   "rmObjs",
 		Short: ebshort,
@@ -25,10 +25,10 @@ var (
 	}
 
 	ebCmd = &cobra.Command{
-		Use:   "rmo",
+		Use:   "delObjs",
 		Short: ebshort,
 		Long: ``,
-		Hidden: true,
+	// 	Hidden: true,
 		Run: deleteObjects,
 	}
 

@@ -21,7 +21,7 @@ var (
 
 
 
-func InitLog(logPath string, cmd string, loglevel int) (*os.File,  *os.File,  *os.File,  *os.File, *os.File ) {
+func InitLog( cmd string, loglevel int, logOutput string ) (*os.File,  *os.File,  *os.File,  *os.File, *os.File ) {
 
 
 	//hostname, _ := os.Hostname()
@@ -32,7 +32,7 @@ func InitLog(logPath string, cmd string, loglevel int) (*os.File,  *os.File,  *o
 
 	)
 
-	if logPath == "" {
+	if logOutput == "terminal" {
 
 		switch loglevel {
 
@@ -50,15 +50,17 @@ func InitLog(logPath string, cmd string, loglevel int) (*os.File,  *os.File,  *o
 
 	}   else {
 
-		logPath = filepath.Join(logPath,cmd)
-		_, err := os.Stat(logPath)
-		if err != nil {
-			if err := os.MkdirAll(logPath, 0755); err != nil {
-				log.Printf("Error %v creating %s ", err, logPath)
+		logPath := filepath.Join(logOutput,cmd)
+		_, err := os.Stat(logOutput)
+
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(logOutput, 0755); err != nil {
+				log.Printf("Error %v creating %s ", err, logOutput)
 				log.Printf("Default logging")
 				Init(os.Stdout, os.Stdout, os.Stderr,os.Stderr,ioutil.Discard,ioutil.Discard)
 			}
 		}
+
 		var (
 			traceLog = logPath  + "_trace.log"
 			// debugLog = logPath  + "_debug.log"

@@ -17,8 +17,8 @@ import (
 
 // putObjectCmd represents the putObject command
 var (
-	pfshort = "Command to upload a file to a bucket"
-	poshort = "Command to upload a buffer to a bucket"
+	pfshort = "Command to upload a given file to a bucket"
+	poshort = "Command to upload a byte buffer to a bucket"
 	datafile,metafile string
 	fPutObjectCmd = &cobra.Command{
 		Use:   "fPutObject",

@@ -54,9 +54,9 @@ func CreateSession() *session.Session {
 
 		sess, _ = session.NewSession(&aws.Config{
 
-			Region:           aws.String(viper.GetString("sc_region")),
-			Endpoint:         aws.String(viper.GetString("sc_url")),
-			Credentials:      credentials.NewStaticCredentials(viper.GetString("sc_access_key_id"), viper.GetString("sc_secret_access_key"), ""),
+			Region:           aws.String(viper.GetString("s3.region")),
+			Endpoint:         aws.String(viper.GetString("s3.url")),
+			Credentials:      credentials.NewStaticCredentials(viper.GetString("credential.access_key_id"), viper.GetString("credential.secret_access_key"), ""),
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
 
