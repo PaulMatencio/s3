@@ -19,8 +19,10 @@ var (
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingKey = "Missing key - please provide the key of the object"
+	missingEmail = "Missing uswr email - please provide the email of the user"
 	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
-
+	illegalPermission = "Illegal permission value. It must be one of: FULL_CONTROL, WRITE, WRITE_ACP, READ, or READ_ACP"
+	invalidUserType = "Invalid user type. It must be CanonicalUser"
 	RootCmd = &cobra.Command {
 		Use:   "acl",
 		Short: "Scality acl commands for bucket and object",
@@ -106,7 +108,7 @@ func initConfig() {
 
 
 	if  autoCompletion {
-		autoCompScript := filepath.Join(configPath,"sc_bash_completion")
+		autoCompScript := filepath.Join(configPath,"acl_bash_completion")
 		RootCmd.GenBashCompletionFile(autoCompScript)
 		gLog.Info.Printf("Generate bash completion script %s to",autoCompScript)
 	}

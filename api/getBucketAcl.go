@@ -7,7 +7,7 @@ import (
 )
 
 func GetBucketAcl(req datatype.GetBucketAclRequest) (*s3.GetBucketAclOutput,error){
-
+	//  fmt.Println(req.Bucket)
 	input := &s3.GetBucketAclInput{
 		Bucket: aws.String(req.Bucket),
 

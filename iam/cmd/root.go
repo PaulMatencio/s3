@@ -104,7 +104,7 @@ func initConfig() {
 
 
 	if  autoCompletion {
-		autoCompScript := filepath.Join(configPath,"sc_bash_completion")
+		autoCompScript := filepath.Join(configPath,"iam_bash_completion")
 		RootCmd.GenBashCompletionFile(autoCompScript)
 		gLog.Info.Printf("Generate bash completion script %s to",autoCompScript)
 	}

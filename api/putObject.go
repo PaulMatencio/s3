@@ -63,6 +63,7 @@ func FputObject2(req datatype.FputObjRequest) (*s3.PutObjectOutput,error){
 		Body:   bytes.NewReader(buffer),
 		Metadata: utils.BuildUsermd(req.Usermd),
 	}
+
 	return req.Service.PutObject(input)
 }
 

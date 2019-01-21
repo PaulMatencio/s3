@@ -1,31 +1,30 @@
-
 package api
 
 import (
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/datatype"
 )
 
-
-
-func AddBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,error){
+func AddObjectAcl(req datatype.PutObjectAclRequest) (*s3.PutObjectAclOutput,error){
 
 	var (
-		result *s3.PutBucketAclOutput
+		result *s3.PutObjectAclOutput
 	)
 
-	getAcl := datatype.GetBucketAclRequest {
+	getAcl := datatype.GetObjAclRequest {
+		Service:req.Service,
 		Bucket: req.Bucket,
+		Key: req.Key,
 	}
 
-	if r,err := GetBucketAcl(getAcl); err != nil {
+	if r,err := GetObjectAcl(getAcl); err == nil {
 
 		ACLPolicy := s3.AccessControlPolicy {
 			Owner: r.Owner,
 		}
-
 
 		// new Grant to be added
 
@@ -35,8 +34,9 @@ func AddBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,erro
 		}
 
 		grantee := s3.Grantee {
-			EmailAddress: &req.ACL.Email,
-			Type: &req.ACL.UserType,
+			DisplayName: &req.ACL.Email,
+			ID : &req.ACL.ID,
+			Type: &req.ACL.Type,
 		}
 
 		permission := req.ACL.Permission
@@ -55,12 +55,15 @@ func AddBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,erro
 		// Append new Grant to ACL policy grants
 		ACLPolicy.Grants= append(r.Grants,&newGrant)
 
-		input := &s3.PutBucketAclInput{
+		fmt.Println("====",ACLPolicy)
+
+		input := &s3.PutObjectAclInput{
 			Bucket: aws.String(req.Bucket),
+			Key: aws.String(req.Key),
 			AccessControlPolicy: &ACLPolicy,
 		}
 
-		return req.Service.PutBucketAcl(input)
+		return req.Service.PutObjectAcl(input)
 
 	} else {
 		return result,err
@@ -69,17 +72,18 @@ func AddBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,erro
 
 
 
-func PutBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,error){
+func PutObjectAcl(req datatype.PutObjectAclRequest) (*s3.PutObjectAclOutput,error){
 
 	var (
-		result *s3.PutBucketAclOutput
+		result *s3.PutObjectAclOutput
 	)
 
-	getAcl := datatype.GetBucketAclRequest {
+	getAcl := datatype.GetObjAclRequest {
 		Bucket: req.Bucket,
+		Key: req.Key,
 	}
 
-	if r,err := GetBucketAcl(getAcl); err != nil {
+	if r,err := GetObjectAcl(getAcl); err != nil {
 
 		ACLPolicy := s3.AccessControlPolicy {
 			Owner: r.Owner,
@@ -92,7 +96,7 @@ func PutBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,erro
 
 		grantee := s3.Grantee {
 			EmailAddress: &req.ACL.Email,
-			Type: &req.ACL.UserType,
+			Type: &req.ACL.Type,
 		}
 
 
@@ -110,12 +114,13 @@ func PutBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,erro
 		// Append new Grant to ACL policy grants
 		ACLPolicy.Grants= append(r.Grants,&newGrant)
 
-		input := &s3.PutBucketAclInput{
+		input := &s3.PutObjectAclInput{
 			Bucket: aws.String(req.Bucket),
+			Key:  aws.String(req.Key),
 			AccessControlPolicy: &ACLPolicy,
 		}
 
-		return req.Service.PutBucketAcl(input)
+		return req.Service.PutObjectAcl(input)
 
 	} else {
 		return result,err
@@ -167,3 +172,4 @@ func SetBucketOwner(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,er
 	}
 }
 */
+

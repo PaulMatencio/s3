@@ -198,6 +198,7 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 	 */
 	svc :=  s3.New(api.CreateSession())
 
+
 	/* Check the existence of the control file */
 	conval = &[]Conval{}
 	confile = strings.Replace(infile,DATval,CONval,1)
@@ -283,6 +284,7 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 								S1 += int(v.DocSize)
 
 								_,err := writeToS3(req)
+
 								s3Error := S3Error{Key: req.Key, Err: err}
 
 								image.Img.Reset() /* reset the previous image buffer */
@@ -363,9 +365,9 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 							gLog.Trace.Printf("Average object size:%d bytes - average time(ms) per object:%4.3f\n", S/N, avgtime)
 
 							if len(ErrKey) > 0 {
-								gLog.Warning.Printf("\nFail to load following objects:\n")
+								gLog.Error.Printf("\nFail to load following objects:\n")
 								for _, er := range ErrKey {
-									gLog.Warning.Printf("Key:%s - Error:%v", er.Key, er.Err)
+									gLog.Error.Printf("Key:%s - Error:%v", er.Key, er.Err)
 								}
 							}
 

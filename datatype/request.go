@@ -94,7 +94,6 @@ type GetBucketAclRequest struct {
 }
 
 type GetObjAclRequest struct {
-
 	Service 	*s3.S3
 	Bucket 		string
 	Key    		string
@@ -102,11 +101,16 @@ type GetObjAclRequest struct {
 }
 
 type PutBucketAclRequest struct {
-
 	Service 	*s3.S3
 	Bucket 		string
-	// Key         string
+	ACL  		 Acl
 
-	ACL  		acl
+}
+
+type PutObjectAclRequest struct {
+	Service 	*s3.S3
+	Bucket 		string
+	Key         string
+	ACL  		Acl
 
 }

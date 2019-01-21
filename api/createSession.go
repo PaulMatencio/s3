@@ -51,7 +51,19 @@ func CreateSession() *session.Session {
 		/*
 			Hard coded credential taken from application configuration file )
 		*/
+		/*
+		client := http.Client{}
+		Transport    := &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   500 * time.Millisecond, // connection timeout
+				KeepAlive: 2 * time.Second,
 
+			}).Dial,
+			TLSHandshakeTimeout: 10 * time.Second,
+		}
+
+		client.Transport = Transport
+		*/
 		sess, _ = session.NewSession(&aws.Config{
 
 			Region:           aws.String(viper.GetString("s3.region")),
@@ -59,8 +71,11 @@ func CreateSession() *session.Session {
 			Credentials:      credentials.NewStaticCredentials(viper.GetString("credential.access_key_id"), viper.GetString("credential.secret_access_key"), ""),
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
+			// HTTPClient:  &client,
+
 
 		})
+
 	}
 
 	return sess
