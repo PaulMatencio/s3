@@ -12,11 +12,11 @@ import (
 	"strings"
 )
 
-func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
+func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, error){
 
 	var (
 
-		confile 		string
+		confile   		string
 		conval			*[]Conval
 		err 			error
 		numdocs			int=0
@@ -24,6 +24,7 @@ func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 	)
 
 	/* read  the control  file  */
+
 	conval = &[]Conval{}
 	confile = strings.Replace(ifile,DATval,CONval,1)
 	if !utils.Exist(confile) {
@@ -103,7 +104,7 @@ func ToFiles(ifile string,  odir string, test bool)  (int,int, error){
 				}
 
 				if l,err  = pxiblob.BuildPxiBlob(buf,l); err == nil {
-					pathname = filepath.Join(odir, pxiblob.Key)+".1"
+					pathname = filepath.Join(bdir, pxiblob.Key)+".1"
 
 					if !test {
 						WriteImgToFile(pathname, pxiblob.Blob)

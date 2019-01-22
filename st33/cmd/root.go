@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/s3/gLog"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -17,7 +18,7 @@ var (
 	verbose, Debug,autoCompletion,test 	 bool
 	// log          = lumber.NewConsoleLogger(lumber.INFO)
 
-	odir,pdir,ifile  string
+	odir,pdir,bdir,ifile  string
 	loglevel,profiling int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
@@ -103,15 +104,14 @@ func initConfig() {
 		log.Printf("Error %v  reading config file %s",err,viper.ConfigFileUsed())
 		log.Printf("AWS sdk shared config will be used if present ")
 	}
-	// setLogLevel()
-	logOutput:= getLogOutput()
-	gLog.InitLog(RootCmd.Name(),setLogLevel(),logOutput)
+
+	logOutput:= utils.GetLogOutput(*viper.GetViper())
+	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
+	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
 	if  autoCompletion {
-		autoCompScript := filepath.Join(configPath,"st33_bash_completion")
-		RootCmd.GenBashCompletionFile(autoCompScript)
-		gLog.Info.Printf("Generate bash completion script %s to",autoCompScript)
+		utils.GenAutoCompletionScript(RootCmd,configPath)
 	}
 	if metaEx = viper.GetString("meta.extension"); metaEx == "" {
 		metaEx = "md"
@@ -119,20 +119,9 @@ func initConfig() {
 
 }
 
-func setLogLevel() (int) {
-
-	if loglevel == 0 {
-		loglevel = viper.GetInt("logging.log_level")
-	}
-
-	if verbose {
-		loglevel= 4
-	}
-	return loglevel
-
-}
-
+/*
 func getLogOutput() (string) {
 	return viper.GetString("logging.output" )
 
 }
+ç*/

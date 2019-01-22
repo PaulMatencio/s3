@@ -12,7 +12,7 @@ import (
 
 // st33ToFilesCmd represents the st33ToFiles command
 var (
-
+	blob string
 	toFilesCmd = &cobra.Command{
 		Use:   "toFiles",
 		Short: "Command to extract an ST33 file containing Tiff images and Blobs to Files",
@@ -28,6 +28,7 @@ func initTfFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
 	cmd.Flags().StringVarP(&ifile,"ifile","i","","ST33 input file")
 	cmd.Flags().StringVarP(&odir,"odir","O","","output directory")
+	cmd.Flags().StringVarP(&blob,"blob","B","","Blob output folder relative to the output directory")
 }
 
 func init() {
@@ -51,8 +52,14 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	bdir = pdir
+	if len(blob) > 0 {
+		bdir  = filepath.Join(pdir,blob)
+		utils.MakeDir(bdir)
+	}
+
 	gLog.Info.Printf("Processing input file %s",ifile)
-	numpages,numdocs,_ :=  st33.ToFiles(ifile,odir,test)
+	numpages,numdocs,_ :=  st33.ToFiles(ifile,odir,bdir, test)
 	gLog.Info.Printf("%d documents/ %d pages were processed",numdocs,numpages)
 
 }
