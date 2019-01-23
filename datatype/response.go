@@ -22,3 +22,14 @@ type  Rp struct {
 	Result   *s3.PutObjectOutput
 	Err error
 }
+
+/*
+type PutS3Response struct {
+
+	Bucket  string
+	Key     string
+	Size    int
+	Error   st33.S3Error
+
+}
+*/

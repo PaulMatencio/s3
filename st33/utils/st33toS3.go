@@ -17,7 +17,6 @@ import (
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
-	"github.com/s3Client/lib"
 	"time"
 
 	"strings"
@@ -27,6 +26,7 @@ type PutS3Response struct {
 
 	Bucket  string
 	Key     string
+	Size    int
 	Error   S3Error
 }
 
@@ -58,7 +58,9 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 	confile = strings.Replace(infile,DATval,CONval,1)
 
 	if !utils.Exist(confile) {
+
 		return 0,0,errors.New(fmt.Sprintf("Corrresponding dirval file %s does not exist for input file %s ",confile,infile))
+
 	} else {
 		// Create an array containing the connfile
 		if conval,err  = BuildConvalArray(confile); err != nil {
@@ -174,7 +176,7 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 }
 
 
-func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Error)  {
+func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, []S3Error)  {
 
 	var (
 
@@ -186,11 +188,11 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 	)
 
 	if err != nil {
-		ErrKey[0]= S3Error {
+		ErrKey = append(ErrKey,S3Error {
 			"",
 			err,
-		}
-		return 0,0,ErrKey
+		})
+		return 0,0,0,ErrKey
 	}
 
 	/*
@@ -204,19 +206,20 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 	confile = strings.Replace(infile,DATval,CONval,1)
 
 	if !utils.Exist(confile) {
-		ErrKey[0]= S3Error {
+
+		ErrKey = append(ErrKey,S3Error {
 			"",
 			errors.New(fmt.Sprintf("Corrresponding dirval file %s does not exist for input file %s ",confile,infile)),
-		}
-		return 0,0,ErrKey
+		})
+		return 0,0,0,ErrKey
 	} else {
 
 		if conval,err  = BuildConvalArray(confile); err != nil {
-			ErrKey[0]= S3Error {
+			ErrKey = append(ErrKey,S3Error {
 				"",
 				errors.New(fmt.Sprintf("Error %v  reading %s ",confile,infile)),
-			}
-			return 0,0,ErrKey
+			})
+			return 0,0,0,ErrKey
 		}
 	}
 
@@ -250,7 +253,7 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 			for _, v := range conVal[p:q] {
 
 				KEY := v.PxiId;
-				lp := len(KEY);S1= 0
+				lp := len(KEY);
 				if KEY[lp-2:lp-1] == "P" {
 					// s:= 0
 					N += int(v.Pages)
@@ -280,17 +283,17 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 								req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum)
 								req.Buffer = image.Img
 
-								S += int(v.DocSize)
-								S1 += int(v.DocSize)
+								// S += int(v.DocSize)
+								// S1 += int(v.DocSize)
 
 								_,err := writeToS3(req)
 
-								s3Error := S3Error{Key: req.Key, Err: err}
+								s3Error := S3Error{Key: req.Key,Err: err}
 
 								image.Img.Reset() /* reset the previous image buffer */
 								// send message to go routine listener
 
-								ch <- &PutS3Response{bucket, req.Key, s3Error}
+								ch <- &PutS3Response{bucket, req.Key, int(v.DocSize),s3Error}
 							}(KEY,image, v)
 						}
 						l =k
@@ -320,8 +323,8 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 								Buffer: pxiblob.Blob,
 							}
 
-							S += int(v.DocSize)
-							S1 += int(v.DocSize)
+							// S += int(v.DocSize)
+							// S1 += int(v.DocSize)
 							// build user metadata
 							if usermd, err := BuildUsermd(v); err == nil {
 								req.Usermd = usermd
@@ -333,7 +336,7 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 							//Reset the Blob Content
 							pxiblob.Blob.Reset()
 							// Send a message to go routine listener
-							ch <- &PutS3Response{bucket, pxiblob.Key, s3Error}
+							ch <- &PutS3Response{bucket, pxiblob.Key, int(v.DocSize),s3Error}
 
 						}(KEY, pxiblob, v)
 					}else {
@@ -346,33 +349,35 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 			/* wait for the completion of all put objects*/
 
 			done:= false
+			S1= 0
 			for ok:=true;ok;ok=!done {
 				select {
 				case r := <-ch:
 					{
 						T++
-						gLog.Trace.Printf("Upload object Key:%s - Bucket:%s - Completed:%d - %d", r.Key, r.Bucket, N, T)
+						S1 += r.Size  //  Document Size just uploaded
+						S  += r.Size  // Total document size
+						gLog.Trace.Printf("Upload object Key:%s - Bucket:%s - Completed:%d/%d  - Object size: %d  - Total uploaded size:%d", r.Key, r.Bucket, T,N, r.Size,S1)
 						if r.Error.Err != nil {
 							E++
 							ErrKey = append(ErrKey, r.Error)
 						}
 
 						if T == N {
-
 							elapsedtm := time.Since(start1)
-							avgtime := float64(elapsedtm) / (float64(N) * 1000000)
-							gLog.Trace.Printf("%d objects loaded to bucket %s (%d bytes uploaded in %s)\n", N, bucket, S, elapsedtm)
-							gLog.Trace.Printf("Average object size:%d bytes - average time(ms) per object:%4.3f\n", S/N, avgtime)
+							avgtime := float64(elapsedtm) / (float64(N) * 1000 *1000)
+
+							gLog.Trace.Printf("%d objects were uploaded to bucket: %s - MB/Sec: %f8.2\n", N, bucket, float64(S1)*1000/float64(elapsedtm) )
+							gLog.Trace.Printf("Average object size: %d KB - avg upload time/object: %4.3f ms\n", S1/(N*1024), avgtime)
 
 							if len(ErrKey) > 0 {
 								gLog.Error.Printf("\nFail to load following objects:\n")
 								for _, er := range ErrKey {
-									gLog.Error.Printf("Key:%s - Error:%v", er.Key, er.Err)
+									gLog.Error.Printf("Key: %s - Error: %v", er.Key, er.Err)
 								}
 							}
 
-
-							gLog.Trace.Printf("Infile: %s - Key:%s - Total uploaded objects:%d - Total size:%d",infile, strings.Split(r.Key,s3Client.DELIMITER)[0],N,S1)
+							// gLog.Trace.Printf("Infile: %s - Key:%s - Total uploaded objects:%d - Total size:%d",infile, strings.Split(r.Key,s3Client.DELIMITER)[0],N,S1)
 							done = true
 
 						}
@@ -385,21 +390,28 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, []S3Er
 			if stop {
 				break
 			}
-			p += step;q += step
-			if q > Numdocs {
-				q = Numdocs
+
+			if q == Numdocs {
 				stop = true
-				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects:%d/%d - Total Size:%d - Total elapsed time:%s",infile,numdocs,numpages,S,time.Since(start0))
+				duration := time.Since(start0)
+
+				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Total Size: %d - Total elapsed time: %s  MB/sec: %f8.2 ",infile,numdocs,numpages,S,duration,1000*float64(S)/float64(duration))
 				abuf.Reset()
-				return numpages,numdocs,ErrKey
+				return numpages,numdocs,S,ErrKey
 			}
-			gLog.Trace.Println("=====>",p,q)
+
+			p += step
+			q += step
+			if q >= Numdocs {
+				q = Numdocs
+			}
+			// gLog.Trace.Println("=====>",p,q,Numdocs)
 		}
 	}
 
 	//  lookup table
-	gLog.Info.Printf("Infile: %s - Number of uploaded documents/objects:%d/%d - Total Size :%d  - Total elapsed time:%s",infile,numdocs, numpages,S,time.Since(start0))
-	return  numpages,numdocs,ErrKey
+	gLog.Info.Printf("Infile: %s - Number of uploaded documents/objects: %d/%d - Total Size: %d  - Total elapsed time: %s",infile,numdocs, numpages,S,time.Since(start0))
+	return  numpages,numdocs,S, ErrKey
 }
 
 
