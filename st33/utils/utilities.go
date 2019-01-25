@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
+
 	// imaging "github.com/desintegration/imaging"
 )
 
@@ -47,6 +49,38 @@ type Response struct {
 type S3Error struct {
 	Key 	string
 	Err	    error
+}
+
+// import "github.com/s3/st33/utils"
+
+type St33ToS3      struct {
+	Request  		 ToS3Request       `json:"request"`
+	Response         ToS3Response      `json:"response"`
+}
+
+
+type ToS3Request struct {
+
+	File 		      string     `json:"input-file"`
+	Bucket 		      string     `json:"target-bucket"`
+	LogBucket         string    `json:"logging-bucket"`
+	DatafilePrefix    string     `json:"data-file-prefix"`
+	CrlfilePrefix     string     `json:"control-file-prefix"`
+	Profiling 	      int        `json:"run-with-profiling"`
+	Async 		      int        `json:"run-with-concurrent-number"`
+
+}
+
+type ToS3Response struct {
+
+	Time   time.Time  `json:"ended-time"`
+	Status string     `json:"uploaded-status"` // upload status
+	Duration  string  `json:"time-to-uploaded"` // duration of the process
+	Docs  int         `json:"number-of-documents"` // number of documenst
+	Pages int         `json:"number_of-pages"`  // number of pages
+	Size  int         `json:"total-uploaded-size"` // total uploaded size
+	Errors int		  `json:"number-of-errors"` // number of errors
+	// Error  []S3Error  `json:"array-of-errors,omitempty"` // key value
 }
 /*
 	image orientation

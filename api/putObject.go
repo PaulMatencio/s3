@@ -91,3 +91,4 @@ func PutObject2(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 
 	return req.Service.PutObject(input)
 }
+

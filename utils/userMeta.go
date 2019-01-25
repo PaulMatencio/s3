@@ -52,6 +52,9 @@ func BuildUserMeta(meta []byte) (map[string]*string) {
 }
 
 
+
+
+
 func WriteUserMeta(metad map[string]*string,pathname string ) {
 
 	var (

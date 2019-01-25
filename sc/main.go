@@ -14,8 +14,13 @@
 
 package main
 
-import "github.com/s3/sc/cmd"
+import (
+	"github.com/s3/sc/cmd"
+	"github.com/s3/utils"
+)
 
 func main() {
+	// set go MAXPROCS
+	utils.SetCPU("100%")
 	cmd.Execute()
 }

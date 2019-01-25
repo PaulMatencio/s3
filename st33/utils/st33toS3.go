@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path/filepath"
+
+	// "path/filepath"
 	"runtime"
 	"runtime/debug"
 
@@ -14,12 +17,12 @@ import (
 	"github.com/s3/utils"
 	"strconv"
 
+	"encoding/json"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
-	"time"
-
 	"strings"
+	"time"
 )
 
 type PutS3Response struct {
@@ -45,7 +48,7 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 			for {
 				var m runtime.MemStats
 				runtime.ReadMemStats(&m)
-				debug.FreeOSMemory()
+				// debug.FreeOSMemory()
 				log.Println("Systenm memory:", float64(m.Sys)/1024/1024)
 				log.Println("Heap allocation", float64(m.HeapAlloc)/1024/1024)
 				time.Sleep(time.Duration(profiling) * time.Second)
@@ -176,24 +179,39 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 }
 
 
-func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, []S3Error)  {
+// Concurrent upload of files to S3
+// Input : a ST33 input file containing  tiff images and blob
+//
+
+// func ToS3Async(infile string,  bucket  string, profiling int,async int)  (int, int, int, []S3Error)  {
+func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 	var (
-
+		infile   = req.File
+		bucket   = req.Bucket
+		sbucket  = req.LogBucket
 		confile				string
 		conval				*[]Conval
 		err 				error
 		ErrKey				[]S3Error
 		numpages,numdocs,E,S,S1	int		=  0,0,0,0,0
 	)
+	//  monitor storage and free storage if necessary
+	if req.Profiling > 0 {
+		go func() {
+			for {
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
 
-	if err != nil {
-		ErrKey = append(ErrKey,S3Error {
-			"",
-			err,
-		})
-		return 0,0,0,ErrKey
+				heap := float64(m.HeapAlloc)/1024/1024
+				log.Println("System memory MB:", float64(m.Sys)/1024/1024)
+				log.Println("Heap allocation MB", heap)
+				debug.FreeOSMemory()
+				time.Sleep(time.Duration(req.Profiling) * time.Second)
+			}
+		}()
 	}
+
 
 	/*
 		Create a  S3 session
@@ -203,7 +221,7 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 
 	/* Check the existence of the control file */
 	conval = &[]Conval{}
-	confile = strings.Replace(infile,DATval,CONval,1)
+	confile = strings.Replace(infile,req.DatafilePrefix,req.CrlfilePrefix,1)
 
 	if !utils.Exist(confile) {
 
@@ -224,7 +242,19 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 	}
 
 	conVal := *conval
-	/* read ST33  file */
+
+	// check the existence of the state migration  Bucket
+	if sbucket != "" {
+		statusBucket := datatype.StatBucketRequest{
+			Service: svc,
+			Bucket:  sbucket,
+		}
+		if _, err := api.StatBucket(statusBucket); err != nil {
+			gLog.Warning.Printf("State bucket: %s %v",sbucket,err)
+		}
+	}
+
+	// read ST33  file
 	abuf, err := utils.ReadBuffer(infile)
 	defer 	abuf.Reset()
 	buf		:= abuf.Bytes()
@@ -237,10 +267,11 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 			l       int64 = 0
 		)
 
-		gLog.Info.Printf("number of documents to upload %d", Numdocs)
+		gLog.Info.Printf("Number of documents to upload %d", Numdocs)
 
 		// Set the break of the main loop
-		p := 0; step := 40; stop := false
+		p := 0; step := req.Async; stop := false
+
 		if step > Numdocs {
 			step = Numdocs
 			stop = true
@@ -367,8 +398,8 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 							elapsedtm := time.Since(start1)
 							avgtime := float64(elapsedtm) / (float64(N) * 1000 *1000)
 
-							gLog.Trace.Printf("%d objects were uploaded to bucket: %s - MB/Sec: %f8.2\n", N, bucket, float64(S1)*1000/float64(elapsedtm) )
-							gLog.Trace.Printf("Average object size: %d KB - avg upload time/object: %4.3f ms\n", S1/(N*1024), avgtime)
+							gLog.Trace.Printf("%d objects were uploaded to bucket: %s - %.2f MB/sec\n", N, bucket, float64(S1)*1000/float64(elapsedtm) )
+							gLog.Trace.Printf("Average object size: %d KB - avg upload time/object: %.2f ms\n", S1/(N*1024), avgtime)
 
 							if len(ErrKey) > 0 {
 								gLog.Error.Printf("\nFail to load following objects:\n")
@@ -392,10 +423,31 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 			}
 
 			if q == Numdocs {
+
 				stop = true
 				duration := time.Since(start0)
+				status := PartialUploaded
+				numerrors := len(ErrKey)
 
-				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Total Size: %d - Total elapsed time: %s  MB/sec: %f8.2 ",infile,numdocs,numpages,S,duration,1000*float64(S)/float64(duration))
+                if numerrors == 0 {
+                	status = FullyUploaded
+				}
+
+				resp := ToS3Response {
+					Time: time.Now(),
+					Duration: fmt.Sprintf("%s",duration),
+					Status : status,
+					Docs  : numdocs,
+					Pages : numpages,
+					Size  : S,
+					// Error : ErrKey,
+					Errors : numerrors,
+				}
+
+				if _,err = logIt(svc,req,&resp,&ErrKey); err != nil {
+					gLog.Warning.Printf("Error logging request to %s : %v",req.LogBucket,err)
+				}
+				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Uploaded size: %.2f - Uploading time: %s  - MB/sec: %.2f ",infile,numdocs,numpages,float64(S)/float64(1024*1024*1024),duration,1000*float64(S)/float64(duration))
 				abuf.Reset()
 				return numpages,numdocs,S,ErrKey
 			}
@@ -409,26 +461,47 @@ func ToS3Async(infile string,  bucket  string, profiling int)  (int, int, int, [
 		}
 	}
 
-	//  lookup table
-	gLog.Info.Printf("Infile: %s - Number of uploaded documents/objects: %d/%d - Total Size: %d  - Total elapsed time: %s",infile,numdocs, numpages,S,time.Since(start0))
-	return  numpages,numdocs,S, ErrKey
+	// Error redaing data file
+	ErrKey = append(ErrKey,S3Error {
+		"",
+		errors.New(fmt.Sprintf("Error reading data file %s %v .... ",req.File,err)),
+	})
+	// return without logging
+	return 0,0,0,ErrKey
+
 }
 
 
 func writeToS3( r datatype.PutObjRequest) (*s3.PutObjectOutput,error){
+
 	gLog.Trace.Println("Write to ", r.Bucket, r.Key,r.Buffer.Len())
 	return api.PutObject2(r)
 }
 
-/*
-func writeToS3( r datatype.PutObjRequest, test bool) error{
-	var err error
-	gLog.Trace.Println("Write to ", r.Bucket, r.Key)
-	if (!test) {
-		if _, err := api.PutObject2(r); err != nil {
-			gLog.Error.Printf("Put key %s error %v", r.Key, err)
-		}
+
+func logIt(svc *s3.S3, req *ToS3Request,resp *ToS3Response,errors *[]S3Error) (*s3.PutObjectOutput,error){
+
+	_,key := filepath.Split(req.File)
+
+	st33toS3 := St33ToS3 {
+		Request : *req,
+		Response: *resp,
 	}
-	return err
+
+	// Build meta
+	meta,_ := json.Marshal(&st33toS3)
+	metad:= map[string]string{}
+	metad["Migration-log"] = string(meta)
+	// gLog.Info.Println(key, string(meta))
+	buffer := []byte {}
+
+	pr := datatype.PutObjRequest{
+		Service: svc,
+		Bucket: req.LogBucket,
+		Key: key,
+		Buffer: bytes.NewBuffer(buffer),
+		Usermd: metad,
+	}
+	return api.PutObject2(pr)
+
 }
-*/

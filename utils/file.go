@@ -8,6 +8,7 @@ import (
 	"github.com/s3/gLog"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -25,6 +26,24 @@ func ReadFile(filename string) ([]byte , error) {
 		return ioutil.ReadAll(r)
 	}
 	return data,err
+}
+
+func ReadDirectory( dirname string, filter string) ([]string, error) {
+
+	var  (
+		files []string
+		fname string
+		err error
+	)
+	if filesinfo, err := ioutil.ReadDir(dirname); err == nil {
+		for _,finfo:= range filesinfo {
+			fname = finfo.Name()
+			if len(filter) == 0 || strings.Contains(fname,filter) {
+				files = append(files, fname)
+			}
+		}
+	}
+	return files,err
 }
 
 func AsyncReadFiles(entries []string) []*Rf{

@@ -88,3 +88,9 @@ const (
 	CONval string ="conval"
 	DIRval string ="dir_datval"
 )
+
+const (
+	PartialUploaded    string = "PartialUploaded"
+	Started  string = "Started"
+	FullyUploaded string = "FullyUploaded"
+)

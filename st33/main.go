@@ -1,4 +1,4 @@
-// Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2019 NAME HERE
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,13 @@
 
 package main
 
-import "github.com/s3/st33/cmd"
+import (
+	"github.com/s3/st33/cmd"
+	"github.com/s3/utils"
+)
 
 func main() {
+	// set go MAXPROCS
+	utils.SetCPU("100%")
 	cmd.Execute()
 }
