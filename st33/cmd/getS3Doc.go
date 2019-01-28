@@ -38,7 +38,7 @@ var (
 	key string
 	getS3DocCmd = &cobra.Command{
 		Use:   "getS3Doc",
-		Short: "Command to get a PXI S3 document(s)",
+		Short: "Command to get PXI S3 document(s)",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			getS3Doc(cmd,args)

@@ -23,6 +23,8 @@ var (
 	loglevel,profiling int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
+	missingToBucket = "Missing target bucket - please provide the target bucket name"
+	missingFromBucket = "Missing source bucket - please provide the source bucket name"
 	missingKey = "Missing key - please provide the key of the object"
 	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
 	missingMetaFile ="Missing meta input file - please provide the meta file path (absolute or relative to current directory"

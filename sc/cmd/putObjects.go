@@ -142,8 +142,8 @@ func putfObjsAsync(idir string) {
 					if t == n {
 						gLog.Info.Printf("%d objects are uploaded to bucket %s", n,bucket)
 						done = true
-						}
-
+					}
+					rg = &datatype.Rp{}
 					case <-time.After(50 * time.Millisecond):
 						fmt.Printf("w")
 					}

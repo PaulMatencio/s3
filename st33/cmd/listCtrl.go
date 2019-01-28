@@ -14,7 +14,7 @@ import (
 
 // readConvalCmd represents the readConval command
 var (
-	ofile string
+	ofile, pfile string
 	lsCtrlCmd = &cobra.Command{
 	Use:   "lsCtrl",
 	Short: "Command to list a control file",
@@ -27,8 +27,10 @@ var (
 
 func initLvFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&ifile,"ifile","i","","ST33 input control file")
-	cmd.Flags().StringVarP(&ofile,"ofile","o","","the output file relative to the home directory")
+	cmd.Flags().StringVarP(&ifile,"ifile","i","","The input ST33 control file")
+	cmd.Flags().StringVarP(&ofile,"ofile","o","","The output pathname relative to the home directory")
+	cmd.Flags().StringVarP(&pfile,"pfile","p","","The output pathname relative to the home directory containing only pxi ids")
+
 }
 
 
@@ -45,9 +47,9 @@ func listConval(cmd *cobra.Command, args []string) {
 	var (
 
 		home,pathname,file  string
-		of *os.File
+		of,pf  *os.File
 		err error
-		w  *bufio.Writer
+		w,p  *bufio.Writer
 	)
 
 
@@ -55,6 +57,7 @@ func listConval(cmd *cobra.Command, args []string) {
 		gLog.Info.Printf("%s",missingInputFile)
 		return
 	}
+
 	if len(ofile) != 0 {
 
         home = utils.GetHomeDir()
@@ -71,6 +74,22 @@ func listConval(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if len(pfile) != 0 {
+
+		home = utils.GetHomeDir()
+		pathname = filepath.Join(home,pfile)
+		if _,err = os.Stat(pathname); os.IsNotExist(err) {
+			os.Create(pathname)
+		}
+		if pf, err = os.OpenFile(pathname, os.O_APPEND|os.O_WRONLY, 0644); err != nil {
+			gLog.Warning.Printf("Error %v opening file %s",pathname,err)
+			os.Exit(1)
+		} else {
+			p = bufio.NewWriter(pf)
+			defer of.Close()
+		}
+	}
+
 	_,file = filepath.Split(ifile)
 
 	if c,err:=  st33.BuildConvalArray(ifile); err == nil {
@@ -80,11 +99,17 @@ func listConval(cmd *cobra.Command, args []string) {
 			if v.PxiId[lp-2:lp-1] == "B" {
 				imageType = "BLOB"
 			}
-			if len(ofile) == 0 {
+			if len(ofile) == 0  &&  len(pfile) == 0 {
 				gLog.Info.Printf("%d %s %s %d ... %s",k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,imageType)
-			} else {
+			}
+
+			if len(ofile) > 0 {
 				fmt.Fprintln(w, file, k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,imageType)
 			}
+			if len(pfile) > 0 {
+				fmt.Fprintf(p,v.PxiId+" ")
+			}
+
 		}
 		 if w != nil {
 			 w.Flush()

@@ -94,8 +94,8 @@ func getObjects(cmd *cobra.Command,args []string) {
 		MaxKey : maxKey,
 		Marker : marker,
 	}
-	ch:= make(chan *datatype.Ro)
-
+	// ch:= make(chan *datatype.Ro)
+	ch:= make(chan int)
 	var (
 		nextmarker string
 		result  *s3.ListObjectsOutput
@@ -125,13 +125,14 @@ func getObjects(cmd *cobra.Command,args []string) {
 					}
 					go func(request datatype.GetObjRequest) {
 
-						rd := datatype.Ro{
+						ro := datatype.Ro{
 							Key : get.Key,
 						}
-						rd.Result, rd.Err = api.GetObject(get)
+						ro.Result, ro.Err = api.GetObject(get)
+						procGetResult(&ro)
 						get = datatype.GetObjRequest{} // reset the get structure for GC
-						ch <- &rd
-
+						// ch <- &ro
+						ch <- 1
 					}(get)
 				}
 
@@ -139,9 +140,10 @@ func getObjects(cmd *cobra.Command,args []string) {
 
 				for ok:=true;ok;ok=!done {
 					select {
-					case rg := <-ch:
+					// case rg := <-ch:
+					case  <-ch:
 						T++
-						procGetResult(rg)
+						// procGetResult(rg)
 
 						if T == N {
 							gLog.Info.Printf("%d objects are downloaded from bucket %s",N,bucket)

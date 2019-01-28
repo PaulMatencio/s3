@@ -25,9 +25,9 @@ var (
 
 
 func initCoFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of target the bucket")
+	cmd.Flags().StringVarP(&bucket,"to-bucket","t","","the name of target the bucket")
 	cmd.Flags().StringVarP(&key,"key","k","","the key of the target object")
-	cmd.Flags().StringVarP(&sbucket,"sbucket","","","the name  the source bucket")
+	cmd.Flags().StringVarP(&sbucket,"from-bucket","f","","the name  the source bucket")
 	cmd.Flags().StringVarP(&skey,"skey","","","the  key of the source object you'd like to copy")
 
 }
@@ -84,4 +84,6 @@ func copyObject(cmd *cobra.Command,args []string) {
 	}
 
 }
+
+
 

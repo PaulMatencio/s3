@@ -88,7 +88,8 @@ func statObjects(cmd *cobra.Command,args []string) {
 		MaxKey : maxKey,
 		Marker : marker,
 	}
-	ch:= make(chan *datatype.Rh)
+	// ch:= make(chan *datatype.Rh)
+	ch:= make(chan int)
 	var (
 		nextmarker string
 		result  *s3.ListObjectsOutput
@@ -119,12 +120,15 @@ func statObjects(cmd *cobra.Command,args []string) {
 					}
 					go func(request datatype.StatObjRequest) {
 
-						rd := datatype.Rh{
+						rh := datatype.Rh{
 							Key : head.Key,
 						}
-						rd.Result, rd.Err = api.StatObject(head)
 
-						ch <- &rd
+						rh.Result, rh.Err = api.StatObject(head)
+						procStatResult(&rh)
+
+						// ch <- &rh
+						ch <- 1
 
 					}(head)
 
@@ -135,9 +139,9 @@ func statObjects(cmd *cobra.Command,args []string) {
 				for ok:=true;ok;ok=!done {
 
 					select {
-					case rd := <-ch:
+					case  <-ch:
 						T++
-						procStatResult(rd)
+						// procStatResult(rd)
 						if T == N {
 							gLog.Info.Printf("Getting metadata of %d objects ",N)
 							done = true

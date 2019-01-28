@@ -23,6 +23,7 @@ func procStatResult(rd *datatype.Rh) {
 
 }
 
+
 func procS3Meta(key string, metad map[string]*string) {
 
 	if len(odir) == 0 {

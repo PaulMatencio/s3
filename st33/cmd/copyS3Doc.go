@@ -36,7 +36,7 @@ var (
 
 	copyS3DocCmd = &cobra.Command{
 		Use:   "copyS3Doc",
-		Short: "Command to copy a PXI S3 document(s)",
+		Short: "Command to copy PXI S3 document(s)",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			copyS3Doc(cmd,args)
