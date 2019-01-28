@@ -17,7 +17,8 @@ func CopyObject(req datatype.CopyObjRequest) (*s3.CopyObjectOutput,error){
 	gLog.Trace.Printf("Copy object %s",*input.CopySource)
 
 	return req.Service.CopyObject(input)
-
-
 }
+
+
+
 

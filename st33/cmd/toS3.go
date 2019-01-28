@@ -37,8 +37,8 @@ var (
 	sBucket string
 	toS3Cmd = &cobra.Command {
 	Use:   "toS3",
-	Short: "Command to extract ST33 file containing Tiff Images and Blob and upload to S3",
-	Long: ``,
+	Short: "Command to extract ST33 file and upload to S3",
+	Long: `Command extract files containing ST33 Tiff Images and Blob then upload them to S3`,
 	Run: func(cmd *cobra.Command, args []string) {
 		toS3Func(cmd,args)
 		},
@@ -116,7 +116,6 @@ func toS3Func(cmd *cobra.Command, args []string) {
 		if len(sBucket) == 0 {
 			gLog.Warning.Printf("Missing bucket to log the status of this migration",)
 		}
-
 	}
 
 	gLog.Info.Printf("Data file name prefix:%s - Control file name prefix:%s - output state bucket name:  %s",datval,conval,sBucket)

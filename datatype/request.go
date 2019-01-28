@@ -23,6 +23,16 @@ type CopyObjRequest struct {
 
 }
 
+type CopyObjsRequest struct {
+
+	Service 	*s3.S3
+	Sbucket 	string
+	Tbucket     string
+	Skey   		[]string
+	Tkey        []string
+
+}
+
 type PutObjRequest struct {
 	Service     *s3.S3
 	Bucket       string

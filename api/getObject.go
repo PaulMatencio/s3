@@ -13,17 +13,5 @@ func GetObject(req datatype.GetObjRequest) (*s3.GetObjectOutput,error){
 	}
 
 	return req.Service.GetObject(input)
-
-
 }
 
-/*
-func GetObject( bucket string, key string) (*s3.GetObjectOutput,error){
-
-	input := &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	}
-	return s3.New(CreateSession()).GetObject(input)
-}
-*/

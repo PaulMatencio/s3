@@ -1,6 +1,9 @@
 package datatype
 
-import "github.com/aws/aws-sdk-go/service/s3"
+import (
+	"github.com/aws/aws-sdk-go/service/s3"
+	"bytes"
+)
 
 type  Rh struct {
 	Key string
@@ -22,6 +25,22 @@ type  Rp struct {
 	Result   *s3.PutObjectOutput
 	Err error
 }
+
+type  Rb struct {
+	Key      string
+	Object   *bytes.Buffer
+	Result   *s3.GetObjectOutput
+	Err      error
+}
+
+type  Rc struct {
+
+	Key string
+	Result   *s3.CopyObjectOutput
+	Err error
+
+}
+
 
 /*
 type PutS3Response struct {

@@ -212,12 +212,10 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 		}()
 	}
 
-
 	/*
 		Create a  S3 session
 	 */
 	svc :=  s3.New(api.CreateSession())
-
 
 	/* Check the existence of the control file */
 	conval = &[]Conval{}

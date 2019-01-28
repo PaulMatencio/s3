@@ -22,9 +22,13 @@ var (
 	loglevel,profiling,suffix int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
+	missingKey = "Missing pxid - please provide a pxi id"
 	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
 	missingOutputFolder ="Missing output directory - please provide the output directory path( absolute or relative to current directory)"
 	missingInputFolder ="Missing input directory - please provide the input directory path( absolute or relative to current directory)"
+	missingSourceBucket = "Missing source bucket - please provide a source  bucket name"
+	missingTargetBucket = "Missing target bucket - please provide a target  bucket name"
+	missingIds = "missing both a pxi id and an input file containing list of pxi ids"
 
 	RootCmd = &cobra.Command {
 		Use:   "st33",
@@ -80,8 +84,6 @@ func init() {
 func initConfig() {
 	var (
 		configPath string
-
-
 	)
 	if cfgFile != "" {
 		// Use config file from the application flag.
@@ -113,7 +115,6 @@ func initConfig() {
 		log.Printf("Error %v  reading config file %s",err,viper.ConfigFileUsed())
 		log.Printf("AWS sdk shared config will be used if present ")
 	}
-
 
 
 	logOutput:= utils.GetLogOutput(*viper.GetViper())

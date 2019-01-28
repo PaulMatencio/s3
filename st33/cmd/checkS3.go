@@ -14,9 +14,10 @@ import (
 
 // readConvalCmd represents the readConval command
 var checkS3Cmd = &cobra.Command{
+
 	Use:   "chkS3",
-	Short: "Command to check if all the  Tiff images and Blobs of a given st33 data file have been migrated to a S3 bucket",
-	Long: ``,
+	Short: "Command to check if all content of a given st33 file has been migrated to a S3 bucket",
+	Long: `Command to check if all the  Tiff images and Blobs of a given st33 data file have been migrated to a S3 bucket`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkS3(cmd,args)
 	},

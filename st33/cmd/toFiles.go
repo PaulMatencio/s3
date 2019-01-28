@@ -20,8 +20,8 @@ var (
 	database *badger.DB
 	toFilesCmd = &cobra.Command{
 		Use:   "toFiles",
-		Short: "Command to extract an ST33 file containing Tiff images and Blobs to Files",
-		Long: ``,
+		Short: "Command to extract an ST33 and write to local files",
+		Long: `Command to extract an ST33 file containing Tiff images and Blobs and write to  files`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toFilesFunc(cmd,args)
 		},

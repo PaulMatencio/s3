@@ -16,8 +16,8 @@ var (
 	idir string
 checkFilesCmd = &cobra.Command{
 	Use:   "chkFiles",
-	Short: "Command to check if all the  Tiff images and Blobs of a given st33 data file have been written to a folder",
-	Long: ``,
+	Short: "Command to check if all content of a given st33 file has been written to a folder",
+	Long: `Command to check if all the  Tiff images and Blobs of a given st33 data file have been written to a folder`,
 	Run: func(cmd *cobra.Command, args []string) {
 		checkFiles(cmd,args)
 	},
