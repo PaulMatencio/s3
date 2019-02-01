@@ -58,8 +58,9 @@ func init() {
 	RootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "sc config file; default $HOME/.st33/config.yaml")
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
-	RootCmd.Flags().StringVarP(&datval,"datval", "","", "data file prefix  ex: datval.lot")
-	RootCmd.Flags().StringVarP(&conval,"conval", "","", "control file prefix ex: conval.lot")
+	// RootCmd.Flags().StringVarP(&datval,"data-file-directrory", "","", "data file prefix  ex: datval.lot")
+	// RootCmd.Flags().StringVarP(&datval,"data-file-prefix", "","", "data file prefix  ex: datval.lot")
+	// RootCmd.Flags().StringVarP(&conval,"control-file-prefix", "","", "control file prefix ex: conval.lot")
 	// RootCmd.PersistentFlags().BoolVarP(&test,"test","t",false,"test mode")
 
 
@@ -122,7 +123,6 @@ func initConfig() {
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
-
 	// Generate auto completion command
 	if  autoCompletion {
 		utils.GenAutoCompletionScript(RootCmd,configPath)

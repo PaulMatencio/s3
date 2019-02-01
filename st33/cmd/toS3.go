@@ -54,7 +54,7 @@ func initT3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","name of the  target bucket")
-	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the status bucket")
+	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
 	cmd.Flags().IntVarP(&async,"async","a",0,"concurrency level (recommended 40)")
 }
 
@@ -78,15 +78,19 @@ func toS3Func(cmd *cobra.Command, args []string) {
 	)
 
 	if len(idir) == 0 {
-		gLog.Info.Printf("%s", missingInputFolder)
-		return
+		idir = viper.GetString("st33.input_data_directory")
+		if len(idir) == 0 {
+			gLog.Info.Printf("%s","Input directory missing, please check your config file or specif  -d or --idir ")
+			return
+		}
+
 	}
 
 	// if no datval argument . try to get in from the config file
 	if len(datval) == 0 {
 		datval = viper.GetString("st33.data_file_prefix")
 		if len(datval) == 0 {
-			gLog.Info.Printf("Data file name prefix is  missing , please check your config file or specify --data-prefix")
+			gLog.Info.Printf("Data file name prefix is  missing, please check your config file or specify --data-prefix")
 			return
 		}
 	}
@@ -123,7 +127,7 @@ func toS3Func(cmd *cobra.Command, args []string) {
 	for _,file := range files {
 
 		file = filepath.Join(idir,file)
-		gLog.Info.Printf("Processing input file %s", file)
+		gLog.Info.Printf("Processing input file ...  %s", file)
 
 		if async == 0  {
 			numpages, numdocs, err := st33.TooS3(file, bucket, profiling)

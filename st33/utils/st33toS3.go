@@ -253,6 +253,7 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 	}
 
 	// read ST33  file
+	gLog.Info.Printf("Reading file ... %s",infile)
 	abuf, err := utils.ReadBuffer(infile)
 	defer 	abuf.Reset()
 	buf		:= abuf.Bytes()
@@ -265,7 +266,7 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 			l       int64 = 0
 		)
 
-		gLog.Info.Printf("Number of documents to upload %d", Numdocs)
+		gLog.Info.Printf("Uploading %d documents to bucket %s ...", Numdocs,bucket)
 
 		// Set the break of the main loop
 		p := 0; step := req.Async; stop := false
@@ -411,7 +412,7 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 						}
 					}
-				case <-time.After(50 * time.Millisecond):
+				case <-time.After(200 * time.Millisecond):
 					fmt.Printf("w")
 				}
 			}
@@ -445,7 +446,7 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 				if _,err = logIt(svc,req,&resp,&ErrKey); err != nil {
 					gLog.Warning.Printf("Error logging request to %s : %v",req.LogBucket,err)
 				}
-				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Uploaded size: %.2f - Uploading time: %s  - MB/sec: %.2f ",infile,numdocs,numpages,float64(S)/float64(1024*1024*1024),duration,1000*float64(S)/float64(duration))
+				gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Uploaded size: %.2f GB- Uploading time: %s  - MB/sec: %.2f ",infile,numdocs,numpages,float64(S)/float64(1024*1024*1024),duration,1000*float64(S)/float64(duration))
 				abuf.Reset()
 				return numpages,numdocs,S,ErrKey
 			}

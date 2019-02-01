@@ -17,8 +17,8 @@ var (
 	email,usertype,permission string
 
 	putBucketCmd = &cobra.Command{
-		Use:   "setBucket",
-		Short: "Command to set Bucket ACL",
+		Use:   "putBucket",
+		Short: "Command to create/update Bucket ACL",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			putBucket(cmd,args)

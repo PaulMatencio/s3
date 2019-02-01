@@ -51,7 +51,7 @@ func init() {
 	getS3DocCmd.Flags().StringVarP(&key,"key","k","","the PXI ID of the document you would like to retrieve")
 	getS3DocCmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the  bucket")
 	getS3DocCmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory (relative to the home directory)")
-	getS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","input file containing a list of pix ids to be retrieved")
+	getS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input  file containing a list of pix ids to be downloaded")
 }
 
 

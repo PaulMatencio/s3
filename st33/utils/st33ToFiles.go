@@ -12,15 +12,16 @@ import (
 	"strings"
 )
 
-func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, error){
+func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, int, error){
 
 	var (
 
 		confile   		string
 		conval			*[]Conval
 		err 			error
-		numdocs			int=0
+		numdocs	        int=0
 		numpages		int=0
+		numerrors       int=0
 	)
 
 	/* read  the control  file  */
@@ -28,10 +29,10 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, erro
 	conval = &[]Conval{}
 	confile = strings.Replace(ifile,DATval,CONval,1)
 	if !utils.Exist(confile) {
-		return 0,0,errors.New(fmt.Sprintf("Corrresponding control file %s does not exist for input data file %s ",confile,ifile))
+		return 0,0,0,errors.New(fmt.Sprintf("Corrresponding control file %s does not exist for input data file %s ",confile,ifile))
 	} else {
 		if conval,err  = BuildConvalArray(confile); err != nil {
-			return 0,0,errors.New(fmt.Sprintf("Error %v  reading %s ",err,confile))
+			return 0,0,0,errors.New(fmt.Sprintf("Error %v  reading %s ",err,confile))
 		}
 	}
 	conVal := *conval
@@ -102,7 +103,7 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, erro
 					Record: v.Records,
 					Blob  :	 new(bytes.Buffer),
 				}
-
+				gLog.Trace.Printf("PXI ID %s",KEY)
 				if l,err  = pxiblob.BuildPxiBlob(buf,l); err == nil {
 					pathname = filepath.Join(bdir, pxiblob.Key)+".1"
 
@@ -123,6 +124,8 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, erro
 					numdocs++
 
 				} else {
+						numerrors++
+						numdocs ++
 						gLog.Error.Printf("Error %v",err)
 				}
 			}
@@ -131,6 +134,6 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, erro
 
 	//  lookup table
 
-	return numpages,numdocs,err
+	return numpages,numdocs,numerrors, err
 }
 

@@ -15,7 +15,7 @@ var (
 	bucket string
 	getBucketCmd = &cobra.Command{
 	Use:   "getBucket",
-	Short: "Command to get Bucket ACL",
+	Short: "Command to retrieve  Bucket ACL",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		getBucket(cmd,args)

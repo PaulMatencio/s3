@@ -55,7 +55,7 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 		pdir = filepath.Join(utils.GetHomeDir(),odir)
 		utils.MakeDir(pdir)
 	} else {
-		gLog.Info.Printf("%s",missingInputFolder)
+		gLog.Info.Printf("%s",missingOutputFolder)
 		return
 	}
 
@@ -78,8 +78,8 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 	}
 
 	gLog.Info.Printf("Processing input file %s",ifile)
-	numpages,numdocs,_ :=  st33.ToFiles(ifile,odir,bdir, test)
-	gLog.Info.Printf("%d documents/ %d pages were processed",numdocs,numpages)
+	numpages,numdocs,numerrors,_ :=  st33.ToFiles(ifile,odir,bdir, test)
+	gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d",numdocs,numpages,numerrors)
 
 }
 

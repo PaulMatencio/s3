@@ -15,7 +15,7 @@ var (
 	key string
 	getObjCmd = &cobra.Command{
 		Use:   "getObj",
-		Short: "Command to get Object ACL",
+		Short: "Command to retrieve Object ACL",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			getObject(cmd,args)

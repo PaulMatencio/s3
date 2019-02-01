@@ -27,7 +27,7 @@ var (
 
 func initLvFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&ifile,"ifile","i","","The input ST33 control file")
+	cmd.Flags().StringVarP(&ifile,"ifile","i","","The full pathname of an input ST33 control file")
 	cmd.Flags().StringVarP(&ofile,"ofile","o","","The output pathname relative to the home directory")
 	cmd.Flags().StringVarP(&pfile,"pfile","p","","The output pathname relative to the home directory containing only pxi ids")
 

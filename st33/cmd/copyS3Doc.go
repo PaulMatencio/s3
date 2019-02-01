@@ -46,10 +46,10 @@ var (
 func init() {
 
 	RootCmd.AddCommand(copyS3DocCmd)
-	copyS3DocCmd.Flags().StringVarP(&key,"key","k","","the PXI Id of the document you'd like to copy")
+	copyS3DocCmd.Flags().StringVarP(&key,"key","k","","the PXI Id of a document you'd like to copy")
 	copyS3DocCmd.Flags().StringVarP(&frombucket,"from-bucket","f","","the name of the source bucket")
 	copyS3DocCmd.Flags().StringVarP(&tobucket,"to-bucket","t","","the name of the target bucket")
-	copyS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","input file containing a list of pixid to be copied")
+	copyS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input file containing a list of pixid to be copied")
 
 }
 

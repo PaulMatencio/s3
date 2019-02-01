@@ -50,6 +50,7 @@ func ( blob *pxiBlob ) BuildPxiBlob(buf []byte, l int64 ) (int64, error) {
 		blobL := 0
 
 		for r:= 0; r < int(totalRecs); r ++ {
+
 			err = binary.Read(bytes.NewReader(buf[k+250 : k+252]), Big, &blobl)
 			blobL += int(blobl)
 			blob.Blob.Write(buf[k+252 : k+252+int64(blobl)]) 	// Build blob
@@ -74,18 +75,31 @@ func ( blob *pxiBlob ) BuildPxiBlob(buf []byte, l int64 ) (int64, error) {
 			l = l + int64(bdw) 								// point to next record
 		}
 
-	} else {
+	}  else {
 
-		gLog.Trace.Printf( "BLOB Buffer pointer => Buffer  length:%d  l: x'%X' k: x'%X'", len(buf), l, k)
+		gLog.Trace.Printf( "PXIID %s Key: %s  - BLOB records number : %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  l: x'%X' k: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),l, k)
+
+		if l >= int64(len(buf)) {
+			error := fmt.Sprintf("PXIID %s Key: %s  - BLOB records number : %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  l: x'%X' k: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),l, k)
+			err := errors.New(error)
+			return l,err
+		}
 		blob.Blob.Write(buf[k : k-4 +int64(rdw)])
 		l = l + int64(bdw)
 
 		for r := 0; r < int(blob.Record)-1; r++ {
 			/* a blob record may be longer than its RDW value */
 			l,bdw,rdw,err = seekBdw(buf,l)
+			if l >= int64(len(buf)) {
+				error := fmt.Sprintf("PXIID %s Key: %s  - BLOB records number: %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  l: x'%X' k: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),l, k)
+				err := errors.New(error)
+				// err := errors.New("Error extracting  slice outbound" + utils.Reverse(blob.Key))
+				return l,err
+			}
 			k:= l+8
 			blob.Blob.Write(buf[k : k-4 + int64(rdw)])       // Build the blob with records
 			l = l + int64(bdw)
+
 		}
 	}
 
@@ -123,11 +137,17 @@ func seekBdw(buf []byte, l int64) (int64, uint16,uint16,error){
 
 		if bdw-rdw != 4 {
 			l++
+			gLog.Trace.Printf("============================================> Seek  x'%v' l  ",l)
+			if l > int64(len(buf)) {
+				l = int64(len(buf))                       //  issue  slice outbound
+				break
+			}
 		} else {
 			break
 		}
+
 	}
-	gLog.Trace.Println("Seek",bdw,rdw)
+	gLog.Trace.Printf("Seek l = x'%X' bdw = %d  rdw = %d ",l, bdw,rdw)
 	return l,bdw,rdw,err
 }
 

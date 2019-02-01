@@ -29,7 +29,7 @@ import (
 var (
 	putObjCmd = &cobra.Command{
 		Use:   "putObj",
-		Short: "Command to put Object ACL",
+		Short: "Command to create/update Object ACL",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			putObject(cmd,args)
