@@ -7,17 +7,15 @@ import (
 	"os"
 	"path/filepath"
 
-	// "path/filepath"
-	"runtime"
-	"runtime/debug"
-
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/utils"
+	// "path/filepath"
+	"runtime"
+	"runtime/debug"
 	"strconv"
-
-	"encoding/json"
+	// "encoding/json"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
@@ -107,32 +105,37 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 					// reset user metadata
 					req.Usermd = map[string]string{}
 					// extract the image
-					image,k,_ := GetPage(v, buf, l)
-					l = k
-					s += image.Img.Len()
-					// update docsize with the actual image size
-					v.DocSize= uint32(image.Img.Len())
-					S += int(v.DocSize)
-					 // build the user metadata for the first page only
-					pagenum, _ := strconv.Atoi(string(image.PageNum))
+					if image,k,err,_ := GetPage(v, buf, l); err== nil {
 
-					if pagenum == 1 {
-						if usermd, err := BuildUsermd(v); err == nil {
-							req.Usermd= usermd
+						l = k
+						s += image.Img.Len()
+						// update docsize with the actual image size
+						v.DocSize = uint32(image.Img.Len())
+						S += int(v.DocSize)
+						// build the user metadata for the first page only
+						pagenum, _ := strconv.Atoi(string(image.PageNum))
+
+						if pagenum == 1 {
+							if usermd, err := BuildUsermd(v); err == nil {
+								req.Usermd = utils.AddMoreUserMeta(usermd,infile)
+							}
 						}
-					}
 
-					// complete the request to write to S3
-					req.Key =  req.Key + "." + strconv.Itoa(pagenum)
-					req.Buffer = image.Img
+						// complete the request to write to S3
+						req.Key = req.Key + "." + strconv.Itoa(pagenum)
+						req.Buffer = image.Img
 
-					if _,err:= writeToS3(req); err != nil {
-						gLog.Fatal.Printf("PutObject Key: %s  Error: %v",req.Key,err)
+						if _, err := writeToS3(req); err != nil {
+							gLog.Fatal.Printf("PutObject Key: %s  Error: %v", req.Key, err)
+							os.Exit(100)
+						}
+						// reset the image
+						image.Img.Reset()
+					} else {
+						// should never happen unless input data is corrupted
+						gLog.Fatal.Printf("%v",err)
 						os.Exit(100)
 					}
-					// reset the image
-					image.Img.Reset()
-
 				}
 
 				numpages += int(v.Pages)
@@ -153,7 +156,7 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 					v.DocSize= uint32(pxiblob.Blob.Len())
 					S += int(v.DocSize)
 					if usermd,err:= BuildUsermd(v); err == nil {
-						req.Usermd = usermd
+						req.Usermd = utils.AddMoreUserMeta(usermd,infile)
 					}
 
 					req.Buffer = pxiblob.Blob
@@ -169,6 +172,8 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 
 					numpages++
 					numdocs++
+				} else {
+					gLog.Warning.Printf("Control file %s and data file %s do not map for key %s",confile,infile,v.PxiId)
 				}
 			}
 		}
@@ -181,8 +186,6 @@ func TooS3(infile string,  bucket  string , profiling int)  (int ,int, error){
 
 // Concurrent upload of files to S3
 // Input : a ST33 input file containing  tiff images and blob
-//
-
 // func ToS3Async(infile string,  bucket  string, profiling int,async int)  (int, int, int, []S3Error)  {
 func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
@@ -190,10 +193,11 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 		infile   = req.File
 		bucket   = req.Bucket
 		sbucket  = req.LogBucket
+		reload   = req.Reload
 		confile				string
 		conval				*[]Conval
 		err 				error
-		ErrKey				[]S3Error
+		ErrKey,inputError	[]S3Error
 		numpages,numdocs,E,S,S1	int		=  0,0,0,0,0
 	)
 	//  monitor storage and free storage if necessary
@@ -242,13 +246,22 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 	conVal := *conval
 
 	// check the existence of the state migration  Bucket
+	// and if  data file was already uploaded
+	_,key := filepath.Split(infile)
 	if sbucket != "" {
-		statusBucket := datatype.StatBucketRequest{
+		getReq := datatype.GetObjRequest{
 			Service: svc,
 			Bucket:  sbucket,
+			Key   :  key,
 		}
-		if _, err := api.StatBucket(statusBucket); err != nil {
-			gLog.Warning.Printf("State bucket: %s %v",sbucket,err)
+		//
+		// check if datafile is already fully loaded
+		//  if req.Reload  then skip checking
+		//  otherwsise check if datafile is already fully loaded
+		//
+
+		if !reload && !checkDoLoad(getReq,infile)  {
+			return 0,0,0,ErrKey
 		}
 	}
 
@@ -262,15 +275,15 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 	if err == nil {
 		var (
-			Numdocs int   = len(conVal)
-			l       int64 = 0
+			Numdocs       = len(conVal)
+			l int64 	  = 0
+			p             = 0
+			step          = req.Async
+			stop          = false
 		)
 
 		gLog.Info.Printf("Uploading %d documents to bucket %s ...", Numdocs,bucket)
-
 		// Set the break of the main loop
-		p := 0; step := req.Async; stop := false
-
 		if step > Numdocs {
 			step = Numdocs
 			stop = true
@@ -289,10 +302,15 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 					N += int(v.Pages)
 					for p := 0; p < int(v.Pages); p++ {
 						// extract tiff image
-						image,k,err := GetPage(v,buf,l)
-
+						image,k,err,err1 := GetPage(v,buf,l)
+						// err1 is not null  when the control file and datafile differ
+						// Extraction can continue
+						if err1 != nil {
+							inputError= append(inputError,S3Error{Key:v.PxiId,Err: err1})
+							// fmt.Println("....",inputError)
+						}
+                        // Get page OK
 						if err == nil {
-
 							numpages++
 							v.DocSize = uint32(image.Img.Len()) // update the document size
 
@@ -305,17 +323,15 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 								pagenum, _ := strconv.Atoi(string(image.PageNum))
 								if pagenum == 1 {
+									// Build user metadata
 									if usermd, err := BuildUsermd(v); err == nil {
-										req.Usermd = usermd
+										req.Usermd = utils.AddMoreUserMeta(usermd,infile)
 									}
 								}
 								// complete building  the request before writing to S3
 								req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum)
 								req.Buffer = image.Img
-
-								// S += int(v.DocSize)
-								// S1 += int(v.DocSize)
-
+								//  write to S3
 								_,err := writeToS3(req)
 
 								s3Error := S3Error{Key: req.Key,Err: err}
@@ -325,6 +341,10 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 								ch <- &PutS3Response{bucket, req.Key, int(v.DocSize),s3Error}
 							}(KEY,image, v)
+						} else {
+							// should never happen unless input data is corrupted
+							gLog.Fatal.Printf("Error building image for Key:%s - buffer address: X'%x' ",v.PxiId,k)
+							os.Exit(100)
 						}
 						l =k
 					}
@@ -353,11 +373,9 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 								Buffer: pxiblob.Blob,
 							}
 
-							// S += int(v.DocSize)
-							// S1 += int(v.DocSize)
 							// build user metadata
 							if usermd, err := BuildUsermd(v); err == nil {
-								req.Usermd = usermd
+								req.Usermd = utils.AddMoreUserMeta(usermd,infile)
 							}
 							// build put object request
 							// Write to S3 and save the return status
@@ -369,8 +387,9 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 							ch <- &PutS3Response{bucket, pxiblob.Key, int(v.DocSize),s3Error}
 
 						}(KEY, pxiblob, v)
-					}else {
+					} else {
 						gLog.Error.Printf("Error %v",err)
+						inputError= append(inputError,S3Error{Key:v.PxiId,Err: err})
 					}
 				}
 
@@ -409,7 +428,6 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 							// gLog.Trace.Printf("Infile: %s - Key:%s - Total uploaded objects:%d - Total size:%d",infile, strings.Split(r.Key,s3Client.DELIMITER)[0],N,S1)
 							done = true
-
 						}
 					}
 				case <-time.After(200 * time.Millisecond):
@@ -425,11 +443,16 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 				stop = true
 				duration := time.Since(start0)
-				status := PartialUploaded
-				numerrors := len(ErrKey)
+				status := PartiallyUploaded
+				numerrupl := len(ErrKey)    // number of upload with errors
+				numerrinp := len(inputError)  // input data error
+                if numerrupl == 0   {
 
-                if numerrors == 0 {
-                	status = FullyUploaded
+                	if numerrinp == 0 {
+						status = FullyUploaded
+					}  else {
+						status =  FullyUploaded2
+					}
 				}
 
 				resp := ToS3Response {
@@ -439,8 +462,13 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 					Docs  : numdocs,
 					Pages : numpages,
 					Size  : S,
-					// Error : ErrKey,
-					Errors : numerrors,
+					Erroru : numerrupl,
+					Errori : numerrinp,
+
+				}
+				// append input data consistency to ErrKey array
+				for _,v := range inputError {
+					ErrKey = append(ErrKey,v)
 				}
 
 				if _,err = logIt(svc,req,&resp,&ErrKey); err != nil {
@@ -460,7 +488,7 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 		}
 	}
 
-	// Error redaing data file
+	// Error reading data file
 	ErrKey = append(ErrKey,S3Error {
 		"",
 		errors.New(fmt.Sprintf("Error reading data file %s %v .... ",req.File,err)),
@@ -470,37 +498,3 @@ func ToS3Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 }
 
-
-func writeToS3( r datatype.PutObjRequest) (*s3.PutObjectOutput,error){
-
-	gLog.Trace.Println("Write to ", r.Bucket, r.Key,r.Buffer.Len())
-	return api.PutObject2(r)
-}
-
-
-func logIt(svc *s3.S3, req *ToS3Request,resp *ToS3Response,errors *[]S3Error) (*s3.PutObjectOutput,error){
-
-	_,key := filepath.Split(req.File)
-
-	st33toS3 := St33ToS3 {
-		Request : *req,
-		Response: *resp,
-	}
-
-	// Build meta
-	meta,_ := json.Marshal(&st33toS3)
-	metad:= map[string]string{}
-	metad["Migration-log"] = string(meta)
-	// gLog.Info.Println(key, string(meta))
-	buffer := []byte {}
-
-	pr := datatype.PutObjRequest{
-		Service: svc,
-		Bucket: req.LogBucket,
-		Key: key,
-		Buffer: bytes.NewBuffer(buffer),
-		Usermd: metad,
-	}
-	return api.PutObject2(pr)
-
-}

@@ -29,12 +29,12 @@ import (
 )
 
 // st33ToS3Cmd represents the st33ToS3 command
+
 var (
 	async int
-	file string
-	files []string
-	ranges []string
-	sBucket string
+	file,sBucket string
+	files,ranges []string
+	reload  bool
 	toS3Cmd = &cobra.Command {
 	Use:   "toS3",
 	Short: "Command to extract ST33 file and upload to S3",
@@ -46,7 +46,6 @@ var (
 )
 
 
-
 func initT3Flags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&idir,"idir","d","","input directory containing  st33  files to be uploaded")
@@ -55,6 +54,7 @@ func initT3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","name of the  target bucket")
 	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
+	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")
 	cmd.Flags().IntVarP(&async,"async","a",0,"concurrency level (recommended 40)")
 }
 
@@ -83,7 +83,6 @@ func toS3Func(cmd *cobra.Command, args []string) {
 			gLog.Info.Printf("%s","Input directory missing, please check your config file or specif  -d or --idir ")
 			return
 		}
-
 	}
 
 	// if no datval argument . try to get in from the config file
@@ -142,15 +141,14 @@ func toS3Func(cmd *cobra.Command, args []string) {
 				DatafilePrefix: datval,
 				CrlfilePrefix: conval,
 				Profiling: profiling,
+				Reload: reload,
 				Async: async,
 			}
 
-			// numpages, numdocs, size, Err := st33.ToS3Async(file, bucket, profiling,async)
-
 			numpages, numdocs, size, Err := st33.ToS3Async(&toS3)
-			gLog.Info.Printf("Input file: %s - Number of uploaded documents/objects: %d/%d -  Upload Size: %.2f GB - Total elapsed time: %s\n", file, numdocs, numpages, float64(size)/float64(1024*1024*1024), time.Since(start0))
+			gLog.Info.Printf("Input file: %s - Number of uploaded documents/objects: %d/%d - Upload Size: %.2f GB - Total elapsed time: %s\n", file, numdocs, numpages, float64(size)/float64(1024*1024*1024), time.Since(start0))
 			if len(Err) > 0 {
-				gLog.Warning.Printf("Oops ! There were some errors to upload documents from %s ................\n", file)
+				gLog.Error.Printf("Uploading %s - List of errors:", file)
 				for _, v := range Err	{
 					gLog.Error.Printf("Key:%s  Error:%v\n", v.Key, v.Err)
 				}

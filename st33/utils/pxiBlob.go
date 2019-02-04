@@ -93,7 +93,6 @@ func ( blob *pxiBlob ) BuildPxiBlob(buf []byte, l int64 ) (int64, error) {
 			if l >= int64(len(buf)) {
 				error := fmt.Sprintf("PXIID %s Key: %s  - BLOB records number: %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  l: x'%X' k: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),l, k)
 				err := errors.New(error)
-				// err := errors.New("Error extracting  slice outbound" + utils.Reverse(blob.Key))
 				return l,err
 			}
 			k:= l+8
@@ -137,7 +136,7 @@ func seekBdw(buf []byte, l int64) (int64, uint16,uint16,error){
 
 		if bdw-rdw != 4 {
 			l++
-			gLog.Trace.Printf("============================================> Seek  x'%v' l  ",l)
+			gLog.Trace.Printf("======================> Seek  x'%v' l  ",l)
 			if l > int64(len(buf)) {
 				l = int64(len(buf))                       //  issue  slice outbound
 				break

@@ -21,7 +21,7 @@ var (
 
 
 
-func InitLog( cmd string, loglevel int, logOutput string ) (*os.File,  *os.File,  *os.File,  *os.File, *os.File ) {
+func InitLog( cmd string, loglevel int, logOutput string) (*os.File,  *os.File,  *os.File,  *os.File, *os.File ) {
 
 
 	//hostname, _ := os.Hostname()
@@ -101,7 +101,8 @@ func InitLog( cmd string, loglevel int, logOutput string ) (*os.File,  *os.File,
 
 func Init( infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer, fatalHandle io.Writer , traceHandle io.Writer, debugHandle io.Writer) {
 
-	Time := log.Lmicroseconds
+	// Time := log.Lmicroseconds
+	Time := log.Ltime
 
 	Trace = log.New(traceHandle,
 		"TRACE: ",
@@ -129,3 +130,4 @@ func Init( infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer,
 		log.Ldate|Time|log.Lshortfile)
 
 }
+

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/s3/gLog"
 	"io/ioutil"
 	"os"
@@ -22,7 +23,6 @@ func GetUserMeta(metad map[string]*string) (string,error) {
 	} else {
 		return "",err
 	}
-
 }
 
 func GetPxiMeta(metad map[string]*string) (string,error) {
@@ -47,15 +47,20 @@ func BuildUserMeta(meta []byte) (map[string]*string) {
 	if len(meta) > 0 {
 		m := base64.StdEncoding.EncodeToString(meta)
 		metad["Usermd"] = &m
+		//md := string(meta)
+		//metad["Usermd"] = &md
 	}
+	return metad
+}
+
+func AddMoreUserMeta(metad map[string]string,source string) (map[string]string) {
+	metad["Source"] = source
 	return metad
 }
 
 
 
-
-
-func WriteUserMeta(metad map[string]*string,pathname string ) {
+func WriteUserMeta(metad map[string]*string,pathname string) {
 
 	var (
 		usermd string
@@ -109,20 +114,23 @@ func BuildUsermd(usermd map[string]string) (map[string]*string) {
 
 func PrintUsermd(key string, metad map[string]*string) {
 
+	gLog.Info.Printf("Key: %s",key)
 	for k,v := range metad {
 		if k == "Usermd" {
 			usermd,_ :=  base64.StdEncoding.DecodeString(*v)
-			gLog.Info.Printf("Key: %s %s = %s",key, k,string(usermd))
+			gLog.Info.Printf("%s: %s",k,string(usermd))
 		} else {
-			gLog.Info.Printf("Key: %s %s = %s", key, k,*v)
+			gLog.Info.Printf("%s: %s", k,*v)
 		}
 	}
+	fmt.Println("")
+
 }
 
 func WriteUsermd(metad map[string]*string ,pathname string ) {
 
 	/* convert map into json */
-	if usermd,err := json.Marshal(metad); err ==  nil {
+	if usermd,err := json.MarshalIndent(metad,""," "); err ==  nil {
 		if err:= ioutil.WriteFile(pathname,[]byte(usermd),0644); err != nil {
 			gLog.Error.Printf("Error %v writing %s ",err,pathname)
 		}

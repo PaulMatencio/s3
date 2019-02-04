@@ -15,22 +15,27 @@ func procStatResult(rd *datatype.Rh) {
 
 	if rd.Err != nil {
 		procS3Error(rd.Err)
-
 	} else {
+		if len(odir) == 0 {
+			gLog.Trace.Printf("Key: %s - ContentLength: %v - LastModified: %v" ,rd.Key ,*rd.Result.ContentLength,*rd.Result.LastModified)
+		}
 		procS3Meta(rd.Key,rd.Result.Metadata)
 	}
 	rd = &datatype.Rh{}
-
 }
 
 
 func procS3Meta(key string, metad map[string]*string) {
 
 	if len(odir) == 0 {
-		utils.PrintUsermd(key,metad)
+		if len(metad) >0 {
+			utils.PrintUsermd(key, metad)
+		}
 	} else {
-		pathname := filepath.Join(pdir,strings.Replace(key,string(os.PathSeparator),"_",-1)+".md")
-		utils.WriteUserMeta(metad,pathname)
+		if len(metad) > 0 {
+			pathname := filepath.Join(pdir, strings.Replace(key, string(os.PathSeparator), "_", -1)+".md")
+			utils.WriteUserMeta(metad, pathname)
+		}
 	}
 }
 
@@ -80,7 +85,7 @@ func procS3Object(rd *datatype.Ro) {
 		utils.PrintUsermd(rd.Key,rd.Result.Metadata)
 		b, err := utils.ReadObject(rd.Result.Body)
 		if err == nil {
-			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d", rd.Key, *rd.Result.ETag, *rd.Result.ContentLength, b.Len())
+			gLog.Info.Printf("Key: %s - Content length: %d - Object length : %d", rd.Key, *rd.Result.ContentLength, b.Len())
 		}
 
 	} else {

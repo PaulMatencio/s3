@@ -1,14 +1,16 @@
 package st33
 
 import (
+	"fmt"
 	"github.com/s3/gLog"
 	"strconv"
+	"errors"
 )
 
-func GetPage( v Conval, buf []byte, l int64) (PxiImg,int64,  error){
+func GetPage( v Conval, buf []byte, l int64) (PxiImg,int64,  error,error){
 
 	var (
-		err error
+		err,err1 error
 		done = false
 		image = PxiImg{}
 		pl = l
@@ -19,12 +21,15 @@ func GetPage( v Conval, buf []byte, l int64) (PxiImg,int64,  error){
 	for ok:=true;ok;ok=!done {
 		npages,_ := strconv.Atoi(string(image.NumPages))
 		if npages != int(v.Pages) {
-			gLog.Error.Printf("Skipping page at address x'%X' - Control pxi id: %s/Image id: %s  => Control file pages number( %d ) !=  Image pages number (%d ) ",  pl, v.PxiId, image.PxiId, v.Pages, npages)
+			error:= fmt.Sprintf("Skipping buffer address x'%X' for Pxi id: %s/Image id: %s - number of pages from control file( %d ) !=  number of pages from data file (%d ) ",  pl, v.PxiId, image.PxiId, v.Pages, npages)
+			err1 = errors.New(error)
+			gLog.Error.Printf("%s",error)
 			// image = PxiImg{}
 			l, err = image.BuildTiffImage(buf, l)
 		} else {
 			done = true
 		}
 	}
-	return image,l,err
+
+	return image,l,err,err1
 }

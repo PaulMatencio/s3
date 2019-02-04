@@ -61,7 +61,7 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, int,
 
 				for p:= 0; p < int(v.Pages); p++ {
 
-					if image, k, err := GetPage(v, buf, l); err == nil {
+					if image, k, err,_ := GetPage(v, buf, l); err == nil {
 						l = k
 						s += image.Img.Len()
 
@@ -77,6 +77,7 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, int,
 
 							if pagenum == 1 {
 								if usermd, err := BuildUsermd(v); err == nil {
+									utils.AddMoreUserMeta(usermd,ifile)
 									pathname += ".md"
 									if err = WriteUsermd(usermd,pathname); err != nil {
 										gLog.Error.Printf("Error writing user metadata %v",err)
@@ -110,6 +111,7 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, int,
 					if !test {
 						WriteImgToFile(pathname, pxiblob.Blob)
 						if usermd, err := BuildUsermd(v); err == nil {
+							utils.AddMoreUserMeta(usermd,ifile)
 							pathname += ".md"
 							if err = WriteUsermd(usermd,pathname); err != nil {
 								gLog.Error.Printf("Error writing user metadata %v",err)

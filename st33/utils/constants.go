@@ -90,7 +90,8 @@ const (
 )
 
 const (
-	PartialUploaded    string = "PartialUploaded"
+	PartiallyUploaded    string = "Partially Uploaded"
 	Started  string = "Started"
-	FullyUploaded string = "FullyUploaded"
+	FullyUploaded string = "Fully Uploaded"
+	FullyUploaded2 string = "Fully Uploaded with some input data inconsistency"
 )

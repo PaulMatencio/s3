@@ -7,81 +7,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/moses/user/files/lib"
+	"github.com/s3/api"
+	"github.com/s3/datatype"
+	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 
 	// imaging "github.com/desintegration/imaging"
 )
 
 
 
-type Tiff struct {
-	Enc          binary.ByteOrder
-	SFrH         []byte
-	SFrW         []byte
-	NlFrH        []byte
-	NlFrW        []byte
-	RotationCode []byte
-	TotalLength  int
-}
 
-
-type Request struct {
-	InputFile  string
-	WriteTo    string
-	OutputDir  string   /* Directory an S3 bucket  */
-}
-
-type Response struct {
-	Bucket  string
-	Key   	string
-	Data    bytes.Buffer
-	Number	int
-	Error 	S3Error
-
-}
-
-type S3Error struct {
-	Key 	string
-	Err	    error
-}
-
-// import "github.com/s3/st33/utils"
-
-type St33ToS3      struct {
-	Request  		 ToS3Request       `json:"request"`
-	Response         ToS3Response      `json:"response"`
-}
-
-
-type ToS3Request struct {
-
-	File 		      string     `json:"input-file"`
-	Bucket 		      string     `json:"target-bucket"`
-	LogBucket         string    `json:"logging-bucket"`
-	DatafilePrefix    string     `json:"data-file-prefix"`
-	CrlfilePrefix     string     `json:"control-file-prefix"`
-	Profiling 	      int        `json:"run-with-profiling"`
-	Async 		      int        `json:"run-with-concurrent-number"`
-
-}
-
-type ToS3Response struct {
-
-	Time   time.Time  `json:"ended-time"`
-	Status string     `json:"uploaded-status"` // upload status
-	Duration  string  `json:"time-to-uploaded"` // duration of the process
-	Docs  int         `json:"number-of-documents"` // number of documenst
-	Pages int         `json:"number_of-pages"`  // number of pages
-	Size  int         `json:"total-uploaded-size"` // total uploaded size
-	Errors int		  `json:"number-of-errors"` // number of errors
-	// Error  []S3Error  `json:"array-of-errors,omitempty"` // key value
-}
 /*
 	image orientation
 */
@@ -249,8 +192,6 @@ func GetMagic( id string) (string){
 }
 
 
-
-
 /*
 	write image to a file
 	create the file path if directories don't exist
@@ -297,3 +238,95 @@ func WriteUsermd(metad map[string]string,pathname string)  (error){
 	}
 }
 
+func writeToS3( r datatype.PutObjRequest) (*s3.PutObjectOutput,error){
+
+	gLog.Trace.Println("Write to ", r.Bucket, r.Key,r.Buffer.Len())
+	return api.PutObject2(r)
+}
+
+
+func logIt(svc *s3.S3, req *ToS3Request,resp *ToS3Response,errors *[]S3Error) (*s3.PutObjectOutput,error){
+	var (
+		_,key = filepath.Split(req.File)
+		buffer string
+	)
+
+	st33toS3 := St33ToS3 {
+		Request : *req,
+		Response: *resp,
+	}
+
+	// Build meta
+	meta,_ := json.Marshal(&st33toS3)
+	metad:= map[string]string{}
+	metad["Migration-log"] = string(meta)
+
+	// add data only if there are some errors
+	if len(*errors) > 0 {
+		for _,v := range *errors {
+			buffer = buffer + fmt.Sprintf("Key: %s - Error: %v\n",v.Key,v.Err)
+		}
+	}
+
+	pr := datatype.PutObjRequest{
+		Service: svc,
+		Bucket: req.LogBucket,
+		Key: key,
+		Buffer: bytes.NewBuffer([]byte(buffer)),
+		Usermd: metad,
+	}
+	return api.PutObject2(pr)
+
+}
+
+func checkDoLoad(getRequest datatype.GetObjRequest, infile string) (bool) {
+
+
+	// if the object exist then
+	//  datafile was already uploaded
+	//  	return
+	//     		- fully uploaded  and reload  false ->  false
+	//    		 - fully upoloaded and reload true -> True
+	//     		- otherwise true
+	//  if bucket or object do not exist -->  true
+
+	do := true
+	if result, err := api.GetObject(getRequest); err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchBucket:
+				gLog.Warning.Printf("Warning : [%s] does not exist, please use command <sc mkBucket> to create it", getRequest.Bucket)
+			case s3.ErrCodeNoSuchKey:
+				gLog.Info.Printf("datafile  %s was not yet uploaded", getRequest.Key)
+			default:
+			}
+
+		}
+	} else {
+		// check if the datafile <infile> was already loaded without error
+
+		metad := result.Metadata
+		if meta,ok :=  metad["Migration-Log"] ; ok {
+			m := St33ToS3{}
+			if err := json.Unmarshal([]byte(*meta),&m); err == nil {
+				switch m.Response.Status {
+				case FullyUploaded:
+					gLog.Info.Printf("Data file %s was already %s, use --reload to reload it",infile, m.Response.Status)
+					do = false
+
+				case FullyUploaded2:
+					gLog.Info.Printf("Data file %s was already %s, use --reload to reload it",infile,m.Response.Status)
+					do = false
+
+				case PartiallyUploaded:
+					do = true
+				}
+
+			} else {
+				gLog.Error.Printf("%v",err)
+
+			}
+		}
+	}
+	return do
+}
