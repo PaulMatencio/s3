@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/s3/utils"
 	"github.com/s3/gLog"
+	"github.com/s3/utils"
+	"os"
 )
 
 type pxiBlob struct {
@@ -69,7 +70,6 @@ func ( blob *pxiBlob ) BuildPxiBlob(buf []byte, l int64 ) (int64, error) {
 		for r := 0; r < int(blob.Record); r++ {
 
 			l,bdw,rdw,err = seekBdw(buf,l) 							    // Look for bdw and rdw
-			// gLog.Trace.Printf("k: %s - r :%d - l: x'%X'  bdw: %d rdw: %d ",blob.Key,r,l,bdw,rdw)
 			k:= l+8 										// skip bdw and rdw
 			blob.Blob.Write(buf[k : k-4 + int64(rdw)])      // build the blob
 			l = l + int64(bdw) 								// point to next record
@@ -88,7 +88,9 @@ func ( blob *pxiBlob ) BuildPxiBlob(buf []byte, l int64 ) (int64, error) {
 		l = l + int64(bdw)
 
 		for r := 0; r < int(blob.Record)-1; r++ {
-			/* a blob record may be longer than its RDW value */
+
+			//  a blob record may be longer than its RDW value
+
 			l,bdw,rdw,err = seekBdw(buf,l)
 			if l >= int64(len(buf)) {
 				error := fmt.Sprintf("PXIID %s Key: %s  - BLOB records number: %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  l: x'%X' k: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),l, k)
@@ -156,7 +158,6 @@ func ( blob *pxiBlob ) BuildPxiBlob1(buf []byte, l int64 ) (int64, error){
 
 	var (
 		err error
-		// Big binary.ByteOrder= binary.BigEndian
 	)
 
 	for r:= 0; r < int(blob.Record);r++ {
@@ -168,3 +169,86 @@ func ( blob *pxiBlob ) BuildPxiBlob1(buf []byte, l int64 ) (int64, error){
 	return l,err
 }
 
+func ( blob *pxiBlob ) BuildPxiBlob2(r *St33Reader,v Conval) ( error) {
+
+	var (
+		err      			error
+		Big      			binary.ByteOrder = binary.BigEndian
+		blobl,totalRecs   	uint16
+		totalLength         uint32
+		nrec                int
+	)
+
+
+	// 	Read the first BLOB  record
+	buf,err := r.Read()
+	nrec++
+	//  Check if is it a ST33 BLOB ?
+	if  IsST33Blob(buf,0) {
+
+		gLog.Trace.Printf("ST33 BLOB Buffer pointer => Key: %s - Buffer  length:%d - r: %d - Previous : x'%X'  -  Current: x'%X'", blob.Key, len(buf), blob.Record,r.GetPrevious(), r.GetCurrent())
+
+		_ = binary.Read(bytes.NewReader(buf[84 : 86]), Big, &totalRecs)
+		_ = binary.Read(bytes.NewReader(buf[214 : 218]), Big, &totalLength)
+
+		//
+		//  Read the total number of BLOB records
+		//
+		blobL := 0
+
+		for rec:= 2; rec <= int(totalRecs); rec ++ {
+
+			if buf,err = r.Read(); err == nil {
+				nrec++
+				if len(buf) > 252 {
+					err = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl)
+					blobL += int(blobl)
+					blob.Blob.Write(buf[252 : 252+int64(blobl)]) // Build blob
+				}
+			} else {
+				 gLog.Error.Printf("Error %v after reading BLOB record number %d from input data file at Prev : X'%x'  Cur: X'%x' position",err,nrec, r.Previous, r.Current)
+				 return err
+			}
+		}
+
+		// check if total length of the image obtained from ST33 header   is equal to the length of the blob
+		if int(totalLength) != blobL {
+			err = errors.New(fmt.Sprintf("ST33 Blob %s bad Header - Total Lenght %d != Blob length %d",blob.Size,blobL,totalLength))
+			os.Exit(100)
+		}
+
+		//
+		// Read other blob ST33 records  The number of other blob records are taken from the control file
+		//
+		for rec := 1; rec <= int(v.Records); rec++ {
+			if buf,err = r.Read(); err != nil {
+				nrec ++
+				blob.Blob.Write(buf)
+			} else       /* if err == io.EOF */ {
+				break
+			}
+		}
+		// Check if all BLOB records are read . Discard unread bucket
+		if int(v.Records) > nrec  {
+			extra := v.Records - nrec
+			for m:=1 ; m <= extra; m++ {
+				if _,err:= r.Read(); err == nil {
+					gLog.Warning.Printf("ST33 BLOB PIXID %d  -  SKIP record %d",v.PxiId, extra+nrec)
+				}
+			}
+		}
+
+	}  else {
+
+		gLog.Trace.Printf( "BLOB PXIID %s  Key: %s  - BLOB records number : %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  Previous: x'%X' Current: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),r.Previous, r.Current)
+		blob.Blob.Write(buf)
+
+		for rec := 0; rec < int(blob.Record)-1; rec++ {
+			if buf,err  := r.Read(); err == nil {
+				blob.Blob.Write(buf) // Build the blob with records
+			}
+		}
+	}
+
+	return err
+}

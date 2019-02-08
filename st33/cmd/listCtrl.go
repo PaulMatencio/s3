@@ -94,13 +94,13 @@ func listConval(cmd *cobra.Command, args []string) {
 
 	if c,err:=  st33.BuildConvalArray(ifile); err == nil {
 		for k, v := range *c {
-			imageType := ""
+			imageType := "TIFF"
 			lp := len(v.PxiId)
 			if v.PxiId[lp-2:lp-1] == "B" {
 				imageType = "BLOB"
 			}
 			if len(ofile) == 0  &&  len(pfile) == 0 {
-				gLog.Info.Printf("%d %s %s %d ... %s",k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,imageType)
+				gLog.Info.Printf("%d %s %s  Pages: %d   records: %d ... %s",k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,v.Records,imageType)
 			}
 
 			if len(ofile) > 0 {

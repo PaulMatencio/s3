@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 )
 
 // st33ToS3Cmd represents the st33ToS3 command
@@ -83,6 +84,7 @@ func toS3Func(cmd *cobra.Command, args []string) {
 			gLog.Info.Printf("%s","Input directory missing, please check your config file or specif  -d or --idir ")
 			return
 		}
+
 	}
 
 	// if no datval argument . try to get in from the config file
@@ -121,19 +123,37 @@ func toS3Func(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	gLog.Info.Printf("Data file name prefix:%s - Control file name prefix:%s - output state bucket name:  %s",datval,conval,sBucket)
+	gLog.Info.Printf("Input Directory %s  - Data file name prefix:%s - Control file name prefix:%s - output state bucket name:  %s",idir,datval,conval,sBucket)
 
 	for _,file := range files {
 
-		file = filepath.Join(idir,file)
+		var (
+
+			file = filepath.Join(idir,file)
+			numdocs,numpages int = 0,0
+			size  int         = 0
+			Err   []st33.S3Error
+			start0 = time.Now()
+			toS3 = st33.ToS3Request {
+				File: file,   //
+				Bucket: bucket,
+				LogBucket: sBucket,
+				DatafilePrefix: datval,
+				CrlfilePrefix: conval,
+				Profiling: profiling,
+				Reload: reload,
+				Async: async,
+			}
+		)
+
 		gLog.Info.Printf("Processing input file ...  %s", file)
 
 		if async == 0  {
-			numpages, numdocs, err := st33.TooS3(file, bucket, profiling)
-			gLog.Info.Printf("%d documents/ %d pages were processed - error ", numdocs, numpages, err)
+			numpages, numdocs, size, Err = st33.TooS3(&toS3)
+			// gLog.Info.Printf("%d documents/ %d pages were processed - error ", numdocs, numpages, err)
 		} else {
-			start0 := time.Now()
 
+            /*
 			toS3 := st33.ToS3Request {
 				File: file,   //
 				Bucket: bucket,
@@ -144,8 +164,9 @@ func toS3Func(cmd *cobra.Command, args []string) {
 				Reload: reload,
 				Async: async,
 			}
-
-			numpages, numdocs, size, Err := st33.ToS3Async(&toS3)
+            */
+			numpages, numdocs, size, Err = st33.ToS3Async(&toS3)
+			/*
 			gLog.Info.Printf("Input file: %s - Number of uploaded documents/objects: %d/%d - Upload Size: %.2f GB - Total elapsed time: %s\n", file, numdocs, numpages, float64(size)/float64(1024*1024*1024), time.Since(start0))
 			if len(Err) > 0 {
 				gLog.Error.Printf("Uploading %s - List of errors:", file)
@@ -153,8 +174,19 @@ func toS3Func(cmd *cobra.Command, args []string) {
 					gLog.Error.Printf("Key:%s  Error:%v\n", v.Key, v.Err)
 				}
 			}
+			*/
 		}
 		//  free oS memory just in case
+
+		gLog.Info.Printf("Input file: %s - Number of uploaded documents/objects: %d/%d - Upload Size: %.2f GB - Total elapsed time: %s\n", file, numdocs, numpages, float64(size)/float64(1024*1024*1024), time.Since(start0))
+		if len(Err) > 0 {
+			gLog.Error.Printf("Uploading %s - List of errors:", file)
+			for _, v := range Err	{
+				gLog.Error.Printf("Key:%s  Error:%v\n", v.Key, v.Err)
+			}
+		}
+
+
 		debug.FreeOSMemory()
 	}
 }

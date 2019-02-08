@@ -18,14 +18,25 @@ import (
 var (
 	blob,DB string
 	database *badger.DB
+
 	toFilesCmd = &cobra.Command{
 		Use:   "toFiles",
 		Short: "Command to extract an ST33 and write to local files",
 		Long: `Command to extract an ST33 file containing Tiff images and Blobs and write to  files`,
+		Hidden: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			toFilesFunc(cmd,args)
 		},
 	}
+	toFiles2Cmd = &cobra.Command{
+		Use:   "toFiles2",
+		Short: "Command to extract an ST33 and write to local files",
+		Long: `Command to extract an ST33 file containing Tiff images and Blobs and write to  files`,
+		Run: func(cmd *cobra.Command, args []string) {
+			toFilesFunc2(cmd,args)
+		},
+	}
+
 	)
 
 func initTfFlags(cmd *cobra.Command) {
@@ -40,6 +51,8 @@ func initTfFlags(cmd *cobra.Command) {
 func init() {
 	RootCmd.AddCommand(toFilesCmd)
 	initTfFlags(toFilesCmd)
+	RootCmd.AddCommand(toFiles2Cmd)
+	initTfFlags(toFiles2Cmd)
 
 
 }
@@ -83,3 +96,41 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 
 }
 
+func toFilesFunc2(cmd *cobra.Command, args []string) {
+
+	if len(ifile) == 0 {
+		gLog.Info.Printf("%s",missingInputFile)
+		return
+	}
+
+	if len(odir) >0 {
+		pdir = filepath.Join(utils.GetHomeDir(),odir)
+		utils.MakeDir(pdir)
+	} else {
+		gLog.Info.Printf("%s",missingOutputFolder)
+		return
+	}
+
+
+	bdir = pdir
+	if len(blob) > 0 {
+		bdir  = filepath.Join(pdir,blob)
+		utils.MakeDir(bdir)
+	}
+
+	//  open badger database
+	if len(DB) > 0 {
+		database,_ := db.OpenBadgerDB(DB)
+		kv := map[string]string{
+			"st33" : ifile,
+			"start" : fmt.Sprintf("%v",time.Now()),
+		}
+		db.UpdateBadgerDB(database,kv)
+
+	}
+
+	gLog.Info.Printf("Processing input file %s",ifile)
+	numpages,numdocs,numerrors,_ :=  st33.ToFiles2(ifile,odir,bdir, test)
+	gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d",numdocs,numpages,numerrors)
+
+}

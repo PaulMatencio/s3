@@ -23,9 +23,10 @@ var (
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingKey = "Missing pxid - please provide a pxi id"
-	missingInputFile ="Missing date input file - please provide the input file path (absolute or relative to current directory"
-	missingOutputFolder ="Missing output directory - please provide the output directory path( absolute or relative to current directory)"
-	missingInputFolder ="Missing input directory - please provide the input directory path( absolute or relative to current directory)"
+	missingInputFile ="Missing input data file - please provide the input data file "
+	missingCtrlFile ="Missing input control file - please provide the input control file"
+	missingOutputFolder ="Missing output directory - please provide the output directory path"
+	missingInputFolder ="Missing input directory - please provide the input directory path"
 	missingSourceBucket = "Missing source bucket - please provide a source  bucket name"
 	missingTargetBucket = "Missing target bucket - please provide a target  bucket name"
 	missingIds = "missing both a pxi id and an input file containing list of pxi ids"

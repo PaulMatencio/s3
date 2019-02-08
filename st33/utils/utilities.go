@@ -290,6 +290,7 @@ func checkDoLoad(getRequest datatype.GetObjRequest, infile string) (bool) {
 	//     		- otherwise true
 	//  if bucket or object do not exist -->  true
 
+
 	do := true
 	if result, err := api.GetObject(getRequest); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -303,6 +304,7 @@ func checkDoLoad(getRequest datatype.GetObjRequest, infile string) (bool) {
 
 		}
 	} else {
+
 		// check if the datafile <infile> was already loaded without error
 
 		metad := result.Metadata
@@ -324,9 +326,19 @@ func checkDoLoad(getRequest datatype.GetObjRequest, infile string) (bool) {
 
 			} else {
 				gLog.Error.Printf("%v",err)
-
 			}
 		}
 	}
 	return do
+}
+
+func IsST33Blob(buf []byte, k int64) (bool) {
+	if len(buf) < int(k+182) {
+		return false
+	}
+	if im :=  string(utils.Ebc2asci(buf[k+180 : k+182])); im == "IM"{
+
+		return true
+	} else {
+		return false}
 }

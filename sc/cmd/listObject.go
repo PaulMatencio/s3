@@ -90,7 +90,7 @@ func listObject(cmd *cobra.Command,args []string) {
 			if l := len(result.Contents); l > 0 {
 				total += int64(l)
 				for _, v := range result.Contents {
-					gLog.Info.Printf("Key: %s - Size: %d ", *v.Key, *v.Size)
+					gLog.Info.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size,v.LastModified)
 				}
 
 				if *result.IsTruncated {
