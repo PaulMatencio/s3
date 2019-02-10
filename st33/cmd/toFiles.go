@@ -33,7 +33,7 @@ var (
 		Short: "Command to extract an ST33 and write to local files",
 		Long: `Command to extract an ST33 file containing Tiff images and Blobs and write to  files`,
 		Run: func(cmd *cobra.Command, args []string) {
-			toFilesFunc2(cmd,args)
+			toFilesFuncV2(cmd,args)
 		},
 	}
 
@@ -91,12 +91,15 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 	}
 
 	gLog.Info.Printf("Processing input file %s",ifile)
-	numpages,numdocs,numerrors,_ :=  st33.ToFiles(ifile,odir,bdir, test)
-	gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d",numdocs,numpages,numerrors)
+	if numpages,numdocs,numerrors,err  :=  st33.ToFiles(ifile,odir,bdir, test); err ==nil {
+		gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d", numdocs, numpages, numerrors)
+	} else {
+		gLog.Error.Printf("%v")
+	}
 
 }
 
-func toFilesFunc2(cmd *cobra.Command, args []string) {
+func toFilesFuncV2(cmd *cobra.Command, args []string) {
 
 	if len(ifile) == 0 {
 		gLog.Info.Printf("%s",missingInputFile)
@@ -130,7 +133,10 @@ func toFilesFunc2(cmd *cobra.Command, args []string) {
 	}
 
 	gLog.Info.Printf("Processing input file %s",ifile)
-	numpages,numdocs,numerrors,_ :=  st33.ToFiles2(ifile,odir,bdir, test)
-	gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d",numdocs,numpages,numerrors)
+	if numpages,numdocs,numerrors,err:=  st33.ToFilesV2(ifile,odir,bdir, test); err != nil {
+		gLog.Error.Printf("%v",err)
+	} else {
+		gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d", numdocs, numpages, numerrors)
+	}
 
 }

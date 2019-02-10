@@ -6,7 +6,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/moses/user/files/lib"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
@@ -16,8 +17,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 
 	// imaging "github.com/desintegration/imaging"
 )
@@ -198,13 +197,13 @@ func GetMagic( id string) (string){
  */
 
 
-func WriteImgToFile(pathname string ,img *bytes.Buffer){
+func WriteImgToFile(pathname string ,img *bytes.Buffer) (error) {
 	// log.Println("write",filePath)
 	dir,_ := filepath.Split(pathname)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0755)
 	}
-	files.Check(utils.WriteFile(pathname, img.Bytes(), 0644))
+	return  utils.WriteFile(pathname, img.Bytes(), 0644);
 }
 
 func BuildUsermd(v Conval) (map[string]string,error)  {

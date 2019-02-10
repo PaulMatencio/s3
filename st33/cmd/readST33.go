@@ -55,10 +55,7 @@ func readST33(cmd *cobra.Command, args []string) {
 		return
 	}
 
-
 	if r,err  := st33.NewSt33Reader(filepath.Join(idir,ifile)); err == nil {
-
-
 		for {
 
 			 b,err := r.Read()
@@ -67,7 +64,6 @@ func readST33(cmd *cobra.Command, args []string) {
 			 	break
 			 }
 		}
-
 	} else {
 		gLog.Error.Printf("%v",err)
 	}

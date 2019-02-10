@@ -3,12 +3,12 @@ package st33
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"os"
 	"strconv"
-	"errors"
 )
 
 type PxiImg struct {
@@ -20,6 +20,14 @@ type PxiImg struct {
 	NumPages 	[]byte
 }
 
+//  return the address of aPxiImg structure
+func NewPxiImg() (*PxiImg) {
+
+	return &PxiImg{}
+}
+
+
+//  Return a TIFF image
 func (image *PxiImg) GetImage() *bytes.Buffer {
 	return image.Img
 }
@@ -261,10 +269,7 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 	Big		:= binary.BigEndian
 	enc 	:= Big
 
-
-
-
-	buf,err := r.Read()   // Reda the First record
+	buf,err := r.Read()   // Read  the First record
 	if err != nil {
 		return nrec,err
 	}
@@ -274,17 +279,15 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 	l1 := utils.Ebc2asci(buf[0: 5])              // convert EBCDIC to Ascii
 	long, _ := strconv.Atoi(string(l1))
 
-	if long != len(buf)-4 {
-		fmt.Println(long,len(buf))
+	if long != len(buf) {
+		gLog.Fatal.Println("Inavlid ST33 record %s  - %s ",long,len(buf))
 		os.Exit(100)
 	}
-
 
 	err 		= 	binary.Read(bytes.NewReader(buf[25 : 27]), Big, &recs)
 	err 		= 	binary.Read(bytes.NewReader(buf[84 : 86]), Big, &totalRec)
 	err 		= 	binary.Read(bytes.NewReader(buf[214 : 218]), Big, &totalLength)
 	err			= 	binary.Read(bytes.NewReader(buf[250 : 252]), Big, &imgl)
-
 
 	/*
 		convert St33 encoded Big Endian input data ( EBCDIC) to  Little Endian (ASCII)
@@ -380,7 +383,7 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 	// read all the records of this image
 	for rec := 2; rec <= int(totalRec); rec++ {
 
-		if buf,err = r.Read();err == nil {
+		if buf,err = r.Read();err == nil  {
 			nrec++
 			_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)
 			img2.Write(buf[252 : 252+int64(imgl)]) // append  the image length found in this record  to the  image

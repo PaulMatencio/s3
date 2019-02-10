@@ -24,14 +24,18 @@ type St33Reader struct {
 func NewSt33Reader(infile string ) (*St33Reader, error) {
 
 	f,err:= os.Open(infile)
-	finfo,_ := f.Stat()
+	if err == nil {
+		finfo, _ := f.Stat()
 
-	return &St33Reader{
-		File    : f,
-		Size    : finfo.Size(),
-		Previous: 0,
-		Current : 0,
-	},err
+		return &St33Reader{
+			File:     f,
+			Size:     finfo.Size(),
+			Previous: 0,
+			Current:  0,
+		}, err
+	} else {
+		return nil,err
+	}
 }
 
 
@@ -86,25 +90,25 @@ func (r *St33Reader) Read()  ([]byte,error){
 
 	bdw,rdw,err := r.getBDW()
 
+	gLog.Trace.Println(bdw,rdw)
+	// loop until bdw - drw == 4
 	for {
 		if bdw-rdw == 4 || err == io.EOF {
 			break
 		} else {
-			r.SetCurrent(r.GetCurrent()+1)
+			r.SetCurrent(r.GetCurrent()+1)  // Look for next pair of BDW,RDW
 			bdw,rdw,err = r.getBDW()
 		}
 	}
 
+	// if EOF then return
 	if err == io.EOF  {
 		return nil,err
 	} else {
-		//  read  rdw bytes  at the position r.Current
-		b,err := r.getRecord(int(rdw))
+		b,err := r.getRecord(int(rdw)) 	//  read  rdw bytes  at the position r.Current
 		return b,err
 	}
 }
-
-
 
 
 //
@@ -118,7 +122,7 @@ func (r *St33Reader) getBDW() (uint16,uint16,error) {
 		rdw                 uint16
 	)
 	byte:=  make([]byte, 2)
-	_,err := r.ReadAt(byte)
+	_,err := r.ReadAt(byte)  // Read BDW ( first 2 bytes )
 
 	if err == io.EOF {
 		return 0,0,err
@@ -126,14 +130,16 @@ func (r *St33Reader) getBDW() (uint16,uint16,error) {
 
 	err = binary.Read(bytes.NewReader(byte), Big, &bdw)
 	if bdw > 0 {
-		r.SetCurrent(r.GetCurrent() + 4)
-		_, err = r.ReadAt(byte)
+		r.SetCurrent(r.GetCurrent() + 4)  // SKIP BDW  ( 4 bytes)
+		_, err = r.ReadAt(byte)           // Read RDW ( first 2 bytes)
 		err = binary.Read(bytes.NewReader(byte), Big, &rdw)
 
 	} else {
 		rdw = 0
 	}
-	r.SetCurrent(r.Current + 4)
+	// skip RDW
+	r.SetCurrent(r.GetCurrent() + 4)
+
 	return bdw,rdw,err
 
 }
@@ -143,16 +149,15 @@ func (r *St33Reader) getBDW() (uint16,uint16,error) {
 //  read n bytes from the current position  position  (r.Current)
 
 func (r *St33Reader)  getRecord(n int) ( []byte,error) {
-
+	n = n -4   //  minus 4 bytes ( rdw length )
 	byte:=  make([]byte, n)
-
 	_,err := r.ReadAt(byte)
-
 	r.setPrevious(r.GetCurrent())
-	r.SetCurrent(r.GetCurrent()+ int64(n)-4)
-
+	// set current pointer at the begining of the next BDW
+	r.SetCurrent(r.GetCurrent()+ int64(n))
+	gLog.Trace.Println(len(byte),r.Previous,r.Current)
+	// os.Exit(100)
 	return byte,err
-
 }
 
 
@@ -282,10 +287,14 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 		missing := v.Records - recs
 		for m:=1; m <= missing; m++ { // SKIP missing records
 
-			buf,_ := r.Read()
-			ST33	   = utils.Ebc2asci(buf[0:214])
-			pagenum,_ 	= strconv.Atoi(string(ST33[17:21]))
-			gLog.Warning.Printf("PXIID %s - Skip record number %d",v.PxiId,pagenum)
+			buf,err := r.Read()
+			if err == nil {
+				ST33 = utils.Ebc2asci(buf[0:214])
+				pagenum, _ = strconv.Atoi(string(ST33[17:21]))
+				gLog.Warning.Printf("PXIID %s - Skip record number %d", v.PxiId, pagenum)
+			}  else {
+				gLog.Info.Printf("%v",err)
+			}
 		}
 	} else {
 		gLog.Info.Printf("PXIID: %s - Number of records: %d - Number of pages: %d ",v.PxiId,recs,pages)

@@ -3,6 +3,7 @@ package st33
 import (
 	"fmt"
 	"github.com/s3/gLog"
+	"io"
 	"strconv"
 	"errors"
 )
@@ -35,13 +36,14 @@ func GetPage( v Conval, buf []byte, l int64) (PxiImg,int64,  error,error){
 }
 
 
-func GetPage2( r *St33Reader,v Conval) (PxiImg, int,error,error){
+func GetPageV2( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 
 	var (
 		err,err1 error
 		done = false
 		nrec  int
-		image = PxiImg{}
+		// image = PxiImg{}
+		image = NewPxiImg()
 	)
     //  Build the image
 	 nrec,err = image.BuildTiffImage2(r,v)
@@ -60,6 +62,9 @@ func GetPage2( r *St33Reader,v Conval) (PxiImg, int,error,error){
 			err1 = errors.New(error)
 			gLog.Error.Printf("%s",error)
 			nrec,err = image.BuildTiffImage2(r,v)  //  get the next image
+			if err != nil || err == io.EOF {
+				done = true
+			}
 
 		} else {
 			done = true

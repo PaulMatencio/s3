@@ -18,6 +18,7 @@ import (
 	"github.com/s3/gLog"
 	"github.com/s3/st33/utils"
 	"github.com/spf13/cobra"
+	"os"
 	"path/filepath"
 )
 
@@ -74,6 +75,7 @@ func checkST33(cmd *cobra.Command, args []string) {
 
 	if err != nil {
 		gLog.Fatal.Printf("%v",err)
+		os.Exit(100)
 	}
 
 	if c,err:=  st33.BuildConvalArray(ctrlFile); err == nil {
