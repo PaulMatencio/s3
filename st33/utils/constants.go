@@ -90,8 +90,12 @@ const (
 )
 
 const (
+	ST33RAMReader        string = "RAM"
+	ST33FILEReader       string = "FILE"
 	PartiallyUploaded    string = "Partially Uploaded"
 	Started  string = "Started"
 	FullyUploaded string = "Fully Uploaded"
 	FullyUploaded2 string = "Fully Uploaded with some input data inconsistency"
+	TwoGB         int64 =  2*1024*1024
 )
+

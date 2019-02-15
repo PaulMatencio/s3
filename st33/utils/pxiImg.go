@@ -3,11 +3,11 @@ package st33
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
-	"os"
 	"strconv"
 )
 
@@ -276,12 +276,11 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 
 	nrec++
 
-	l1 := utils.Ebc2asci(buf[0: 5])              // convert EBCDIC to Ascii
-	long, _ := strconv.Atoi(string(l1))
-
-	if long != len(buf) {
-		gLog.Fatal.Println("Inavlid ST33 record %s  - %s ",long,len(buf))
-		os.Exit(100)
+	err = CheckST33Length(&v,r,buf)
+	if err != nil {
+		gLog.Error.Println(err)
+		gLog.Info.Printf("%s", hex.Dump(buf[0:255]))
+		return nrec,err
 	}
 
 	err 		= 	binary.Read(bytes.NewReader(buf[25 : 27]), Big, &recs)

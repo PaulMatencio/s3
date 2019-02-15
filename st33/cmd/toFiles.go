@@ -94,7 +94,7 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 	if numpages,numdocs,numerrors,err  :=  st33.ToFiles(ifile,odir,bdir, test); err ==nil {
 		gLog.Info.Printf("%d documents/ %d pages were processed. Number errors %d", numdocs, numpages, numerrors)
 	} else {
-		gLog.Error.Printf("%v")
+		gLog.Error.Printf("%v",err)
 	}
 
 }

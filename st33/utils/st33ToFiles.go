@@ -99,13 +99,7 @@ func ToFiles(ifile string,  odir string, bdir string, test bool)  (int,int, int,
 
 
 			} else {
-                /*
-				var pxiblob = pxiBlob{
-					Key : utils.Reverse(KEY),
-					Record: v.Records,
-					Blob  :	 new(bytes.Buffer),
-				}
-				*/
+
 				pxiblob := NewPxiBlob(KEY,v.Records)
 				gLog.Trace.Printf("Build PXI Blob %s - Key %s",KEY,pxiblob.Key)
 				if l,err  = pxiblob.BuildPxiBlobV1(buf,l); err == nil {
@@ -188,8 +182,6 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
 				KEY = v.PxiId;
 			)
 
-			gLog.Trace.Printf("Processing Key %s",v.PxiId)
-
 			if v.PxiId[lp-2:lp-1] == "P" {  // TIFF IMAGE
 				gLog.Trace.Printf("Processing ST33 Key %s Number of Pages/Records: %d/%d",v.PxiId,v.Pages,v.Records)
 				s:= 0
@@ -204,7 +196,7 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
 						if image.Img!= nil {
 							s += image.Img.Len()
 
-							gLog.Trace.Printf("ST33 Key:%s - # Pages:%d - PxiId:%s Page number:%s - ImageLength:%d", v.PxiId, v.Pages, string(image.PxiId), string(image.PageNum), image.Img.Len())
+							gLog.Trace.Printf("ST33 Key:%s - # Pages:%d - PxiId:%s Page number:%s - ImageLength:%d", KEY, v.Pages, string(image.PxiId), string(image.PageNum), image.Img.Len())
 							pagenum, _ := strconv.Atoi(string(image.PageNum))
 							pathname = filepath.Join(odir, KEY+"."+strconv.Itoa(pagenum))
 
@@ -253,7 +245,7 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
                 pxiblob := NewPxiBlob(KEY,v.Records)
 				if nrec,err  := pxiblob.BuildPxiBlobV2(r,v); err == nil {
 					if nrec != v.Records {                                // Check number of BLOB record
-						gLog.Warning.Printf("Key %s - Control file records != Blob records",v.PxiId,v.Records,nrec)
+						gLog.Warning.Printf("Key %s - Control file records %d != Blob records %d",v.PxiId,v.Records,nrec)
 					}
 					pathname = filepath.Join(bdir, pxiblob.Key)          // Only one page
 					err = WriteImgToFile(pathname, pxiblob.Blob);        // Save the image to file
@@ -274,7 +266,6 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
 					numpages++            // increment number of processed pages
 				} else {
 					numerrors++          // increment number of errors
-
 					gLog.Error.Printf("Error %v",err)
 				}
 				numdocs++   // increment number of processed docs

@@ -3,11 +3,11 @@ package st33
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
-	"os"
 )
 
 type pxiBlob struct {
@@ -49,18 +49,20 @@ func ( blob *pxiBlob ) BuildPxiBlobV1(buf []byte, l int64 ) (int64, error) {
 
 	if  IsST33Blob(buf,k) {
 
-		gLog.Trace.Printf("ST33 BLOB Buffer pointer => Key: %s - Buffer  length:%d - r: %d - l: x'%X'  -  k: x'%X'", blob.Key, len(buf), blob.Record,l, k)
+		// gLog.Info.Printf("ST33 BLOB Buffer pointer => Key: %s - Buffer  length:%d - recs: %d%d - l: x'%X'  -  k: x'%X'", blob.Key, len(buf), blob.Record,l, k)
 
 		_ = binary.Read(bytes.NewReader(buf[k+84 : k+86]), Big, &blobRecs)
 		_ = binary.Read(bytes.NewReader(buf[k+214 : k+218]), Big, &totalLength)
-
+		gLog.Info.Printf("ST33 BLOB Buffer pointer => Key: %s - Total blob length:%d  - Buffer length:%d - Blob recs: %d/%d - l: x'%X'  -  k: x'%X'", blob.Key, totalLength,len(buf), blob.Record,blobRecs,l, k)
 		//  First  build the  resulting  blob with all the ST33 records
 		//
 		blobL := 0
 
-		for r:= 0; r < int(blobRecs); r ++ {
+		for rec:= 1; rec <= int(blobRecs); rec ++ {
 
 			err = binary.Read(bytes.NewReader(buf[k+250 : k+252]), Big, &blobl)
+			gLog.Info.Printf("ST33 BLOB Buffer pointer => Key: %s - Blob chunk length: %d  - rec of/recs: %d/%d - l: x'%X'  -  k: x'%X'  bdw/rdw: %d/%d", blob.Key,blobl, rec,blobRecs,l, k,bdw,rdw)
+
 			blobL += int(blobl)
 			blob.Blob.Write(buf[k+252 : k+252+int64(blobl)]) 	// Build blob
 			l = l + int64(bdw) 									// Next record
@@ -69,19 +71,24 @@ func ( blob *pxiBlob ) BuildPxiBlobV1(buf []byte, l int64 ) (int64, error) {
 
 		// check if total image length given by the ST33 header  is equal to the length of the blob
 		if int(totalLength) != blobL {
-			err = errors.New(fmt.Sprintf("ST33 Blob %s bad Header - Total Lenght %d != Blob length %d",blob.Size,blobL,totalLength))
+			err = errors.New(fmt.Sprintf("ST33 Blob %s bad Header - Total Lenght %d != Blob length %d",blob.Key, blobL,totalLength))
+			gLog.Error.Printf("%v",err)
 		}
 
 		// Second continue with the other remaining blob records
 		// the number of blob records are taken from the control file
+		gLog.Info.Printf("PXIID:%s - BLOB  Key: %s - remaining Blob records: %d  - k: X'%x'",utils.Reverse(blob.Key), blob.Key,blob.Record,k)
 
-		for r := 0; r < int(blob.Record); r++ {
-
-			l,bdw,rdw,err = seekBdw(buf,l) 							    // Look for bdw and rdw
+		for rec := 1; rec <= int(blob.Record); rec++ {
+			gLog.Info.Printf("l: X'%x' - k: X'%x'",l,k )
+			l,bdw,rdw,err = seekBdw(buf,l) 					 // Look for bdw and rdw
 			k:= l+8 										// skip bdw and rdw
+			gLog.Info.Printf(" Blod record =====>  %d  -  l: X'%x' - k: X'%x' rdw:%d",rec,k,l,rdw-4)
 			blob.Blob.Write(buf[k : k-4 + int64(rdw)])      // build the blob
 			l = l + int64(bdw) 								// point to next record
 		}
+
+		gLog.Info.Printf("ST33 Blob Id %s  - Blob length %d",blob.Key, blob.Blob.Len())
 
 	}  else {
 
@@ -92,12 +99,12 @@ func ( blob *pxiBlob ) BuildPxiBlobV1(buf []byte, l int64 ) (int64, error) {
 			err := errors.New(error)
 			return l,err
 		}
-
 		blob.Blob.Write(buf[k : k-4 +int64(rdw)])
 
 		l = l + int64(bdw)
 
-		for r := 2; r <= int(blob.Record); r++ {
+
+		for rec := 2; rec <= int(blob.Record); rec++ {
 
 			//  a blob record may be longer than its RDW value
 			//  look for a pair of bdw and rdw
@@ -117,6 +124,8 @@ func ( blob *pxiBlob ) BuildPxiBlobV1(buf []byte, l int64 ) (int64, error) {
 			l = l + int64(bdw)
 
 		}
+		gLog.Info.Printf("Regular Blob Id %s  - Blob length %d",blob.Key, blob.Blob.Len())
+
 	}
 
 	return l,err
@@ -158,24 +167,6 @@ func seekBdw(buf []byte, l int64) (int64, uint16,uint16,error){
 	return l,bdw,rdw,err
 }
 
-/*
-
-func ( blob *pxiBlob ) BuildPxiBlobV1(buf []byte, l int64 ) (int64, error){
-
-	var (
-		err error
-	)
-
-	for r:= 0; r < int(blob.Record);r++ {
-		var bdw,rdw uint16
-		l,bdw,rdw,err = seekBdw(buf,l)
-		blob.Blob.Write(buf[l+8:l+int64(rdw)+4])
-		l = l + int64(bdw)
-	}
-
-	return l,err
-}
-*/
 
 
 //
@@ -196,20 +187,36 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 		nrec                int = 0
 	)
 
+	gLog.Trace.Printf("Build BLOB  - Buffer pointer => Key: %s - Previous: x'%X' - Current: x'%X'", blob.Key,r.GetPrevious(),r.GetCurrent())
+
 	buf,err := r.Read()    // 	Read the first BLOB  record
 	nrec++                 //   increment the number of records
+
 	if  IsST33Blob(buf,0) {    //  Check if is it a ST33 BLOB ?
-		gLog.Trace.Printf("ST33 BLOB Buffer pointer => Key: %s - Buffer  length:%d - r: %d - Previous : x'%X'  -  Current: x'%X'", blob.Key, len(buf), blob.Record,r.GetPrevious(), r.GetCurrent())
-		_ = binary.Read(bytes.NewReader(buf[84 : 86]), Big, &blobRecs)  // Number of Bloc records
-		_ = binary.Read(bytes.NewReader(buf[214 : 218]), Big, &blobLength)  // Total length of the BLOB
+
+
+		err = CheckST33Length(&v,r,buf)
+		if err != nil {
+			gLog.Error.Println(err)
+			gLog.Info.Printf("%s", hex.Dump(buf[0:255]))
+			return nrec,err
+		}
+
+		_ = binary.Read(bytes.NewReader(buf[84 : 86]), Big, &blobRecs)       // Number of Bloc records
+		_ = binary.Read(bytes.NewReader(buf[214 : 218]), Big, &blobLength)   // Total length of the BLOB
 		_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl)          // Get the length of the first chunk of the BLOB
+
+
 
 		//
 		//   Append the first chunk to the Blob buffer
 		//
 
 		blobL := int(blobl)
-		blob.Blob.Write(buf[252 : 252+int64(blobl)])   // Append the first chunk
+		// gLog.Info.Printf("ST33 BLOB Buffer pointer => Key: %s - Buffer length:%d - blob Record: %d /%d - Previous : x'%X' - Current: x'%X'", blob.Key, len(buf), blob.Record,  blobRecs,r.GetPrevious(), r.GetCurrent())
+		blob.Blob.Write(buf[252 : 252+int64(blobl)])   // Append the first chunk to the blob
+
+		gLog.Trace.Printf("ST33 BLOB  Key: %s - Total Blob length:%d - Blob chunk length %d  - rec of/recs: %d/%d - Prev: x'%X' - Cur: x'%X'", blob.Key,  blobLength,blobl, 1, blobRecs,r.GetPrevious(),r.GetCurrent())
 
 		for rec:= 2; rec <= int(blobRecs); rec ++ {    // Read  the other chunks
 
@@ -217,40 +224,51 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 				nrec++
 				if len(buf) > 252 {
 					err = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl) // blobl =length of a  chunk
-					blobL += int(blobl)                                          //  blobL = length of the BLOB
-					blob.Blob.Write(buf[252 : 252+int64(blobl)])                // Append chunk to the BLOB buffer
-					gLog.Trace.Printf("Blob recs: %d - Total length %d - Blob length ",blobRecs,blobLength, blobL )
+					gLog.Info.Printf("ST33 BLOB  Key: %s - Blob chunk length: %d  - rec of/recs: %d/%d - Prev: x'%X' - Cur: x'%X' ", blob.Key, blobl, rec, blobRecs, r.Previous, r.Current)
+					blobL += int(blobl) //  blobL = length of the BLOB
+					if int(blobl) + 252 > len(buf) {
+						blob.Blob.Write(buf[252:]) // Append chunk to the BLOB buffer
+					} else {
+						blob.Blob.Write(buf[252 : 252+int64(blobl)]) // Append chunk to the BLOB buffer
+					}
 				}
 			} else {
-				 gLog.Error.Printf("Error %v after reading BLOB record number %d from input data file at Prev : X'%x'  Cur: X'%x' position",err,nrec, r.Previous, r.Current)
-				 return nrec,err
+				gLog.Error.Printf("Error %v after reading BLOB record number %d from input data file at Prev : X'%x'  Cur: X'%x' position",err,nrec, r.Previous, r.Current)
+				return nrec,err
 			}
 		}
 
+
+		//
 		// Continue to build the blob
 		// STOP  if computed blob length differ from the data file
+		//
+
 		if int(blobLength) != blobL {
-			err = errors.New(fmt.Sprintf("ST33 Blob %s bad Header - Total Length %d != Blob length %d",blob.Size,blobL,blobLength))
+			err = errors.New(fmt.Sprintf("==> ST33 Blob bad Header. %s - Total length:%d != Blob length:%d",blob.Size,blobL,blobLength))
 			gLog.Error.Printf("%v",err)
-			os.Exit(100)
+
 		}
-		gLog.Info.Println("PXIID BLOB: %s - Key %s - Blob control records/read records %d/%d ",v.PxiId,utils.Reverse(v.PxiId),blobRecs,nrec)
+
+		gLog.Trace.Printf("PXIID:%s - ST33 BLOB Key: %s - remaining Blob records: %d ",v.PxiId, blob.Key,blob.Record)
 
 		//
 		// Read some other blob ST33 records
 		// The number of other blob records are read from the control file
 		//  v.Records == blob.Record
 		//
-		for rec := 2; rec <= int(blob.Record); rec++ {
 
+		for rec := 1; rec <= int(blob.Record); rec++ {
+			gLog.Info.Printf("Blob record Prev : X'%x'  Cur: X'%x'",r.Previous,r.Current)
 			if buf,err = r.Read(); err == nil  {
 				nrec ++
-				// blob.Blob.Write(buf[:len(buf)-4])
 				blob.Blob.Write(buf)
 			} else   {
 				break
 			}
 		}
+
+
 		gLog.Trace.Println("PXIID: %s - Key %s - Blob control records/Reda records %d/%d",v.PxiId,utils.Reverse(v.PxiId),blobRecs,nrec)
 
 		//  Skip and discard unread records
@@ -258,10 +276,13 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 			extra := v.Records - nrec
 			for m:=1 ; m <= extra; m++ {
 				if _,err:= r.Read(); err == nil  {
-					gLog.Warning.Printf("ST33 BLOB PIXID %d  -  SKIP record %d",v.PxiId, extra+nrec)
+					gLog.Warning.Printf("==> ST33 BLOB PIXID %d  -  SKIP record %d",v.PxiId, extra+nrec)
 				}
 			}
 		}
+
+		gLog.Info.Printf("ST33 Blob Id %s  - Blob length %d",blob.Key, blob.Blob.Len())
+
 
 	}  else {                                              // Just a regular BLOB
 
@@ -274,6 +295,7 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 				blob.Blob.Write(buf)
 			}
 		}
+		gLog.Trace.Printf("Regular Blob Id %s  - Blob length %d",blob.Key, blob.Blob.Len())
 	}
 
 	return nrec,err

@@ -25,8 +25,8 @@ import (
 // checkST33Cmd represents the checkST33 command
 var (
 	checkST33Cmd = &cobra.Command {
-		Use:   "checkST33",
-		Short: "Command to check ST33 data file consistency",
+		Use:   "chkST33",
+		Short: "Command to check ST33 data file consistency vs control file",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 				checkST33(cmd,args)
@@ -82,10 +82,13 @@ func checkST33(cmd *cobra.Command, args []string) {
 		for _, v := range *c {
 
 			lp := len(v.PxiId)
-			if v.PxiId[lp-2:lp-1] == "B" {  // BLOB record
+			typ := v.PxiId[lp-2:lp-1]
+			if typ == "B" {  // BLOB record
 				r.ReadST33BLOB(v)
-			} else {
+			} else  if typ == "P" {
 				r.ReadST33Tiff(v)
+			} else {
+				gLog.Warning.Printf("%s 's document code is %s",v.PxiId, typ)
 			}
 		}
 

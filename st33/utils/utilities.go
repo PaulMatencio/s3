@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -331,13 +332,34 @@ func checkDoLoad(getRequest datatype.GetObjRequest, infile string) (bool) {
 	return do
 }
 
+
+
 func IsST33Blob(buf []byte, k int64) (bool) {
+
 	if len(buf) < int(k+182) {
 		return false
 	}
-	if im :=  string(utils.Ebc2asci(buf[k+180 : k+182])); im == "IM"{
+	l1 := utils.Ebc2asci(buf[0: 5])              // convert EBCDIC to Ascii
+	long, _ := strconv.Atoi(string(l1))
 
+	if im :=  string(utils.Ebc2asci(buf[k+180 : k+181])); im == "I"  && long== len(buf) {
 		return true
 	} else {
 		return false}
+}
+
+
+func CheckST33Length(v *Conval , r *St33Reader, buf []byte) (error) {
+
+	var err error
+
+	l1 := utils.Ebc2asci(buf[0: 5])              // convert EBCDIC to Ascii
+	long, _ := strconv.Atoi(string(l1))
+
+	if long != len(buf) {
+		err = errors.New(fmt.Sprintf("Inavlid ST33 record %s/%s at input byte address prev: X'%x'/ cur:X'%x' - Buffer length %d != ST33 record length %d ", v.PxiId, utils.Reverse(v.PxiId), r.Previous, r.Current, len(buf), long))
+		return err
+	} else {
+		return nil
+	}
 }

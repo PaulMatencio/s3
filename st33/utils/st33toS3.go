@@ -352,8 +352,7 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 				KEY = v.PxiId
 			)
 
-			gLog.Trace.Printf("Uploading Key: %s Number of pages %d",utils.Reverse(v.PxiId),v.Pages)
-
+			gLog.Info.Printf("Document#: %d - Uploading Key: %s Number of pages %d",e, utils.Reverse(v.PxiId),v.Pages)
 
 			if v.PxiId[lp-2:lp-1] == "P" {
 
@@ -387,9 +386,11 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 						putReq.Buffer = image.Img
 
 						if _, err := writeToS3(putReq); err != nil {
-							gLog.Fatal.Printf("PutObject Key: %s  Error: %v", putReq.Key, err)
-							os.Exit(100)
+							error:= errors.New(fmt.Sprintf("PutObject Key: %s  Error: %v",putReq.Key,err))
+							gLog.Error.Printf("%v",error)
+							ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
 						}
+
 						// reset the image
 						image.Img.Reset()
 					} else {
@@ -409,8 +410,12 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 				// NewPxiBlob  returns a pxiblob with  a reverse KEY
 				pxiblob := NewPxiBlob(KEY,v.Records)
 				if nrec,err  := pxiblob.BuildPxiBlobV2(r,v); err == nil {
-					if nrec != v.Records {                                     // Check number of BLOB record
-						gLog.Warning.Printf("Key %s - Control file records != Blob records",v.PxiId,v.Records,nrec)
+					if nrec != v.Records {
+						// Check number of BLOB record
+					    error := errors.New(fmt.Sprintf("Key %s - Control file records %d != Blob records %d",v.PxiId,v.Records,nrec))
+						gLog.Error.Printf("%v",error)
+						ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
+
 					}
 					v.DocSize= uint32(pxiblob.Blob.Len())
 					S += int(v.DocSize)
@@ -423,8 +428,10 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 					putReq.Key = pxiblob.Key
 
 					if _,err:= writeToS3(putReq); err != nil {
-						gLog.Fatal.Printf("PutObject Key: %s  Error: %v",putReq.Key,err)
-						os.Exit(100)
+
+						error:= errors.New(fmt.Sprintf("PutObject Key: %s  Error: %v",putReq.Key,err))
+						gLog.Error.Printf("%v",error)
+						ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
 					}
 
 					pxiblob.Blob.Reset()
@@ -432,7 +439,7 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 				} else {
 					gLog.Warning.Printf("Control file %s and data file %s do not map for key %s",confile,infile,v.PxiId)
 				}
-			}else {
+			} else {
 				error := errors.New(fmt.Sprintf("Control file entry: %d contains invalid input key: %s",e,v.PxiId))
 				gLog.Error.Printf("%v",error)
 				ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
@@ -884,6 +891,8 @@ func ToS3V2Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 	// read ST33  input file
 	gLog.Info.Printf("Reading file ... %s",infile)
 	r,err := NewSt33Reader(infile)
+
+	// Make communication channel for go routine
 	ch := make(chan *PutS3Response)
 	start0:= time.Now()
 
@@ -974,8 +983,11 @@ func ToS3V2Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 					pxiblob := NewPxiBlob(v.PxiId,v.Records)                       // it is BLOB
 					if nrec,err := pxiblob.BuildPxiBlobV2(r,v); err == nil {       //  Build the blob
-						if nrec != v.Records {                                     // Check number of BLOB record
-							gLog.Warning.Printf("Key %s - Control file records != Blob records",v.PxiId,v.Records,nrec)
+
+						if nrec != v.Records { // Check number of BLOB record
+						    error := errors.New(fmt.Sprintf("Pxiid %s - Control file records %d != Blob records %d",v.PxiId,v.Records,nrec))
+							gLog.Warning.Printf("%v",error)
+							inputError= append(inputError,S3Error{Key:pxiblob.Key,Err: error})
 						}
 						N++                    // Increment the number of requests
 						numpages++             //  increment total number of pages
