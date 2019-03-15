@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 
@@ -50,6 +51,7 @@ func InitLog( cmd string, loglevel int, logOutput string) (*os.File,  *os.File, 
 
 	}   else {
 
+		logOutput = filepath.Join(logOutput,"pid_"+strconv.Itoa(os.Getpid()))
 		logPath := filepath.Join(logOutput,cmd)
 		_, err := os.Stat(logOutput)
 

@@ -74,7 +74,7 @@ func getObject(cmd *cobra.Command,args []string) {
 
 
 	// handle any missing args
-	utils.LumberPrefix(cmd)
+	start := utils.LumberPrefix(cmd)
 
 	switch {
 
@@ -115,6 +115,7 @@ func getObject(cmd *cobra.Command,args []string) {
 		if err == nil {
 			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*result.ETag,*result.ContentLength,b.Len())
 		}
+		utils.Return(start)
 	}
 }
 

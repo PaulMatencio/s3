@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/s3/gLog"
 	"io/ioutil"
 	"os"
@@ -123,7 +122,7 @@ func PrintUsermd(key string, metad map[string]*string) {
 			gLog.Info.Printf("%s: %s", k,*v)
 		}
 	}
-	fmt.Println("")
+	// fmt.Println("")
 
 }
 

@@ -55,9 +55,12 @@ func GetPageV2( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 	npages,_ := strconv.Atoi(string(image.NumPages))
 
 	if npages != int(v.Pages) {
-		error := fmt.Sprintf("Pxi id: %s/Image id: %s - #pages from control file( %d ) != #pages from data file (%d ) ", r.GetPrevious(), v.PxiId, image.PxiId, v.Pages, npages)
+		error := fmt.Sprintf("At rddress x'%x' - Image id: %s/%s - #pages from control file( %d) != #pages from data file (%d ) ", r.GetPrevious(), v.PxiId, string(image.PxiId), v.Pages, npages)
 		err1 = errors.New(error)
 		gLog.Error.Printf("%s", error)
+		// Dump the content of the data
+		// hex.Dump(r.Buffer.Bytes()[r.Previous:r.Previous+256])
+		// os.Exit(100)
 
 	}
 

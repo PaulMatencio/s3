@@ -104,7 +104,7 @@ func listConval(cmd *cobra.Command, args []string) {
 			}
 
 			if len(ofile) > 0 {
-				fmt.Fprintln(w, file, k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,imageType)
+				fmt.Fprintln(w, file, k, v.PxiId, utils.Reverse(v.PxiId), v.Pages,v.Records,imageType)
 			}
 			if len(pfile) > 0 {
 				fmt.Fprintf(p,v.PxiId+" ")

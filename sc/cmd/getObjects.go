@@ -18,6 +18,8 @@ import (
 
 var (
 	getObjsShort = "Command to download concurrently nultiple  objects and their metadata to a given directory"
+	loopc int
+	n = 1
 	getobjectsCmd = &cobra.Command{
 		Use:   "getObjects",
 		Short: getObjsShort,
@@ -47,6 +49,9 @@ func init() {
 	getobjectsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you'd like to save")
 	getobjsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you's like to save")
 
+	getobjectsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
+	getobjsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
+
 }
 
 
@@ -54,8 +59,11 @@ func getObjects(cmd *cobra.Command,args []string) {
 
 	var (
 		start= utils.LumberPrefix(cmd)
-		N,T = 0,0
+		N,T  = 0,0
 		total int64 = 0
+		S int64 = 0
+		AvgObjs float64 = 0
+		AvgSize int64 = 0
 	)
 
 	if len(bucket) == 0 {
@@ -95,7 +103,8 @@ func getObjects(cmd *cobra.Command,args []string) {
 		Marker : marker,
 	}
 	// ch:= make(chan *datatype.Ro)
-	ch:= make(chan int)
+
+	ch:= make(chan int64)
 	var (
 		nextmarker string
 		result  *s3.ListObjectsOutput
@@ -124,15 +133,18 @@ func getObjects(cmd *cobra.Command,args []string) {
 						Key:     *v.Key,
 					}
 					go func(request datatype.GetObjRequest) {
-
+						var len *int64
 						ro := datatype.Ro{
 							Key : get.Key,
 						}
 						ro.Result, ro.Err = api.GetObject(get)
+						if ro.Err == nil {
+							len = ro.Result.ContentLength
+						}
 						procGetResult(&ro)
 						get = datatype.GetObjRequest{} // reset the get structure for GC
 						// ch <- &ro
-						ch <- 1
+						ch <- *len
 					}(get)
 				}
 
@@ -140,9 +152,10 @@ func getObjects(cmd *cobra.Command,args []string) {
 
 				for ok:=true;ok;ok=!done {
 					select {
-					// case rg := <-ch:
-					case  <-ch:
+					case l := <-ch:
+					// case  <-ch:
 						T++
+						S += l
 						// procGetResult(rg)
 
 						if T == N {
@@ -167,11 +180,20 @@ func getObjects(cmd *cobra.Command,args []string) {
 
 		}
 
-		if loop && *result.IsTruncated {
+		if loop && *result.IsTruncated  && n < loopc {
 			req.Marker = nextmarker
+			n++
+
 
 		} else {
-			gLog.Info.Printf("Total number of objects downloaded: %d",total)
+
+			AvgMbs := 1000*float64(S)/float64(time.Since(start))
+
+			if total > 0 {
+				AvgSize = S / total
+				AvgObjs = 1000 * 1000 * 1000 * float64(total) / float64(time.Since(start))
+			}
+			gLog.Info.Printf("Total number of objects downloaded: %d - Total Size: %d - Average Size: %d  - MB/sec %f - Objs/sec %f ",total,S,AvgSize, AvgMbs,AvgObjs)
 			break
 		}
 	}

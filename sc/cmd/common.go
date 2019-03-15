@@ -47,7 +47,7 @@ func procGetResult(rd *datatype.Ro) {
 	} else {
 		procS3Object(rd)
 	}
-	rd = &datatype.Ro{}
+	rd = &datatype.Ro{} // reset the request
 }
 
 
