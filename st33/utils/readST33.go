@@ -42,6 +42,7 @@ func NewSt33Reader(infile string ) (*St33Reader, error) {
 				Current:  0,
 			}, err
 		} else {
+			/*    utils.file    */
 			if buf,err := utils.ReadBuffer(infile); err == nil {
 				fmt.Println(ST33RAMReader)
 				return &St33Reader{
@@ -341,9 +342,11 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 		pagenum, numpages int
 	)
 
-	// compare the number of pages in data file  to  the numer of pages in the control file
-	// if they differ loop until getting the record  number that match on botrh or EOF
-	// if they match, rewind one record  for  processing again
+	//
+	// First compare the number of pages from data file  against  the number of pages from the control file for a document
+	// if they differ skip the recod and get the  the next record  until they  match  or EOF
+	// if they match, rewind one record  for processing again ( if we are lucky, we are reading the correct image
+	//
 	for {
 		if buf,err    := r.Read(); err == nil {
 			if len(buf) > 214 {
@@ -351,23 +354,21 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 				pagenum, _ = strconv.Atoi(string(ST33[17:21]))
 				numpages, _ = strconv.Atoi(string(ST33[76:80]))
 
-				if numpages == int(v.Pages) {
-					//  if   match then rewind to the previous record
+				if numpages == int(v.Pages) {  //  if   match then rewind to the previous record
 					r.SetCurrent(r.GetPrevious() - 8)
 					break
 				} else {
-					gLog.Warning.Printf("PXIID %s - Page number in Control file %d != Page number %d of the image  at address x'%x'", v.PxiId, v.Pages, numpages, r.GetPrevious())
+					gLog.Warning.Printf("PXIID %s - Total number of pages in Control file %d != Total number of pages %d in the image at buffer address: x'%x'", v.PxiId, v.Pages, numpages, r.GetPrevious())
 				}
 			}
 
 		} else {
-			// should be EOF
-			break
+			break  // could be end of file
 		}
 	}
 
 	//
-	//  Number of pages in data file == number of page  in control file
+	//  From here the number of pages in data file IS EQUAL  number of page  in control file
 	//
 	var (
 		buf []byte
@@ -375,6 +376,8 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 
 	)
 	current := r.Current
+
+    // read every page
 
 	for p:= 1; p <= int(v.Pages); p++ {
 
@@ -395,21 +398,31 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 				gLog.Info.Printf("X'%#x", buf[0:214])
 				os.Exit(100)
 			}
-			pagenum, _ = strconv.Atoi(string(ST33[17:21]))
-			recs++
-			pages++
-			gLog.Trace.Printf("PXIID %s - Pages number/pages number in image: %d/%d  - Record number:%d - Buffer length %d", v.PxiId,pages, pagenum, recs, len(buf))
-			_ = binary.Read(bytes.NewReader(buf[84:86]), Big, &tiffRecs)
 
-			// reading  all the records specified in data file
+			pagenum, _ = strconv.Atoi(string(ST33[17:21]))  //  Get the page number from  the image
+			recs++                                          //  incr  total number of records
+			pages++                                         //  incr  total number of pages
 
+			//  pagemum should be equal to pages
+
+			gLog.Trace.Printf("PXIID %s - has total number of pages/records %d/%d - Processing page number/page number found in image: %d/%d - record number:%d - length of buffer: %d - prev/cur X'%x'/X'%x' ",  v.PxiId, int(v.Pages),int(v.Records) ,pages, pagenum, recs, len(buf),r.Previous,r.Current)
+
+			//  Check the page number in the control file against the page number of the image in the buffer
+			if pages != pagenum {
+				gLog.Warning.Printf("PXIID %s - Page number in control file  %d != page number in the image %d ",v.PxiId,pages,pagenum)
+				fmt.Println(hex.Dump(buf[0:255]))
+			}
+
+			_ = binary.Read(bytes.NewReader(buf[84:86]), Big, &tiffRecs)     // get the total number of the records of the image
+
+			// read all the records of the image specified in data file
 
 			for rec := 2; rec <= int(tiffRecs); rec ++ {
 
 				recs++
 				if buf, err = r.Read(); err == nil {
 					ST33 = utils.Ebc2asci(buf[0:214])
-					gLog.Trace.Printf("PXIID %s/%s - Ref Number %s - Page number: %d - pages number in image: %d  - read record number: %d - read buffer length %d", v.PxiId, ST33[5:17],ST33[34:41],pages, pagenum, recs, len(buf))
+					gLog.Trace.Printf("PXIID %s/%s - Ref Number %s - Processing page number/page number found in image: %d/%d - record number: %d - length of buffer: %d - prev/cur X'%x'/X'%x'", v.PxiId, ST33[5:17],ST33[34:41],pages, pagenum, recs, len(buf),r.Previous,r.Current)
 				} else {
 					break
 				}
@@ -417,20 +430,18 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 				if recs == v.Records {
 					break
 				}
-
-
 			}
 		}
 	}
 
 	//
-	//    after all teh pages of the tiff images are read, compare the number of records in the control file with the
-	//    number of records of the images
+	//    After reading all the records specified in the control file for this image,
+	//    Compare the number of records in the control file against the  total number of records of the image specfied in the control file
 	//
 
 	if v.Records != recs {
 
-		gLog.Warning.Printf("PXIID %s/%s - Ref number %s - Page number %s -  number of records in the control file [%d]!= number of records of the image [%d]",v.PxiId,ST33[5:17],ST33[34:41],ST33[17:21],v.Records,recs)
+		gLog.Error.Printf("PXIID %s/%s - Ref number %s - Page number %s -  Total number of records in the control file [%d]!= total number of records of the image [%d]",v.PxiId,ST33[5:17],ST33[34:41],ST33[17:21],v.Records,recs)
 
 		fmt.Println(hex.Dump(buf[0:255]))
 
@@ -454,12 +465,12 @@ func (r *St33Reader) ReadST33Tiff( v Conval) {
 		if missing < 0 { // read too much , just rewind and read all again
 			gLog.Warning.Printf("Rewind to @ X'%x'",current)
 			r.Current = current
-			for rec:= 0; rec <v.Records; rec ++ {
+			for rec:= 0; rec < v.Records; rec ++ {
 				_,_ = r.Read()
 			}
 		} else {
-			gLog.Info.Println("Exiting ............................")
-			os.Exit(100)
+			gLog.Warning.Printf("Number of records from the control  file  %d !=  number of records of the document %d  at buffer address  X'%x' ",v.Records, recs,current)
+			// os.Exit(100)
 		}
 
 		//

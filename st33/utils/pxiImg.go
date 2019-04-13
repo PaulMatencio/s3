@@ -112,11 +112,11 @@ func (image *PxiImg) BuildTiffImage(buf []byte, l int64) (int64,error) {
 
 	long, _ := 	strconv.Atoi(string(st33[0:5]))
 
-	image.PxiId		= st33[5:17]
-	image.PageNum	= st33[17:21]
-	image.RefNum	= st33[34:41]
-	image.NumPages 	= st33[76:80]
-	image.DataType	= st33[180:181]
+	image.PxiId		= st33[5:17]       // PXI ID
+	image.PageNum	= st33[17:21]      // page Number
+	image.RefNum	= st33[34:41]      // Reference Number
+	image.NumPages 	= st33[76:80]      // Total number of pages
+	image.DataType	= st33[180:181]    // Data type
 
 	/*
 		comp_meth := st33[181:183]
@@ -379,20 +379,34 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 	img2.Write(buf[252 : 252+int64(imgl)])       // append  the image length found in this record  to the  image
 	imageL += int(imgl)
 
-	// read all the records of this image
+	// read all the records for this image.
+	// the number of records are extracted from the image header
+
 	for rec := 2; rec <= int(totalRec); rec++ {
 
 		if buf,err = r.Read();err == nil  {
-			nrec++
+			nrec++   // increment the number of records
+
 			_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)
-			img2.Write(buf[252 : 252+int64(imgl)]) // append  the image length found in this record  to the  image
-			imageL += int(imgl)                    //  Compute the total  image length
+
+			if int64(imgl) <= int64(len(buf) - 252) {
+				img2.Write(buf[252 : 252+int64(imgl)]) // append  the image length found in this record  to the  image
+				imageL += int(imgl)                    //  Compute the total  image length
+			} else {
+				err := errors.New("Invalid image length")
+				return nrec,err
+			}
+		} else {
+			//  return the read error  to the caller
+			break    /*  12-04-2019  */
 		}
+
+
 	}
 
-	//	Check if the input header of thefirts record we read is consistent
-	//	totalLength is the TIFF image length that is extracted from the first record  of the image
-	//	imageL is the sum of the image lenght of each records = True length
+	//	Check if the input header of the first record we read is an ST33 recird
+	//	totalLength is the length of the TIFF image extracted from the first record  of the image
+	//	imageL is the sum of the image length of all records = true length of the image
 
 
 	var img3 = new(bytes.Buffer)
@@ -423,6 +437,9 @@ func (image *PxiImg) BuildTiffImage2(r *St33Reader, v Conval) (int,error) {
 
 	// check if number of records match
 	// If not skip all the remaining records in the data file
+
+
+
 
 	return  nrec,err
 

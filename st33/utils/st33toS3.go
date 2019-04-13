@@ -356,7 +356,7 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 
 			if v.PxiId[lp-2:lp-1] == "P" {
 				// exclude This PXID
-				if v.PxiId != "E1_____113F65926719P1" { // not in datafile
+				if v.PxiId != "E1_____113F65926719P1"   {  //not in datafile
 
 					KEY = utils.Reverse(KEY)
 					s := 0
