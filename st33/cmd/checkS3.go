@@ -50,6 +50,11 @@ func checkS3(cmd *cobra.Command, args []string) {
 		return
 	}
 
+
+
+
+
+
 	if c,err:=  st33.BuildConvalArray(ifile); err == nil {
 
 		svc := s3.New(api.CreateSession())

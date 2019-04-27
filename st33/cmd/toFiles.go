@@ -4,13 +4,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dgraph-io/badger"
 	"github.com/s3/gLog"
 	"github.com/s3/st33/db"
 	"github.com/s3/st33/utils"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"path/filepath"
-	"github.com/dgraph-io/badger"
 	"time"
 )
 
@@ -114,6 +114,7 @@ func toFilesFuncV2(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	
 
 	bdir = pdir
 	if len(blob) > 0 {

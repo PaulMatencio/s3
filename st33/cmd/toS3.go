@@ -27,13 +27,14 @@ import (
 	"strings"
 	"time"
 
+
 )
 
 // st33ToS3Cmd represents the st33ToS3 command
 
 var (
 	async int
-	file,sBucket string
+	file,sBucket,partition string
 	files,ranges []string
 	reload  bool
 	toS3Cmd = &cobra.Command {
@@ -60,8 +61,10 @@ func initT3Flags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&idir,"idir","d","","input directory containing  st33  files to be uploaded")
 	cmd.Flags().StringVarP(&ifile,"ifile","i","","input fullname data file, list of fullname data files separated by a commma or a range of data file suffix ex: 020...025")
+
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
+	cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","name of the  target bucket")
 	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
 	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")
@@ -96,6 +99,14 @@ func toS3Func(cmd *cobra.Command, args []string) {
 			return
 		}
 
+	}
+
+	if len(partition) == 0 {
+		partition = viper.GetString("st33.input_data_partition")
+		if len(partition) == 0 {
+			gLog.Info.Printf("%s","Input directory partition is missing, please check your config file or specify  -p or --partition ")
+			return
+		}
 	}
 
 	// if no datval argument . try to get in from the config file
@@ -140,7 +151,7 @@ func toS3Func(cmd *cobra.Command, args []string) {
 
 		var (
 
-			file = filepath.Join(idir,file)
+			file = filepath.Join(filepath.Join(idir,partition),file)
 			numdocs,numpages int = 0,0
 			size  int         = 0
 			Err   []st33.S3Error
@@ -192,7 +203,17 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 	if len(idir) == 0 {
 		idir = viper.GetString("st33.input_data_directory")
 		if len(idir) == 0 {
-			gLog.Info.Printf("%s","Input directory missing, please check your config file or specif  -d or --idir ")
+			gLog.Info.Printf("%s","Input directory is missing, please check your config file or specif  -d or --idir ")
+			return
+		}
+
+
+	}
+
+	if len(partition) == 0 {
+		partition = viper.GetString("st33.input_data_partition")
+		if len(partition) == 0 {
+			gLog.Info.Printf("%s","Input directory partition is missing, please check your config file or specif  -p or --partition ")
 			return
 		}
 
@@ -240,7 +261,9 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 
 		var (
 
-			file = filepath.Join(idir,file)
+			// file = filepath.Join(idir,file)
+
+			file = filepath.Join(filepath.Join(idir,partition),file)
 			numdocs,numpages int = 0,0
 			size  int         = 0
 			Err   []st33.S3Error
@@ -257,7 +280,7 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 			}
 		)
 
-		gLog.Info.Printf("Processing input file ...  %s", file)
+		gLog.Info.Printf("Processing input file ...  %s %s", idir, file)
 
 		if async == 0  {
 			numpages, numdocs, size, Err = st33.ToS3V2(&toS3)

@@ -310,7 +310,12 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 
 	conVal := *conval
 	svc :=  s3.New(api.CreateSession())
-	_,key := filepath.Split(infile)
+
+	d,key := filepath.Split(infile)
+	p1 := strings.Split(d,"/")
+	p := p1[len(p1)-2]
+	key = p + "." + key
+
 	if sbucket != "" {
 		getReq := datatype.GetObjRequest{
 			Service: svc,
@@ -356,8 +361,8 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 
 			if v.PxiId[lp-2:lp-1] == "P" {
 				// exclude This PXID
-				if v.PxiId != "E1_____113F65926719P1"   {  //not in datafile
-
+				// if v.PxiId != "E1_____113F65926719P1"   {  //not in datafile for intg
+				 if v.PxiId !=   "E1_______0011444808P1"  {    // always true
 					KEY = utils.Reverse(KEY)
 					s := 0
 					for p := 0; p < int(v.Pages); p++ {
@@ -414,8 +419,8 @@ func ToS3V2(req *ToS3Request)  (int, int, int, []S3Error) {
 
 			} else if v.PxiId[lp-2:lp-1] == "B" {
 
-				if v.PxiId != "E1_____114270EFD39ABL" {
-
+				// if v.PxiId != "E1_____114270EFD39ABL" {
+				if v.PxiId != 	 "E1_____XXXXXXXXXXXXBL" {
 				// NewPxiBlob  returns a pxiblob with  a reverse KEY
 					pxiblob := NewPxiBlob(KEY, v.Records)
 					if nrec, err := pxiblob.BuildPxiBlobV2(r, v); err == nil {
@@ -566,6 +571,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 	// check the existence of the state migration  Bucket
 	// and if  data file was already uploaded
+
 	_,key := filepath.Split(infile)
 	if sbucket != "" {
 		getReq := datatype.GetObjRequest{
@@ -619,12 +625,19 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 				lp := len(KEY);
 				if KEY[lp-2:lp-1] == "P" {
 					// s:= 0
-					N += int(v.Pages)
-					for p := 0; p < int(v.Pages); p++ {
+
+					P := int(v.Pages)
+					N += P
+
+					for p := 0; p < P; p++ {
 						// extract tiff image
 						image,k,err,err1 := GetPage(v,buf,l)
 						// err1 is not null  when the control file and datafile differ
 						// Extraction can continue
+
+
+
+
 						if err1 != nil {
 							inputError= append(inputError,S3Error{Key:v.PxiId,Err: err1})
 							// fmt.Println("....",inputError)
@@ -882,9 +895,16 @@ func ToS3V2Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 
 	conVal := *conval
 
-	// check the existence of the state migration  Bucket
+	// check the existence of the migration log  Bucket
 	// and if  data file was already uploaded
-	_,key := filepath.Split(infile)
+
+	d,key := filepath.Split(infile)
+	p1 := strings.Split(d,"/")
+	p := p1[len(p1)-2]
+
+	key = p + "." + key
+
+
 	if sbucket != "" {
 		getReq := datatype.GetObjRequest{
 			Service: svc,
@@ -937,107 +957,137 @@ func ToS3V2Async(req *ToS3Request)  (int, int, int, []S3Error)  {
 			for e, v := range conVal[p:q] {
 
 				KEY := v.PxiId;
-				lp := len(KEY);
-				recs := 0  // number of records for this pxi package
-				pages := 0 //  number of pages
+				if KEY != "E1_______0011444808P1" && KEY != "E1_______001156770LP1"  && v.PxiId != "E1_______0031079902P1" { // lot p00001.00155, p00001.00164 p00002.00171
 
-				if KEY[lp-2:lp-1] == "P" {
 
-					N += int(v.Pages)
-					for p := 0; p < int(v.Pages); p++ {
+					lp := len(KEY);
+					recs := 0  // number of records for this pxi package
+					pages := 0 //  number of pages
 
-						image,nrec,err,err1 := GetPageV2(r,v)  	// return a tiff image and its number of records
-																// return err1 when the control file and datafile differ
-																// but extraction will continue
-						if err1 != nil {
-							inputError= append(inputError,S3Error{Key:v.PxiId,Err: err1})
-						}
+					if KEY[lp-2:lp-1] == "P" {
 
-						if err == nil /*|| err == io.EOF*/ {
-							recs += nrec   // increment the number of records for this pages
-							pages++        //  increment the number of pages without error.
-							numpages++     //  increment the number of pages for this lot
-							v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
+						P := int(v.Pages) // number of pages
+						N += P
 
-							go func(key string, image *PxiImg, v Conval) {
+						for p := 0; p < P; p++ {
 
-								req := datatype.PutObjRequest{                     // build a PUT OBject request
-									Service: svc,
-									Bucket: bucket,
+							image, nrec, err, err1 := GetPageV2(r, v) // return a tiff image and its number of records
+							// return err1 when  control file and datafile differ
+							// but the extraction should continue
+							//
+							// 							Fix ---   16-04-2019   ----
+							// Compare  the total number of pages from the image against the control file
+							//  This should not happpen since  we have  already checked  the total number of document pages
+							//  (image.Numpages) against the total number of pages  in the control file (P or v.Pages) in
+							//  the GetPageV2  function
+							/*
+								tpages, _ := strconv.Atoi(string(image.NumPages))
+								if tpages != P {
+
+									err:= errors.New( fmt.Sprintf("PXIID: %s - Total number of pages from control file: %d !=  Total number of pages from image: %d",KEY,tpages,P))
+									gLog.Error.Printf("%v",err)
+									inputError= append(inputError,S3Error{Key:v.PxiId,Err: err})
+									// recompute the total number of pages
+									N -= P
+									P = tpages
+									N += P
 								}
-								// Add user metadata to page 1
-								pagenum, _ := strconv.Atoi(string(image.PageNum))   // Build user metadata for page 1
-								if pagenum == 1 {
-									if usermd, err := BuildUsermd(v); err == nil {
-										req.Usermd = utils.AddMoreUserMeta(usermd,infile)
+							*/
+
+							//   							end fix ---  16-04-2019 ----
+
+							if err1 != nil {
+								inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
+							}
+
+							if err == nil /*|| err == io.EOF */ {
+								recs += nrec                        // increment the number of records for this pages
+								pages++                             //  increment the number of pages without error.
+								numpages++                          //  increment the number of pages for this lot
+								v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
+
+								go func(key string, image *PxiImg, v Conval) {
+
+									req := datatype.PutObjRequest{ // build a PUT OBject request
+										Service: svc,
+										Bucket:  bucket,
 									}
+									// Add user metadata to page 1
+									pagenum, _ := strconv.Atoi(string(image.PageNum)) // Build user metadata for page 1
+									if pagenum == 1 {
+										if usermd, err := BuildUsermd(v); err == nil {
+											req.Usermd = utils.AddMoreUserMeta(usermd, infile)
+										}
+									}
+
+									// S3 key is the reverse of the pxi id + '.' + page number
+									//  PUT OBJECT
+									req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
+									req.Buffer = image.Img                                     //   add timage
+									_, err := writeToS3(req)                                   //  upload the image  to S3
+									//  Prepare a response Block
+									s3Error := S3Error{Key: req.Key, Err: err} // forward error
+									image.Img.Reset()                          // reset the image buffer
+									ch <- &PutS3Response{bucket, req.Key, int(v.DocSize), s3Error}
+
+								}(KEY, image, v)
+							} else {
+								// should never happen unless input data is corrupted
+								gLog.Error.Printf("Error %v  building image for Key:%s - Prev/Curr buffer address: X'%x'/ X'%x' ", err, v.PxiId, r.Previous, r.Current)
+								if err != io.EOF {
+									os.Exit(100)
+								}
+							}
+
+						}
+						numdocs++ // increment the number of processed documents
+
+					} else if KEY[lp-2:lp-1] == "B" { // regular BLOB
+
+						pxiblob := NewPxiBlob(v.PxiId, v.Records) // it is BLOB
+						if nrec, err := pxiblob.BuildPxiBlobV2(r, v); err == nil { //  Build the blob
+
+							if nrec != v.Records { // Check number of BLOB record
+								error := errors.New(fmt.Sprintf("Pxiid %s - Control file records %d != Blob records %d", v.PxiId, v.Records, nrec))
+								gLog.Warning.Printf("%v", error)
+								inputError = append(inputError, S3Error{Key: pxiblob.Key, Err: error})
+							}
+							N++                                    // Increment the number of requests
+							numpages++                             //  increment total number of pages
+							numdocs++                              //  increment total number of documents
+							v.DocSize = uint32(pxiblob.Blob.Len()) // Update the original size
+
+							go func(key string, pxiblob pxiBlob, v Conval) {
+
+								req := datatype.PutObjRequest{
+									Service: svc,
+									Bucket:  bucket,
+									Key:     pxiblob.Key,
+									Buffer:  pxiblob.Blob,
 								}
 
-								// S3 key is the reverse of the pxi id + '.' + page number
-								//  PUT OBJECT
-								req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
-								req.Buffer = image.Img                              //   add timage
-								_,err := writeToS3(req)                             //  upload the image  to S3
-								//  Prepare a response Block
-								s3Error := S3Error{Key: req.Key,Err: err}           // forward error
-								image.Img.Reset()                                   // reset the image buffer
-								ch <- &PutS3Response{bucket, req.Key, int(v.DocSize),s3Error}
+								if usermd, err := BuildUsermd(v); err == nil { // Add  user metadata
+									req.Usermd = utils.AddMoreUserMeta(usermd, infile)
+								}
+								// build put object request
+								// Write to S3
+								_, err := writeToS3(req)
+								s3Error := S3Error{Key: pxiblob.Key, Err: err}
+								//Reset the Blob Content
+								pxiblob.Blob.Reset()
+								// Send a message to go routine listener
+								ch <- &PutS3Response{bucket, pxiblob.Key, int(v.DocSize), s3Error}
 
-							}(KEY,image, v)
+							}(KEY, *pxiblob, v)
 						} else {
-							// should never happen unless input data is corrupted
-							gLog.Fatal.Printf("Error %v  building image for Key:%s - buffer address: X'%x' ",err, v.PxiId,r.Current)
-							os.Exit(100)
+							gLog.Error.Printf("Error %v", err)
+							inputError = append(inputError, S3Error{Key: v.PxiId, Err: err})
 						}
-
-					}
-					numdocs++  // increment the number of processed documents
-
-				} else if  KEY[lp-2:lp-1] == "B"  {   // regular BLOB
-
-					pxiblob := NewPxiBlob(v.PxiId,v.Records)                       // it is BLOB
-					if nrec,err := pxiblob.BuildPxiBlobV2(r,v); err == nil {       //  Build the blob
-
-						if nrec != v.Records { // Check number of BLOB record
-						    error := errors.New(fmt.Sprintf("Pxiid %s - Control file records %d != Blob records %d",v.PxiId,v.Records,nrec))
-							gLog.Warning.Printf("%v",error)
-							inputError= append(inputError,S3Error{Key:pxiblob.Key,Err: error})
-						}
-						N++                    // Increment the number of requests
-						numpages++             //  increment total number of pages
-						numdocs++              //  increment total number of documents
-						v.DocSize = uint32(pxiblob.Blob.Len())   // Update the original size
-
-						go func(key string, pxiblob pxiBlob, v Conval) {
-
-							req := datatype.PutObjRequest{
-								Service: svc,
-								Bucket: bucket,
-								Key : pxiblob.Key,
-								Buffer: pxiblob.Blob,
-							}
-
-							if usermd, err := BuildUsermd(v); err == nil {   // Add  user metadata
-								req.Usermd = utils.AddMoreUserMeta(usermd,infile)
-							}
-							// build put object request
-							// Write to S3
-							_,err := writeToS3(req)
-							s3Error := S3Error{Key: pxiblob.Key, Err: err}
-							//Reset the Blob Content
-							pxiblob.Blob.Reset()
-							// Send a message to go routine listener
-							ch <- &PutS3Response{bucket, pxiblob.Key, int(v.DocSize),s3Error}
-
-						}(KEY,*pxiblob, v)
 					} else {
-						gLog.Error.Printf("Error %v",err)
-						inputError= append(inputError,S3Error{Key:v.PxiId,Err: err})
+						error := errors.New(fmt.Sprintf("Control file entry: %d contains invalid input key: %s", e, v.PxiId))
+						gLog.Error.Printf("%v", error)
+						ErrKey = append(ErrKey, S3Error{Key: v.PxiId, Err: error})
 					}
-				} else {
-					error := errors.New(fmt.Sprintf("Control file entry: %d contains invalid input key: %s",e,v.PxiId))
-					gLog.Error.Printf("%v",error)
-					ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
 				}
 			}
 

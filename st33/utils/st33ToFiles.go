@@ -186,10 +186,24 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
 				gLog.Trace.Printf("Processing ST33 Key %s Number of Pages/Records: %d/%d",v.PxiId,v.Pages,v.Records)
 				s:= 0
 				KEY = utils.Reverse(KEY)
-
-				for p:= 0; p < int(v.Pages); p++ {
+				P := int(v.Pages)    // fix 16-04-2019
+				for p:= 0; p < P; p++ {
 
 					if image, nrec , err, _ := GetPageV2(r,v); err == nil  {
+
+
+
+
+						// Fix 16-04-2019
+						// Compare  the total number of pages from the image against the control file
+						//
+
+						tpages, _ := strconv.Atoi(string(image.NumPages))
+						if tpages != P {
+							P = tpages
+						}
+
+						//   end fix 16-04-2019
 
 						pages++
 						recs += nrec
@@ -224,7 +238,7 @@ func ToFilesV2(ifile string,  odir string, bdir string, test bool)  (int,int, in
 						}
 				}
 
-				numpages += int(v.Pages)
+				numpages += P    // fix 06-04-2019
 				numdocs++
 
 				//  Check if number of records of the image matche

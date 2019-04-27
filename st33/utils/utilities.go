@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	// imaging "github.com/desintegration/imaging"
 )
@@ -245,11 +246,19 @@ func writeToS3( r datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 }
 
 
+//
+//  log to the migration log  bucket
+//
 func logIt(svc *s3.S3, req *ToS3Request,resp *ToS3Response,errors *[]S3Error) (*s3.PutObjectOutput,error){
+
 	var (
-		_,key = filepath.Split(req.File)
+		d,key = filepath.Split(req.File)
 		buffer string
 	)
+
+	p1 := strings.Split(d,"/")
+	p := p1[len(p1)-2]
+	key = p + "." + key
 
 	st33toS3 := St33ToS3 {
 		Request : *req,
