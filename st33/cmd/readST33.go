@@ -23,24 +23,16 @@ var (
 )
 
 func initRdFlags(cmd *cobra.Command) {
-
-
 	cmd.Flags().StringVarP(&ifile,"data-file","i","","the St33 data file ")
 	cmd.Flags().StringVarP(&idir,"input-directory","d","","the name of the directory")
 	// cmd.Flags().StringVarP(&odir,"ofile","o","","output file")
 }
-
-
-
-
-
 
 func init() {
 
 	RootCmd.AddCommand(readST33Cmd)
 	initRdFlags(readST33Cmd)
 }
-
 
 //  Read ST33 files
 func readST33(cmd *cobra.Command, args []string) {
@@ -57,7 +49,6 @@ func readST33(cmd *cobra.Command, args []string) {
 
 	if r,err  := st33.NewSt33Reader(filepath.Join(idir,ifile)); err == nil {
 		for {
-
 			 b,err := r.Read()
 			 gLog.Info.Printf(" Prev address :X'%x' -  Cur address : X'%x' - Record length: %d\n",r.Previous,r.Current,len(b))
 			 if err == io.EOF {
@@ -67,6 +58,4 @@ func readST33(cmd *cobra.Command, args []string) {
 	} else {
 		gLog.Error.Printf("%v",err)
 	}
-
-
 }

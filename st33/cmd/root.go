@@ -59,11 +59,13 @@ func init() {
 	RootCmd.Flags().StringVarP(&cfgFile,"config", "c","", "sc config file; default $HOME/.st33/config.yaml")
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
+	RootCmd.PersistentFlags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
+
+
 	// RootCmd.Flags().StringVarP(&datval,"data-file-directrory", "","", "data file prefix  ex: datval.lot")
 	// RootCmd.Flags().StringVarP(&datval,"data-file-prefix", "","", "data file prefix  ex: datval.lot")
 	// RootCmd.Flags().StringVarP(&conval,"control-file-prefix", "","", "control file prefix ex: conval.lot")
 	// RootCmd.PersistentFlags().BoolVarP(&test,"test","t",false,"test mode")
-
 
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
@@ -72,12 +74,10 @@ func init() {
 	viper.BindPFlag("loglevel",RootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("autoCompletion",RootCmd.PersistentFlags().Lookup("autoCompletion"))
 	viper.BindPFlag("profiling",RootCmd.PersistentFlags().Lookup("profiling"))
-
+	viper.BindPFlag("partition",RootCmd.PersistentFlags().Lookup("persistent"))
 
 	// read and init the config with  viper
 	cobra.OnInitialize(initConfig)
-
-
 }
 
 
@@ -118,9 +118,11 @@ func initConfig() {
 		log.Printf("AWS sdk shared config will be used if present ")
 	}
 
-
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
+	if logOutput != "terminal" {
+		logOutput += "/" + partition
+	}
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)

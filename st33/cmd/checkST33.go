@@ -36,45 +36,37 @@ var (
 		},
 	}
 	cfile string
+	Errors,Warnings = 0,0
 )
 
 
 func initCdFlags(cmd *cobra.Command) {
 
-	//cmd.Flags().StringVarP(&ifile,"data-file","i","","the St33 data file ")
-	// cmd.Flags().StringVarP(&cfile,"control-file","c","","the St33 control file ")
-	// cmd.Flags().StringVarP(&idir,"input-directory","d","","the name of the directory")
-
 	cmd.Flags().StringVarP(&idir,"idir","d","","input directory containing  st33  files to be uploaded")
-	cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
+	// cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
 	cmd.Flags().StringVarP(&ifile,"ifile","i","","input fullname data file, list of fullname data files separated by a commma or a range of data file suffix ex: 0020...0025")
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
-
 }
 
 func init() {
 	RootCmd.AddCommand(checkST33Cmd)
 	initCdFlags(checkST33Cmd)
-
 }
-
 
 func checkST33(cmd *cobra.Command, args []string) {
 
-
 	var (
 		files []string
+		f    int
 		err   error
 	)
-
 	if len(idir) == 0 {
 		idir = viper.GetString("st33.input_data_directory")
 		if len(idir) == 0 {
 			gLog.Info.Printf("%s","Input directory missing, please check your config file or specif  -d or --idir ")
 			return
 		}
-
 	}
 
 	if len(partition) == 0 {
@@ -113,13 +105,15 @@ func checkST33(cmd *cobra.Command, args []string) {
 	for _,file := range files {
 
 		var (
-        //	ifile = path.Join(idir,file)
+
 			ifile = filepath.Join(filepath.Join(idir,partition),file)
         	cfile =  strings.Replace(ifile,datval,conval,1)
-        	ind ,errors, warning int
+        	ind int
+        	errors, warnings = 0,0
         	v  st33.Conval
 		)
 		gLog.Info.Printf("Checking ST33 input file %s",ifile)
+		gLog.Warning.Printf("Checking ST33 input file %s",ifile)
 
 		r, err := st33.NewSt33Reader(ifile)
 
@@ -127,7 +121,6 @@ func checkST33(cmd *cobra.Command, args []string) {
 			gLog.Fatal.Printf("%v", err)
 			os.Exit(100)
 		}
-
 		if c, err := st33.BuildConvalArray(cfile); err == nil {
 
 			for ind, v = range *c {
@@ -137,9 +130,7 @@ func checkST33(cmd *cobra.Command, args []string) {
 
 				if typ == "B" { // BLOB record
 					r.ReadST33BLOB(v)
-
 				} else if typ == "P" {
-
 
 					//  For intg only -> todo -> externalize it
 					// if v.PxiId  != "E1_____113F65926719P1" {       // Exclude PXIID for IPXI.lot029 INTG
@@ -147,29 +138,27 @@ func checkST33(cmd *cobra.Command, args []string) {
 					// }
 					//
 
-					if v.PxiId != "E1_______0011444808P1"  && v.PxiId!="E1_______001156770LP1"  &&
-					     v.PxiId != "E1_______0031079902P1" {
-						w,e := r.ReadST33Tiff(v,ind)
-						warning += w
+						w,e,c := r.ReadST33Tiff(v,ind)
+						warnings += w
 						errors += e
-
-					}
-
+						if c {
+							gLog.Error.Printf("Skiiping file %s due to critical error",file)
+							break
+						}
 
 				} else {
 					gLog.Warning.Printf("%s 's document code is %s", v.PxiId, typ)
 				}
 			}
-			gLog.Warning.Printf("Total number of documents: %d  - warnings: %d  - errors: %d",ind+1,warning,errors )
-
+			gLog.Warning.Printf("File: %s - Number of documents processed: %d  - Number of warnings: %d  - Number of errors: %d",file, ind+1,warnings,errors )
+			Errors += errors
+			Warnings += warnings
 		} else {
 			gLog.Error.Println(err)
 		}
-
+		f++
 	}
-
-
-
+	gLog.Warning.Printf("Partion: %s  - Total number of files: %d - Total number of warnings: %d - Total number of errors: %d ",partition,f,Warnings,Errors)
 }
 
 

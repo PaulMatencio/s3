@@ -114,7 +114,7 @@ func toFilesFuncV2(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	
+
 
 	bdir = pdir
 	if len(blob) > 0 {

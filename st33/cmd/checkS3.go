@@ -31,13 +31,10 @@ func initCvFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&odir,"ofile","o","","output file")
 }
 
-
 func init() {
 
 	RootCmd.AddCommand(checkS3Cmd)
 	initCvFlags(checkS3Cmd)
-
-
 }
 
 func checkS3(cmd *cobra.Command, args []string) {
@@ -49,11 +46,6 @@ func checkS3(cmd *cobra.Command, args []string) {
 		gLog.Info.Printf("%s",missingInputFile)
 		return
 	}
-
-
-
-
-
 
 	if c,err:=  st33.BuildConvalArray(ifile); err == nil {
 

@@ -64,7 +64,7 @@ func initT3Flags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
-	cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
+	// cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","name of the  target bucket")
 	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
 	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")
@@ -206,8 +206,6 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 			gLog.Info.Printf("%s","Input directory is missing, please check your config file or specif  -d or --idir ")
 			return
 		}
-
-
 	}
 
 	if len(partition) == 0 {
@@ -216,7 +214,6 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 			gLog.Info.Printf("%s","Input directory partition is missing, please check your config file or specif  -p or --partition ")
 			return
 		}
-
 	}
 
 	// if no datval argument . try to get in from the config file
@@ -260,9 +257,7 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 	for _,file := range files {
 
 		var (
-
 			// file = filepath.Join(idir,file)
-
 			file = filepath.Join(filepath.Join(idir,partition),file)
 			numdocs,numpages int = 0,0
 			size  int         = 0
@@ -298,7 +293,6 @@ func toS3V2Func(cmd *cobra.Command, args []string) {
 				gLog.Error.Printf("Key:%s  Error:%v\n", v.Key, v.Err)
 			}
 		}
-
 		// debug.FreeOSMemory()
 	}
 }
