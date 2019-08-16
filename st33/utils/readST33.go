@@ -26,46 +26,21 @@ type St33Reader struct {
 
 // create a new reader instance
 func NewSt33Reader(infile string ) (*St33Reader, error) {
-
 	f,err:= os.Open(infile)
-
 	if err == nil {
 		finfo, _ := f.Stat()
 		size := finfo.Size()
-		gLog.Warning.Printf("Checking data file: %s - size: %d ....\n",infile, size)
-		if size > TwoGB {
+		gLog.Trace.Printf("Checking data file: %s - size: %d ....\n",infile, size)
 			return &St33Reader{
 				File:     f,
 				Size:     size,
-				Type:     ST33FILEReader,
 				Previous: 0,
 				Current:  0,
 			}, err
-		} else {
-			/*    utils.file    */
-			if buf,err := utils.ReadBuffer(infile); err == nil {
-				fmt.Println(ST33RAMReader)
-				return &St33Reader{
-					File:    f,
-					Buffer:   buf,
-					Size:     size,
-					Type:     ST33RAMReader,
-					Previous: 0,
-					Current:  0,
-				}, err
-			} else {
-				gLog.Error.Printf("%v",err)
-				return nil,err
-			}
-		}
 	} else {
 		return nil,err
 	}
 }
-
-
-
-
 
 //
 // Set position of the current record to read
@@ -102,15 +77,9 @@ func  (r *St33Reader)  GetPrevious() (int64){
 // read  b bytes from the current  position
 //
 func (r *St33Reader) ReadAt(b []byte) (int, error){
-
-	if r.Type == ST33FILEReader {
 		f := r.File
-		//	c := r.GetCurrent()
 		c := r.Current
 		return f.ReadAt(b, c)
-	} else {
-		return r.Buffer.Read(b)
-	}
 }
 
 //
@@ -213,7 +182,10 @@ func (r *St33Reader)  getRecord(n int) ( []byte,error) {
 	return byte,err
 }
 
-
+func (r *St33Reader) writeRecord(b[]byte,f os.File) (error){
+	_,err := f.Write(b)
+    return err
+}
 
 
 func (r *St33Reader) ReadST33BLOB(v Conval)  {

@@ -52,6 +52,7 @@ func readST33(cmd *cobra.Command, args []string) {
 			 b,err := r.Read()
 			 gLog.Info.Printf(" Prev address :X'%x' -  Cur address : X'%x' - Record length: %d\n",r.Previous,r.Current,len(b))
 			 if err == io.EOF {
+			 	r.File.Close()
 			 	break
 			 }
 		}

@@ -1,0 +1,96 @@
+package cmd
+
+import (
+	"github.com/s3/gLog"
+	"github.com/s3/utils"
+	"github.com/spf13/cobra"
+	"io"
+	"path/filepath"
+	"strconv"
+)
+
+// readConvalCmd represents the readConval command
+var (
+	ST33 bool
+	rl   int
+	chKRecordCmd = &cobra.Command{
+		Use:   "chkRecord",
+		Short: "Command to check valid record of VB file",
+		Long: ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			readVB(cmd,args)
+		},
+	}
+)
+
+func initVbFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&ifile,"input-file","i","","the VB data file ")
+	cmd.Flags().StringVarP(&idir,"input-directory","d","","the name of the directory")
+	cmd.Flags().BoolVarP(&ST33,"st33","s",true,"the name of the directory")
+	cmd.Flags().StringVarP(&ofile,"output-file","o","","the VB data file ")
+	cmd.Flags().StringVarP(&odir,"output-directory","e","","the name of the output directory")
+	// cmd.Flags().StringVarP(&odir,"ofile","o","","output file")
+}
+
+func init() {
+
+	RootCmd.AddCommand(chKRecordCmd)
+	initVbFlags(chKRecordCmd)
+}
+
+//  Read VB file
+func readVB(cmd *cobra.Command, args []string) {
+
+	if len(ifile) == 0 {
+		gLog.Info.Printf("%s",missingInputFile)
+		return
+	}
+
+	if len(idir) == 0 {
+		gLog.Info.Printf("%s",missingInputFolder)
+		return
+	}
+
+	if len(odir) == 0 {
+		odir  = "/tmp"
+		gLog.Info.Printf("output directory: %s",odir)
+	}
+
+	if len(ofile) == 0 {
+		ofile = ifile
+		gLog.Info.Printf("output file: %s",ofile)
+	}
+
+	n:= 0
+	bad:= 0
+	if vb,err,err1  := utils.NewVBtoRecord(filepath.Join(idir,ifile), filepath.Join(odir,ofile)); err == nil && err1 == nil {
+		for {
+			b,err:= vb.Read()
+			if ST33 {
+				rl = 0
+				if len(b) > 5 {
+					RL := utils.Ebc2asci(b[0:5])
+					rl, _ = strconv.Atoi(string(RL[0:5]))
+					if len(b) != rl {
+						gLog.Error.Printf("Wrong ST33 record - Record lengths differ rdw=%d  not equal size of the record : %d", len(b), rl)
+						bad++
+					}
+				}
+			}
+			gLog.Trace.Printf("Previous address : X'%x'  Current address : X'%x' - Record length: %d %d\n",vb.Previous,vb.Current,len(b),rl)
+			if err == io.EOF {
+				vb.File.Close()
+				vb.OutFile.Close()
+				gLog.Info.Printf("Total number of records: %d %d",n,bad)
+				break
+			} else {
+				n++
+				/* e:= []byte("\n")
+				vb.OutFile.Write(append(b,e[0]))
+				*/
+			}
+		}
+	} else {
+		gLog.Error.Printf("%v %v ",err,err1)
+	}
+}
