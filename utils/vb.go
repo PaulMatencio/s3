@@ -22,7 +22,7 @@ type VBReader interface {
 	setPreviuos(int64)
 	GetPrevious()   int64
 	Read()   ([]byte,error)
-	getRecord(int)   ( []byte,error)
+	GetRecord(int)   ( []byte,error)
 	ReadAt([]byte) (int, error)
 	getBDW()   (uint16,uint16,error)
 }
@@ -87,7 +87,7 @@ func (vb *VBRecord) Read()  ([]byte,error){
 	if err != nil  {
 		return nil,err
 	} else {
-		b,err := vb.getRecord(int(rdw)) 	//  read  rdw bytes  at the position r.Current
+		b,err := vb.GetRecord(int(rdw)) 	//  read  rdw bytes  at the position r.Current
 		return b,err
 	}
 }
@@ -96,7 +96,7 @@ func (vb *VBRecord) Read()  ([]byte,error){
 //  read n bytes from the current position (r.Current)
 //
 
-func (vb *VBRecord)  getRecord(n int) ( []byte,error) {
+func (vb *VBRecord)  GetRecord(n int) ( []byte,error) {
 	n = n - 4 //  minus 4 bytes ( rdw length )
 	byte := make([]byte, n)
 	_, err := vb.ReadAt(byte)

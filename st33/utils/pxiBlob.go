@@ -280,16 +280,14 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 				}
 			}
 		}
-
 		gLog.Info.Printf("ST33 Blob Id %s  - Blob length %d",blob.Key, blob.Blob.Len())
-
 
 	}  else {                                              // Just a regular BLOB
 
-		gLog.Trace.Printf( "PXIID %s - Key: %s  - BLOB records# : %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  Previous: x'%X' Current: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),r.Previous, r.Current)
+		gLog.Trace.Printf( "PXIID %s - Key: %s - BLOB records# : %d - BLOB Buffer pointer => Buffer length: %d  x'%X'  Previous: x'%X' Current: x'%X'", blob.Key, utils.Reverse(blob.Key), int(blob.Record),len(buf), len(buf),r.Previous, r.Current)
 		// blob.Blob.Write(buf[:len(buf)-4])                  // add the first record to the BLOB
 		blob.Blob.Write(buf)
-		for rec := 1; rec <  int(blob.Record); rec++ {     // add other records to the BLOB
+		for rec := 1; rec <  int(blob.Record); rec++ {     // append records to the BLOB
 			if buf,err  := r.Read(); err == nil  {
 				nrec++
 				blob.Blob.Write(buf)
@@ -300,3 +298,5 @@ func ( blob *pxiBlob ) BuildPxiBlobV2(r *St33Reader,v Conval) (int, error) {
 
 	return nrec,err
 }
+
+

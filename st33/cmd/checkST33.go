@@ -135,7 +135,7 @@ func checkST33(cmd *cobra.Command, args []string) {
 						warnings += w
 						errors += e
 						if c {
-							gLog.Error.Printf("Skiiping file %s due to critical error",file)
+							gLog.Error.Printf("Skipping file %s due to critical error",file)
 							break
 						}
 
