@@ -48,16 +48,6 @@ func readVB(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if len(odir) == 0 {
-		odir  = "/tmp"
-		gLog.Info.Printf("output directory: %s",odir)
-	}
-
-	if len(ofile) == 0 {
-		ofile = ifile
-		gLog.Info.Printf("output file: %s",ofile)
-	}
-
 	n:= 0
 	bad:= 0
 	if vb,err := utils.NewVBRecord(filepath.Join(idir,ifile)); err == nil {

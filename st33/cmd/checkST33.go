@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-// checkST33Cmd represents the checkST33 command
+//  check ST33 data consistency using the ST33 control file
 var (
 	checkST33Cmd = &cobra.Command {
 		Use:   "chkST33",
@@ -131,13 +131,6 @@ func checkST33(cmd *cobra.Command, args []string) {
 				if typ == "B" { // BLOB record
 					r.ReadST33BLOB(v)
 				} else if typ == "P" {
-
-					//  For intg only -> todo -> externalize it
-					// if v.PxiId  != "E1_____113F65926719P1" {       // Exclude PXIID for IPXI.lot029 INTG
-					//	r.ReadST33Tiff(v)
-					// }
-					//
-
 						w,e,c := r.ReadST33Tiff(v,ind)
 						warnings += w
 						errors += e

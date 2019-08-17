@@ -14,7 +14,17 @@ type VBRecord struct {
 	Size        int64           // Size of the file
 	Current     int64           //  Current address of the record to read
 	Previous    int64           //  Pointer to previous recod ( BDW,RDW,data)
-	OutFile     *os.File        //  Outfile -> File descriptor of the Record file
+}
+
+type VBReader interface {
+	SetCurrent(int64)
+	GetCurrent()   int64
+	setPreviuos(int64)
+	GetPrevious()   int64
+	Read()   ([]byte,error)
+	getRecord(int)   ( []byte,error)
+	ReadAt([]byte) (int, error)
+	getBDW()   (uint16,uint16,error)
 }
 
 // create a new VBtoRecord instance

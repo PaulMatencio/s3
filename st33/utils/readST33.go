@@ -13,18 +13,21 @@ import (
 )
 
 type St33Reader struct {
-
+    /*
 	File        *os.File        // File  -> File descriptor
 	Buffer      *bytes.Buffer   // in memory buffer
 	Size        int64           // Size of the file
 	Type        string          //  type  : RAM , File
 	Current     int64           //  Current address of the record to read
 	Previous    int64           //  Pointer to previous recod ( BDW,RDW,data)
+    */
 
+	*utils.VBRecord
 }
 
 
 // create a new reader instance
+/*
 func NewSt33Reader(infile string ) (*St33Reader, error) {
 	f,err:= os.Open(infile)
 	if err == nil {
@@ -41,10 +44,19 @@ func NewSt33Reader(infile string ) (*St33Reader, error) {
 		return nil,err
 	}
 }
+*/
+
+func NewSt33Reader(infile string ) (*St33Reader, error){
+	a,err:= utils.NewVBRecord(infile)
+	return &St33Reader  {
+		a,
+	},err
+}
 
 //
 // Set position of the current record to read
 //
+/*
 func  (r *St33Reader)  SetCurrent(c int64) {
 	r.Current = c
 }
@@ -187,7 +199,7 @@ func (r *St33Reader) writeRecord(b[]byte,f os.File) (error){
     return err
 }
 
-
+*/
 func (r *St33Reader) ReadST33BLOB(v Conval)  {
 
 	var (

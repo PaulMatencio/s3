@@ -3,13 +3,13 @@ package cmd
 
 import (
 	"github.com/s3/gLog"
-	"github.com/s3/st33/utils"
+	st33 "github.com/s3/st33/utils"
 	"github.com/spf13/cobra"
 	"io"
 	"path/filepath"
 )
 
-// readConvalCmd represents the readConval command
+//  same as checkST33.go
 var (
 
 	readST33Cmd = &cobra.Command{
