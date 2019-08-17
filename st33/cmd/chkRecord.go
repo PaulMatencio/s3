@@ -60,7 +60,7 @@ func readVB(cmd *cobra.Command, args []string) {
 
 	n:= 0
 	bad:= 0
-	if vb,err := utils.NewVBtoRecord(filepath.Join(idir,ifile)); err == nil {
+	if vb,err := utils.NewVBRecord(filepath.Join(idir,ifile)); err == nil {
 		for {
 			b,err:= vb.Read()
 			if ST33 {

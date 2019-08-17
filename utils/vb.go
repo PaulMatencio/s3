@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type VBToRecord struct {
+type VBRecord struct {
 
 	File        *os.File        // File  -> File descriptor of the VB file
 	Buffer      *bytes.Buffer   // in memory buffer
@@ -18,13 +18,13 @@ type VBToRecord struct {
 }
 
 // create a new VBtoRecord instance
-func NewVBtoRecord(infile string ) (*VBToRecord, error) {
+func NewVBRecord(infile string ) (*VBRecord, error) {
 
 	f,err:= os.Open(infile)
 	if err == nil   {
 		finfo, _ := f.Stat()
 		size := finfo.Size()
-		return &VBToRecord{
+		return &VBRecord{
 			File:     f,
 			Size:     size,
 			Previous: 0,
@@ -39,7 +39,7 @@ func NewVBtoRecord(infile string ) (*VBToRecord, error) {
 //
 // Set position of the current record to read
 //
-func  (r *VBToRecord)  SetCurrent(c int64) {
+func  (r *VBRecord)  SetCurrent(c int64) {
 	r.Current = c
 }
 
@@ -47,21 +47,21 @@ func  (r *VBToRecord)  SetCurrent(c int64) {
 //
 //   Return the location of the current record
 //
-func  (r *VBToRecord)  GetCurrent() (int64){
+func  (r *VBRecord)  GetCurrent() (int64){
 	return r.Current
 }
 
 //
 // Set  the location of the previous record
 //
-func  (r *VBToRecord)  setPrevious(c int64){
+func  (r *VBRecord)  setPrevious(c int64){
 	r.Previous = c
 }
 
 //
 // return the location of the previous  record
 //
-func  (r *VBToRecord)  GetPrevious() (int64) {
+func  (r *VBRecord)  GetPrevious() (int64) {
 	return r.Previous
 }
 
@@ -72,7 +72,7 @@ func  (r *VBToRecord)  GetPrevious() (int64) {
 //   BDW -RDW should = 4
 //
 
-func (vb *VBToRecord) Read()  ([]byte,error){
+func (vb *VBRecord) Read()  ([]byte,error){
 	_,rdw,err := vb.getBDW()
 	if err != nil  {
 		return nil,err
@@ -86,7 +86,7 @@ func (vb *VBToRecord) Read()  ([]byte,error){
 //  read n bytes from the current position (r.Current)
 //
 
-func (vb *VBToRecord)  getRecord(n int) ( []byte,error) {
+func (vb *VBRecord)  getRecord(n int) ( []byte,error) {
 	n = n - 4 //  minus 4 bytes ( rdw length )
 	byte := make([]byte, n)
 	_, err := vb.ReadAt(byte)
@@ -98,7 +98,7 @@ func (vb *VBToRecord)  getRecord(n int) ( []byte,error) {
 //
 // read  b bytes from the current  position
 //
-func (vb *VBToRecord) ReadAt(b []byte) (int, error){
+func (vb *VBRecord) ReadAt(b []byte) (int, error){
 
 	f := vb.File
 	c := vb.Current
@@ -119,7 +119,7 @@ func (vb *VBToRecord) readVB() ([]byte, error){
 */
 
 
-func (vb *VBToRecord) getBDW() (uint16,uint16,error) {
+func (vb *VBRecord) getBDW() (uint16,uint16,error) {
 	var (
 		Big binary.ByteOrder = binary.BigEndian
 		bdw uint16
