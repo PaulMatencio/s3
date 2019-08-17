@@ -18,11 +18,10 @@ type VBToRecord struct {
 }
 
 // create a new VBtoRecord instance
-func NewVBtoRecord(infile string , outfile string) (*VBToRecord, error,error) {
+func NewVBtoRecord(infile string ) (*VBToRecord, error) {
 
 	f,err:= os.Open(infile)
-	of,err1 := os.Create(outfile)
-	if err == nil && err1 == nil  {
+	if err == nil   {
 		finfo, _ := f.Stat()
 		size := finfo.Size()
 		return &VBToRecord{
@@ -30,10 +29,10 @@ func NewVBtoRecord(infile string , outfile string) (*VBToRecord, error,error) {
 			Size:     size,
 			Previous: 0,
 			Current:  0,
-			OutFile: of,
-		}, err,err1
+
+		}, err
 	} else {
-		return nil,err,err1
+		return nil,err
 	}
 }
 

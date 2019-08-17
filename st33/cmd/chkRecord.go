@@ -27,9 +27,6 @@ func initVbFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&ifile,"input-file","i","","the VB data file ")
 	cmd.Flags().StringVarP(&idir,"input-directory","d","","the name of the directory")
 	cmd.Flags().BoolVarP(&ST33,"st33","s",true,"the name of the directory")
-	cmd.Flags().StringVarP(&ofile,"output-file","o","","the VB data file ")
-	cmd.Flags().StringVarP(&odir,"output-directory","e","","the name of the output directory")
-	// cmd.Flags().StringVarP(&odir,"ofile","o","","output file")
 }
 
 func init() {
@@ -63,7 +60,7 @@ func readVB(cmd *cobra.Command, args []string) {
 
 	n:= 0
 	bad:= 0
-	if vb,err,err1  := utils.NewVBtoRecord(filepath.Join(idir,ifile), filepath.Join(odir,ofile)); err == nil && err1 == nil {
+	if vb,err := utils.NewVBtoRecord(filepath.Join(idir,ifile)); err == nil {
 		for {
 			b,err:= vb.Read()
 			if ST33 {
@@ -80,7 +77,6 @@ func readVB(cmd *cobra.Command, args []string) {
 			gLog.Trace.Printf("Previous address : X'%x'  Current address : X'%x' - Record length: %d %d\n",vb.Previous,vb.Current,len(b),rl)
 			if err == io.EOF {
 				vb.File.Close()
-				vb.OutFile.Close()
 				gLog.Info.Printf("Total number of records: %d %d",n,bad)
 				break
 			} else {
@@ -91,6 +87,6 @@ func readVB(cmd *cobra.Command, args []string) {
 			}
 		}
 	} else {
-		gLog.Error.Printf("%v %v ",err,err1)
+		gLog.Error.Printf("%v %v ",err)
 	}
 }
