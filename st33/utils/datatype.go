@@ -55,6 +55,7 @@ type ToS3Request struct {
 	Profiling 	      int        `json:"run-with-profiling"`
 	Reload            bool       `json:"reload"`
 	Async 		      int        `json:"run-with-concurrent-number"`
+	Check             bool       `json:"check"`
 
 }
 

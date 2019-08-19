@@ -26,7 +26,7 @@ var (
 func initVbFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&ifile,"input-file","i","","the VB data file ")
 	cmd.Flags().StringVarP(&idir,"input-directory","d","","the name of the directory")
-	cmd.Flags().BoolVarP(&ST33,"st33","s",true,"the name of the directory")
+	cmd.Flags().BoolVarP(&ST33,"st33","s",true,"Input format is ST33")
 }
 
 func init() {

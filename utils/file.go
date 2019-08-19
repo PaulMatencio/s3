@@ -176,7 +176,7 @@ func Scanner(pathname string) (*bufio.Scanner, error) {
 func WriteFile(filename string, buf []byte, mode os.FileMode) error {
 	var err error
 	if err = ioutil.WriteFile(filename, buf, mode); err != nil {
-		gLog.Warning.Printf("Err %v Writing $s",err, filename)
+		gLog.Warning.Printf("Err %v Writing %s",err, filename)
 	}
 	return err
 }

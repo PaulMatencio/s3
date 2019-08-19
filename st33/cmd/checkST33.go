@@ -151,7 +151,7 @@ func checkST33(cmd *cobra.Command, args []string) {
 		}
 		f++
 	}
-	gLog.Warning.Printf("Partion: %s  - Total number of files: %d - Total number of warnings: %d - Total number of errors: %d ",partition,f,Warnings,Errors)
+	gLog.Warning.Printf("Partition: %s  - Total number of files: %d - Total number of warnings: %d - Total number of errors: %d ",partition,f,Warnings,Errors)
 }
 
 

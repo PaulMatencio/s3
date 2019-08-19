@@ -97,5 +97,6 @@ const (
 	FullyUploaded string = "Fully Uploaded"
 	FullyUploaded2 string = "Fully Uploaded with some input data inconsistency"
 	TwoGB         int64 =  2*1024*1024
+	LOOP               int = 4    /* number of loop to skip bad records */
 )
 
