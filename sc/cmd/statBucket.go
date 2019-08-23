@@ -10,6 +10,7 @@ import (
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 // statBucketCmd represents the statBucket command
@@ -47,7 +48,7 @@ func statBucket(cmd *cobra.Command,args []string) {
 		gLog.Warning.Printf("%s",missingBucket)
 		return
 	}
-
+	start := time.Now()
 	var (
 
 		req = datatype.StatBucketRequest{
@@ -62,12 +63,12 @@ func statBucket(cmd *cobra.Command,args []string) {
 	if err != nil {
 
 		if aerr, ok := err.(awserr.Error); ok {
-			gLog.Info.Printf("Bucket %s %v",bucket,aerr.Code())
+			gLog.Info.Printf("Bucket %s %v ",bucket,aerr.Code())
 		} else {
 			gLog.Error.Println(err.Error())
 		}
 	} else {
-		gLog.Info.Printf("Bucket %s exists",bucket)
+		gLog.Info.Printf("Bucket %s exists (Response in %s ms) ",bucket, time.Since(start))
 	}
 
 }

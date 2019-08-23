@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -62,7 +63,7 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 				KEY = utils.Reverse(KEY)
 				P := int(v.Pages)    // Total number of pages for this document
 				for p:= 0; p < P; p++ {
-					if image, nrec , err, err1 := GetPage(r,v); err == nil && err1==nil   {
+					if image, nrec , err, err1 := GetPage(r,v); err == nil /* && err1==nil  */ {
 
 						/*
 						THIS SHOULD NOT HAPPEN
@@ -122,10 +123,20 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 				numdocs++
 
 				//  Total number of records of the control file should match the total number of records for this PXIID
+
 				if v.Records != recs {
 					gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
-					extrarec := v.Records - recs   // SKIP AND discard extra records
-					for m:=1; m <= extrarec; m++ { // SKIP missing records
+					diff := v.Records - recs   // SKIP AND discard extra records
+					if diff < 0 {
+						if diff < -1 {
+							gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
+							gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
+							os.Exit(100)
+						}
+						gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
+						r.Current = r.Previous - 8
+					}
+					for m:=1; m <= diff; m++ { // SKIP missing records
 						if buf,err := r.Read(); err == nil {
 							ST33 := utils.Ebc2asci(buf[0:214])
 							pagenum, _ := strconv.Atoi(string(ST33[17:21]))
@@ -133,6 +144,8 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 						}
 					}
 				}
+
+
 				gLog.Trace.Printf("PXIID: %s - Key %s - #records: %d/%d - #pages: %d/%d - Total #pages: %d ",v.PxiId,utils.Reverse(v.PxiId),v.Records,recs,v.Pages,pages,numpages)
 
 			} else if v.PxiId[lp-2:lp-1] == "B"  {            // Regular BLOB

@@ -31,7 +31,7 @@ import (
 
 var (
 	async int
-	file,sBucket,partition string
+	file,sBucket,partition  string
 	files,ranges []string
 	reload  bool   // force reload when true
 	check   bool   // check mode when true
@@ -67,6 +67,7 @@ func init() {
 	RootCmd.AddCommand(toS3V2Cmd)
 	// initT3Flags(toS3Cmd)
 	initT3Flags(toS3V2Cmd)
+
 }
 
 
@@ -141,6 +142,7 @@ func toS3Func(cmd *cobra.Command, args []string) {
 	if check {
 		gLog.Info.Print("Running in test mode")
 	}
+
 	for _,file := range files {
 
 		var (
@@ -163,7 +165,16 @@ func toS3Func(cmd *cobra.Command, args []string) {
 			}
 		)
 
-		gLog.Info.Printf("Processing input file ...  %s %s", idir, file)
+		// For helping to identify  the current input file ( lot number)   in all the logs
+
+		if lot == "" {
+			gLog.Info.Printf("Processing input file ..........................  %s %s", idir, file)
+			/* gLog.Warning.Printf("Processing input file  ..........................  %s %s", idir, file)
+			gLog.Error.Printf("Processing input file  ..........................  %s %s", idir, file)
+			*/
+		}
+
+
 
 		if async <= 1  {
 			numpages, numrecs,numdocs, size, Err = st33.ToS3V1(&toS3)
@@ -184,9 +195,6 @@ func toS3Func(cmd *cobra.Command, args []string) {
 		// debug.FreeOSMemory()
 	}
 }
-
-
-
 
 
 // return an array of ST33  files to be processed

@@ -125,13 +125,12 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 	/* read ST33  file */
 	gLog.Info.Printf("Processing input file %s - control file %s",infile,confile)
 	r,err  := NewSt33Reader(infile)
-
 	if err == nil {
 		var (
 			Numdocs 	int = len(conVal)
 		)
 		gLog.Info.Printf("Number of documents to upload %d",Numdocs)
-
+		// loop tru the control file
 		for e, v := range conVal {
 			var (
 				recs   int =0
@@ -141,7 +140,10 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 			)
 
 			gLog.Info.Printf("Document#: %d - Uploading Key: %s - Number of pages %d / Number of records %d",e, utils.Reverse(v.PxiId),v.Pages,v.Records)
-
+			/* Delete previous stack and  create  a  new stack  to keep track of all record 's address of this document */
+			utils.DelStack(r.Stack)
+			r.Stack =  utils.NewStack(v.Records)
+			// if the last - 1 byte is "P"  then it is  an ST33 TIFF image
 			if v.PxiId[lp-2:lp-1] == "P" {
 					KEY = utils.Reverse(KEY)
 					s := 0
@@ -149,7 +151,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					for p := 0; p < P; p++ {
 						// set the key of the s3 object
 						putReq.Key = KEY
-						putReq.Usermd = map[string]string{} // reset user metadata
+						putReq.Usermd = map[string]string{} // reset the  user metadata
 
 						if image,nrec, err, err1 := GetPage(r, v); err == nil  {
 
@@ -173,6 +175,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 								// complete the request to write to S3
 								putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
 								putReq.Buffer = image.Img
+
                                 /*
 								if _, err := writeToS3(putReq); err != nil {
 									error := errors.New(fmt.Sprintf("PutObject Key: %s  Error: %v", putReq.Key, err))
@@ -207,8 +210,40 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					numpages += int(v.Pages)
 					numrecs += recs
 
+					/*  check records number */
 
-			} else if v.PxiId[lp-2:lp-1] == "B" {
+					//  Total number of records of the control file should match the total number of records for this PXIID
+
+					if v.Records != recs {
+						gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
+						diff := v.Records - recs   // SKIP AND discard extra records
+						if diff < 0 {
+							/*
+							if diff < -1 {
+								gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
+								gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
+							}
+							gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
+							r.Current = r.Previous - 8
+							*/
+							gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
+							for sk:= 1; sk <= diff; sk ++ {
+								r.Current = r.Stack.Pop().Address
+								gLog.Warning.Printf(" Rewinding to address X'%x'",r.Current)
+							}
+
+						}
+						for m:=1; m <= diff; m++ { // SKIP missing records
+							if buf,err := r.Read(); err == nil {
+								ST33 := utils.Ebc2asci(buf[0:214])
+								pagenum, _ := strconv.Atoi(string(ST33[17:21]))
+								gLog.Warning.Printf("PXIID %s - Skip record number %d", v.PxiId, pagenum)
+							}
+						}
+					}
+
+
+			} else if v.PxiId[lp-2:lp-1] == "B" {  // it is a blob
 					pxiblob := NewPxiBlob(KEY, v.Records)
 					if nrec, err := pxiblob.BuildPxiBlob(r, v); err == nil {
 						if nrec != v.Records {
@@ -339,7 +374,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 	if !utils.Exist(confile) {
 		ErrKey = append(ErrKey,S3Error {
 			"",
-			errors.New(fmt.Sprintf("Corrresponding dirval file %s does not exist for input file %s ",confile,infile)),
+			errors.New(fmt.Sprintf("Corrresponding datval file %s does not exist for input file %s ",confile,infile)),
 		})
 		return 0,0,0,0,ErrKey
 	} else {
@@ -408,7 +443,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 				start1 = time.Now()
 			)
 			// for all documents listed in the control file
-			for e, v := range conVal[p:q] {
+			for e, v := range conVal[p:q] {   // loop tru teh control file
 				KEY := v.PxiId;
 			//	if KEY != "E1_______0011444808P1" && KEY != "E1_______001156770LP1"  && v.PxiId != "E1_______0031079902P1" { // lot p00001.00155, p00001.00164 p00002.00171
 
@@ -424,10 +459,8 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 						for p := 0; p < P; p++ {
 
 							image, nrec, err, err1 := GetPage(r, v)   // Get the next page
-							if err1 != nil { // page is broken
+							if err1 != nil { // Broken page
 								inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
-								N = (N - P) + p
-								break
 							}
 
 							if err == nil  {
@@ -435,6 +468,8 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 								pages++                             //  increment the number of pages without error.
 								numpages++                          //  increment the number of pages for this lot
 								numrecs += nrec                     //  increment the number of records for this lot
+
+
 								v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
 
 								go func(key string, image *PxiImg, v Conval) {
@@ -475,6 +510,36 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 
 						}
 						numdocs++ // increment the number of processed documents
+
+						/* Check the total number of records of  this document, they must match */
+						if v.Records != recs {
+							gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
+							diff := v.Records - recs
+							if diff < 0 {    //  the number of records of the documents >  number of records in the control file
+							    /*
+								if diff < -1 {
+									gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
+									gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
+									os.Exit(100)
+								}
+								gLog.Warning.Printf("PXIID %s - %s - rewinding by 1 record", v.PxiId,r.File.Name())
+								r.Current = r.Previous - 8
+							    */
+								gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
+								for sk:= 1; sk <= diff; sk ++ {
+									r.Current = r.Stack.Pop().Address
+									gLog.Warning.Printf(" Rewinding to address X'%x'",r.Current)
+								}
+							}
+							/* diff > 0  =>  the number of records of the documents  < number of records of the control file */
+							for m:=1; m <= diff; m++ { // SKIP missing records
+								if buf,err := r.Read(); err == nil {
+									ST33 := utils.Ebc2asci(buf[0:214])
+									pagenum, _ := strconv.Atoi(string(ST33[17:21]))
+									gLog.Warning.Printf("PXIID %s - %s  - Skip page number %d", v.PxiId, r.File.Name(),pagenum)
+								}
+							}
+						}
 
 
 					} else if KEY[lp-2:lp-1] == "B" { // regular BLOB

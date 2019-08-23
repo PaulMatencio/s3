@@ -14,6 +14,8 @@ type VBRecord struct {
 	Size        int64           // Size of the file
 	Current     int64           //  Current address of the record to read
 	Previous    int64           //  Pointer to previous recod ( BDW,RDW,data)
+	Stack       Stack           //  size  stack
+
 }
 
 type VBReader interface {
@@ -39,7 +41,7 @@ func NewVBRecord(infile string ) (*VBRecord, error) {
 			Size:     size,
 			Previous: 0,
 			Current:  0,
-
+			Stack : NewStack(0),
 		}, err
 	} else {
 		return nil,err
@@ -83,6 +85,7 @@ func  (r *VBRecord)  GetPrevious() (int64) {
 //
 
 func (vb *VBRecord) Read()  ([]byte,error){
+
 	_,rdw,err := vb.getBDW()
 	if err != nil  {
 		return nil,err
@@ -97,10 +100,16 @@ func (vb *VBRecord) Read()  ([]byte,error){
 //
 
 func (vb *VBRecord)  GetRecord(n int) ( []byte,error) {
+
 	n = n - 4 //  minus 4 bytes ( rdw length )
 	byte := make([]byte, n)
 	_, err := vb.ReadAt(byte)
 	vb.Previous = vb.Current
+	/* stack the  previous addrees */
+	addr := Node{
+		Address: vb.Previous-8,  /* point to BDW */
+	}
+	vb.Stack.Push(&addr)
 	vb.Current += int64(n)
 	return byte, err
 }
@@ -138,14 +147,10 @@ func (vb *VBRecord) getBDW() (uint16,uint16,error) {
 	)
 
 	byte := make([]byte, 4)
-
 	seek := vb.Current
-
 	_, err = vb.ReadAt(byte) // Read BDW ( first 2 bytes )
-
 	if err == nil {
 		err = binary.Read(bytes.NewReader(byte), Big, &bdw)
-
 		vb.Current += 4
 	}
 	// read rdw

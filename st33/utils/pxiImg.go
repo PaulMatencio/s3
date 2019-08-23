@@ -85,16 +85,12 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 	err 		= 	binary.Read(bytes.NewReader(buf[84 : 86]), Big, &totalRec)
 	err 		= 	binary.Read(bytes.NewReader(buf[214 : 218]), Big, &totalLength)
 	err			= 	binary.Read(bytes.NewReader(buf[250 : 252]), Big, &imgl)
-
 	/*
 		convert St33 encoded Big Endian input data ( EBCDIC) to  Little Endian (ASCII)
 	*/
-
-
 	st33 	:= utils.Ebc2asci(buf[0: 214])
 
 	// long, _ := 	strconv.Atoi(string(st33[0:5]))
-
 	image.PxiId		= st33[5:17]   //  PXI ID
 	image.PageNum	= st33[17:21]  // page nunber
 	image.RefNum	= st33[34:45]  // was 41
@@ -176,10 +172,13 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 
 	// read all the records for this image.
 	// the number of records are extracted from the image header
+	//  if the total number of the records is >  the control records  the take the total number of records from the
+	//  control file
 
 	for rec := 2; rec <= int(totalRec); rec++ {
 
 		if buf,err = r.Read();err == nil  {
+
 			nrec++   // increment the number of records
 
 			_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)

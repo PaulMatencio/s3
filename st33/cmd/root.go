@@ -18,7 +18,7 @@ var (
 	verbose, Debug,autoCompletion,test 	 bool
 	// log          = lumber.NewConsoleLogger(lumber.INFO)
 	conval,datval string
-	odir,pdir,bdir,ifile  string
+	odir,pdir,bdir,ifile, lot string
 	loglevel,profiling,suffix int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
@@ -60,7 +60,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
 	RootCmd.PersistentFlags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
-
+	RootCmd.PersistentFlags().StringVarP(&lot,"lot", "L","", "string to be appended to the path directory of the log")
 
 	// RootCmd.Flags().StringVarP(&datval,"data-file-directrory", "","", "data file prefix  ex: datval.lot")
 	// RootCmd.Flags().StringVarP(&datval,"data-file-prefix", "","", "data file prefix  ex: datval.lot")
@@ -74,7 +74,8 @@ func init() {
 	viper.BindPFlag("loglevel",RootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("autoCompletion",RootCmd.PersistentFlags().Lookup("autoCompletion"))
 	viper.BindPFlag("profiling",RootCmd.PersistentFlags().Lookup("profiling"))
-	viper.BindPFlag("partition",RootCmd.PersistentFlags().Lookup("persistent"))
+	viper.BindPFlag("partition",RootCmd.PersistentFlags().Lookup("partition"))
+	viper.BindPFlag("lot",RootCmd.PersistentFlags().Lookup("lot"))
 
 	// read and init the config with  viper
 	cobra.OnInitialize(initConfig)
@@ -121,7 +122,10 @@ func initConfig() {
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
 	if logOutput != "terminal" {
-		logOutput += "/" + partition
+		logOutput += string(os.PathSeparator) + partition
+		if lot != ""  {
+			logOutput += string(os.PathSeparator) + lot
+		}
 	}
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 

@@ -182,9 +182,10 @@ func (r *St33Reader) ReadST33Tiff( v Conval, ind int) (int,int,bool){
 					break
 				} else {
 					// loop until the number of pages are equal on both
-					loop ++
-					gLog.Warning.Printf("Loop: %d - PXIID: %s/%s - Page #: %s - Ref #: %s - Total # of pages in Control file: %d != Total # of pages: %d in the image at buffer address: x'%x'", loop, v.PxiId, ST33[5:17],ST33[17:21],ST33[34:45],v.Pages, numpages, r.GetPrevious())
+
+					gLog.Warning.Printf("Loop: %d - PXIID: %s/%s/%d - Page #: %s - Ref #: %s - Total # of pages in Control file: %d != Total # of pages: %d in the image at buffer address: x'%x'", loop, v.PxiId, ST33[5:17],ind,ST33[17:21],ST33[34:45],v.Pages, numpages, r.GetPrevious())
 					gLog.Warning.Println(hex.Dump(buf[0:214]))
+					loop ++
 					warning ++
 					if loop >= LOOP {
 						gLog.Warning.Printf("PXIID: %s - Too many errors %d  at entry %d  in file %s ",v.PxiId,loop,ind,r.File.Name())
