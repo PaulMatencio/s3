@@ -226,6 +226,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
 							r.Current = r.Previous - 8
 							*/
+							diff = -diff
 							gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
 							for sk:= 1; sk <= diff; sk ++ {
 								r.Current = r.Stack.Pop().Address
@@ -282,7 +283,6 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 				gLog.Error.Printf("%v",error)
 				ErrKey= append(ErrKey,S3Error{Key:v.PxiId,Err:error})
 			}
-
 			numdocs++
 		}
 		duration := time.Since(start0)
@@ -323,8 +323,6 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 	gLog.Info.Printf("Number of uploaded documents %d - Number of uploaded pages %d",numdocs,numpages)
 	return numpages,numrecs, numdocs,S,ErrKey
 }
-
-
 
 
 //
@@ -525,6 +523,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 								gLog.Warning.Printf("PXIID %s - %s - rewinding by 1 record", v.PxiId,r.File.Name())
 								r.Current = r.Previous - 8
 							    */
+							    diff = -diff
 								gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
 								for sk:= 1; sk <= diff; sk ++ {
 									r.Current = r.Stack.Pop().Address

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -82,7 +81,6 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 
 						if image.Img!= nil {
 							s += image.Img.Len()
-
 							gLog.Trace.Printf("ST33 Key:%s - # Pages:%d - PxiId:%s Page number:%s - ImageLength:%d", KEY, v.Pages, string(image.PxiId), string(image.PageNum), image.Img.Len())
 							pagenum, _ := strconv.Atoi(string(image.PageNum))
 							 	if !test {
@@ -110,11 +108,11 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 						}
 
 					} else {
-						gLog.Error.Printf("Error %v getting  page number %d", err,err1, p+1)
-						numerrors++
-						if err1 != nil {
-							return numpages,numrecs,numdocs,numerrors, err1
-						}
+							gLog.Error.Printf("Error %v getting  page number %d", err,err1, p+1)
+							numerrors++
+							if err1 != nil {
+								return numpages,numrecs,numdocs,numerrors, err1
+							}
 						}
 				}
 
@@ -128,13 +126,20 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 					gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
 					diff := v.Records - recs   // SKIP AND discard extra records
 					if diff < 0 {
-						if diff < -1 {
-							gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
-							gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
-							os.Exit(100)
+						/*
+							if diff < -1 {
+								gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
+								gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
+							}
+							gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
+							r.Current = r.Previous - 8
+						*/
+						diff = -diff
+						gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
+						for sk:= 1; sk <= diff; sk ++ {
+							r.Current = r.Stack.Pop().Address
+							gLog.Warning.Printf(" Rewinding to address X'%x'",r.Current)
 						}
-						gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
-						r.Current = r.Previous - 8
 					}
 					for m:=1; m <= diff; m++ { // SKIP missing records
 						if buf,err := r.Read(); err == nil {
@@ -144,7 +149,6 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 						}
 					}
 				}
-
 
 				gLog.Trace.Printf("PXIID: %s - Key %s - #records: %d/%d - #pages: %d/%d - Total #pages: %d ",v.PxiId,utils.Reverse(v.PxiId),v.Records,recs,v.Pages,pages,numpages)
 
@@ -173,8 +177,6 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 					} else {
 						gLog.Error.Printf("Error building user metadata %v", err)
 					}
-
-
 					pxiblob.Blob.Reset()  /* reset the previous blob buffer */
 					numpages++            // increment number of processed pages
 					numrecs +=nrec        //  increment the number of processed records
