@@ -124,29 +124,13 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 
 				if v.Records != recs {
 					gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
-					diff := v.Records - recs   // SKIP AND discard extra records
+					diff := v.Records - recs
 					if diff < 0 {
-						/*
-							if diff < -1 {
-								gLog.Info.Printf("Critical error - can't  process %s  - %s",v.PxiId, r.File.Name())
-								gLog.Error.Printf("PXIID %s - %s - can't rewind more  than one record %d", v.PxiId, r.File.Name(),diff)
-							}
-							gLog.Warning.Printf("PXIID %s - rewinding by 1 record", v.PxiId)
-							r.Current = r.Previous - 8
-						*/
-						diff = -diff
-						gLog.Warning.Printf("PXIID %s - rewinding by %d record from address X'%x'", v.PxiId, diff, r.Current)
-						for sk:= 1; sk <= diff; sk ++ {
-							r.Current = r.Stack.Pop().Address
-							gLog.Warning.Printf(" Rewinding to address X'%x'",r.Current)
-						}
-					}
-					for m:=1; m <= diff; m++ { // SKIP missing records
-						if buf,err := r.Read(); err == nil {
-							ST33 := utils.Ebc2asci(buf[0:214])
-							pagenum, _ := strconv.Atoi(string(ST33[17:21]))
-							gLog.Warning.Printf("PXIID %s - Skip record number %d", v.PxiId, pagenum)
-						}
+						RewindST33(v,r,diff)
+						recs -= diff
+					} else {
+						SkipST33(v,r,diff)
+						recs += diff
 					}
 				}
 
