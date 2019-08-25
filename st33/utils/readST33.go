@@ -289,11 +289,17 @@ func (r *St33Reader) ReadST33Tiff( v Conval, ind int) (int,int,bool){
 	//
 
 	if v.Records != recs {
-		gLog.Error.Printf("Entry number: %d - PXIID: %s/%s - Ref #: %s - Page#: %s - Total # of records in the control file: %d != total # of records found in the image: %d - Length of buffer:%d - Prev/cur X'%x'/X'%x'",ind, v.PxiId,ST33[5:17],ST33[34:45],ST33[17:21],v.Records,recs,len(buf),r.Previous,r.Current)
-		gLog.Error.Println(hex.Dump(buf[0:214]))
-		errors++
+		diff := v.Records - recs
+		if diff < 0 {
+			RewindST33(v,r,diff)
+			recs -= diff
+		} else {
+			SkipST33(v,r,diff)
+			recs += diff
+		}
+		gLog.Info.Printf("Entry number: %d  Good??? - PXIID: %s - # of pages: %d - # of records: %d ",ind,v.PxiId,pages,recs)
 	} else {
-		gLog.Info.Printf("Entry number: %d  Good! - PXIID: %s - # of pages: %d - # of records: %d ",ind,v.PxiId,pages,recs)
+		gLog.Info.Printf("Entry number: %d  Good!!! - PXIID: %s - # of pages: %d - # of records: %d ",ind,v.PxiId,pages,recs)
 	}
 
 	return warning,errors,critical
