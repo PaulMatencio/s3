@@ -152,7 +152,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					putReq.Key = KEY
 					putReq.Usermd = map[string]string{} // reset the  user metadata
 
-					if image,nrec, err, err1 := GetPage(r, v); err == nil  {
+					if image,nrec, err, err1 := GetPage(r, v); err == nil  && err1 == nil  {
 
 						pages++  // increment the number of pages for this PXI ID
 						recs += nrec // increment the number of records for this PXI ID
@@ -200,8 +200,10 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 						// should never happen unless input data is corrupted
 						// gLog.Fatal.Printf("%v",err)
 						//  os.Exit(100)
-						if err1 != nil {
+						if err != io.EOF || err1 != nil {
+							gLog.Error.Printf("PXIID: %s -  Err: %v  - Err1: %v ",v.PxiId,err,err1)
 							inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
+							break
 						}
 					}
 				}
@@ -446,12 +448,11 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 							inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
 						}
 
-						if err == nil  {
+						if err == nil  && err1 == nil {
 							recs += nrec                        // increment the number of records for this page
 							pages++                             //  increment the number of pages without error.
 							numpages++                          //  increment the number of pages for this lot
 							numrecs += nrec                     //  increment the number of records for this lot
-
 
 							v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
 
@@ -484,19 +485,19 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 
 							}(KEY, image, v)
 						} else {
-							// should never happen unless input data is corrupted
-							gLog.Error.Printf("Error %v  building image for Key:%s - Prev/Curr buffer address: X'%x'/ X'%x' ", err, v.PxiId, r.Previous, r.Current)
-							if err != io.EOF {
+							// should not happen unless input data is corrupted
+							if err != io.EOF  || err1 != nil {
+								gLog.Error.Printf("Err: %v Err1: %v  building image for Key:%s - Prev/Curr buffer address: X'%x'/ X'%x' ", err,err1, v.PxiId, r.Previous, r.Current)
+								gLog.Error.Printf("Exit while processing key: %s  at entry number: %d  of input file: %s",v.PxiId,e, infile)
 								os.Exit(100)
 							}
 						}
-
 					}
 					numdocs++ // increment the number of processed documents
 
 					/* Check the total number of records of  this document, they must match */
 					if v.Records != recs {
-						gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
+						gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file %s",v.PxiId,v.Records,recs,req.File)
 						diff := v.Records - recs
 						if diff < 0 {
 							RewindST33(v,r,diff)

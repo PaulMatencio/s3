@@ -120,6 +120,8 @@ func initConfig() {
 	}
 
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
+	logCombine:= utils.GetLogCombine(*viper.GetViper())
+
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
 	if logOutput != "terminal" {
 		logOutput += string(os.PathSeparator) + partition
@@ -127,9 +129,13 @@ func initConfig() {
 			logOutput += string(os.PathSeparator) + lot
 		}
 	}
-	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
-	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
+	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
+	if ! logCombine {
+		gLog.InitLog(RootCmd.Name(), loglevel, logOutput)
+	} else {
+		gLog.InitLog1(RootCmd.Name(), loglevel, logOutput)
+	}
 	// Generate auto completion command
 	if  autoCompletion {
 		utils.GenAutoCompletionScript(RootCmd,configPath)

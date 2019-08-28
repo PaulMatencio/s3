@@ -28,6 +28,7 @@ func GetPageV1( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 	// if they differ skip the recod and get the  the next record  until they  match  or EOF
 	// if they match, rewind one record  for processing again ( if we are lucky, we are reading the correct image
 	//
+
     loop:=0
 	for {
 		if buf,err    := r.Read(); err == nil {
@@ -46,7 +47,7 @@ func GetPageV1( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 					gLog.Warning.Println(hex.Dump(buf[0:214]))
 					if loop > LOOP {
 						error := fmt.Sprintf( "PXIID: %s/%s - Ref: %s - Can't get tru it - Total # of pages in control file: %d != Total number of pages: %d of the image buffer at address: x'%x' . Skip this buffer", v.PxiId,  ST33[5:17],ST33[34:45],v.Pages, numpages, r.GetPrevious())
-						err1 = errors.New(error)
+						err = errors.New(error)
 						gLog.Error.Printf("%v",err1)
 						gLog.Error.Println(hex.Dump(buf[0:214]))
 						return image,0,err,err1
@@ -58,27 +59,19 @@ func GetPageV1( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 			break  // could be end of file
 		}
 	}
-
 	// 						end FIX  12-04-2019
-
     //  Build the image
-	nrec,err = image.BuildTiffImage(r,v)
+	nrec,err,err1 = image.BuildTiffImage(r,v)
 
 	return image,nrec,err,err1
 }
 
 func GetPage( r *St33Reader,v Conval) (*PxiImg, int,error,error){
-
 	var (
-		err,err1 error
-		// done = false
+		err, err1 error
 		nrec  int
 		image = NewPxiImg()
 	)
-
-	nrec, err = image.BuildTiffImage(r, v)
-
+	nrec, err, err1 = image.BuildTiffImage(r, v)
 	return image,nrec,err,err1
-
-
 }

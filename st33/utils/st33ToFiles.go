@@ -62,19 +62,8 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 				KEY = utils.Reverse(KEY)
 				P := int(v.Pages)    // Total number of pages for this document
 				for p:= 0; p < P; p++ {
-					if image, nrec , err, err1 := GetPage(r,v); err == nil /* && err1==nil  */ {
+					if image, nrec , err, err1 := GetPage(r,v); err == nil && err1==nil   {
 
-						/*
-						THIS SHOULD NOT HAPPEN
-						Checked by GetPage()
-						tpages, _ := strconv.Atoi(string(image.NumPages))
-						// if number of pages from the control differ from the image header
-						//  continue the  iteration with the number of page from the image
-						if tpages != P {
-							gLog.Warning.Printf("Number of pages differ for PXIID %s %d",v.PxiId,P,tpages)
-							P = tpages
-						}
-						*/
 
 						pages++       // increment the number of pages of the PXIID
 						recs += nrec  // increment the number of records of the PXIID
@@ -108,7 +97,7 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 						}
 
 					} else {
-							gLog.Error.Printf("Error %v getting  page number %d", err,err1, p+1)
+							gLog.Error.Printf("Err: %v - Err1: %v - getting  page number %d ", err,err1, p+1)
 							numerrors++
 							if err1 != nil {
 								return numpages,numrecs,numdocs,numerrors, err1

@@ -35,6 +35,10 @@ func GetLogOutput(viper viper.Viper) (string) {
 
 }
 
+func GetLogCombine(viper viper.Viper) (bool) {
+	return viper.GetBool("logging.combine" )
+}
+
 func InitConfig(config string,viper viper.Viper,rootcmd cobra.Command) {
 
 	var configPath string

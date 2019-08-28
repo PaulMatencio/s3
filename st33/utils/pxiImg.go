@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
+	"errors"
 )
 
 type PxiImg struct {
@@ -52,14 +53,14 @@ func (image *PxiImg) GetDataType() []byte {
 
 
 
-func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
+func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error,error) {
 
 	var (
 		totalRec       uint16
 		totalLength    uint32
 		recs           uint16
 		imgl           uint16
-		err   		   error
+		err, err1   		   error
 		nrec           int = 0
 	)
 
@@ -69,16 +70,17 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 
 	buf,err := r.Read()   // Read  the First record
 	if err != nil {
-		return nrec,err
+		return nrec,err,err1
 	}
-
 	nrec++
 
-	err = CheckST33Length(&v,r,buf)
-	if err != nil {
+	/* check if record  lenth = length  of the ST33 record   */
+	err1 = CheckST33Length(&v,r,buf)
+
+	if err1 != nil {
 		gLog.Error.Println(err)
 		gLog.Info.Printf("%s", hex.Dump(buf[0:255]))
-		return nrec,err
+		return nrec,err,err1
 	}
 
 	err 		= 	binary.Read(bytes.NewReader(buf[25 : 27]), Big, &recs)
@@ -167,8 +169,19 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 	imageL := 0    // Total length of the image
 	// build the image with the St33 first record
 	_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)
+
+    /*
 	img2.Write(buf[252 : 252+int64(imgl)])       // append  the image length found in this record  to the  image
 	imageL += int(imgl)
+    */
+    rec := 1
+	imgL,err1 := writeImg(img2,buf)
+	if err1 == nil {
+		imageL += imgL
+	} else {
+		gLog.Error.Printf("Record:%d of %d - Error: %v ",rec,int(totalRec),err1)
+		return nrec,err,err1
+	}
 
 	// read all the records for this image.
 	// the number of records are extracted from the image header
@@ -180,19 +193,16 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 		if buf,err = r.Read();err == nil  {
 
 			nrec++   // increment the number of records
-
-			_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)
-
-			if int64(imgl) <= int64(len(buf) - 252) {
-				img2.Write(buf[252 : 252+int64(imgl)]) // append  the image length found in this record  to the  image
-				imageL += int(imgl)                    //  Compute the total  image length
+			imgL,err1 = writeImg(img2,buf)
+			if err1 == nil {
+				imageL += imgL
 			} else {
-				err := errors.New("Invalid image length")
-				return nrec,err
+				gLog.Error.Printf("Record:%d of %d -  Error:%v ",rec,int(totalRec),err1)
+				return nrec,err,err1
 			}
+
 		} else {
-			//  return the read error  to the caller
-			break    /*  12-04-2019  */
+			break
 		}
 	}
 
@@ -226,8 +236,29 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error) {
 	// check if number of records match
 	// If not skip all the remaining records in the data file
 
-	return  nrec,err
+	return  nrec,err,err1
 
 }
 
 
+func writeImg(img2 *bytes.Buffer, buf []byte) (int, error){
+
+	var (
+		imgl uint16
+		err error
+		Big		= binary.BigEndian
+	)
+	_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &imgl)
+	err = nil
+	if int64(imgl) <= int64(len(buf) - 252) {
+		img2.Write(buf[252 : 252+int64(imgl)]) // append  the image length found in this record  to the  image
+		                //  Compute the total  image length
+	} else {
+		gLog.Error.Printf("%s", hex.Dump(buf[0:255]))
+		error := fmt.Sprintf("Invalid ST33 image length: %d - Buffer length: %d",int64(imgl), int64(len(buf)-252))
+		err = errors.New(error)
+		/* gLog.Error.Printf("%v",err)*/
+
+	}
+	return int(imgl),err
+}
