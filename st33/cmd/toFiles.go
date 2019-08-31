@@ -78,7 +78,6 @@ func toFilesFunc(cmd *cobra.Command, args []string) {
 			"start" : fmt.Sprintf("%v",time.Now()),
 		}
 		db.UpdateBadgerDB(database,kv)
-
 	}
 
 	gLog.Info.Printf("Processing input file %s",ifile)

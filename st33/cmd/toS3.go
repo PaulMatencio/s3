@@ -54,7 +54,7 @@ func initT3Flags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
-	// cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
+	cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","name of the  target bucket")
 	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
 	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")

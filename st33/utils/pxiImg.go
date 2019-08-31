@@ -74,7 +74,7 @@ func (image *PxiImg) BuildTiffImage(r *St33Reader, v Conval) (int,error,error) {
 	}
 	nrec++
 
-	/* check if record  lenth = length  of the ST33 record   */
+	/* check if record  length = length  of the ST33 record   */
 	err1 = CheckST33Length(&v,r,buf)
 
 	if err1 != nil {

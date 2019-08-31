@@ -109,9 +109,11 @@ func initConfig() {
 		viper.SetConfigType("yaml")
 	}
 
+
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it
+
 	if err := viper.ReadInConfig(); err == nil {
 		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}  else {
