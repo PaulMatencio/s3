@@ -7,6 +7,8 @@ import (
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"net/http"
 )
 
 // getObjectCmd represents the getObject command
@@ -30,11 +32,11 @@ var (
 	}
 
 	statObjCmd = &cobra.Command {
-		Use:   "ho",
+		Use:   "statObjV2",
 		Short: soshort,
 		Hidden: true,
 		Long: ``,
-		Run: statObject,
+		Run: statObjectV2,
 	}
 
 )
@@ -100,5 +102,35 @@ func statObject(cmd *cobra.Command,args []string) {
 
 }
 
+func statObjectV2(cmd *cobra.Command,args []string) {
+
+	// handle any missing args
+	utils.LumberPrefix(cmd)
+
+	switch {
+
+	case len(bucket) == 0:
+		gLog.Warning.Printf("%s",missingBucket)
+		return
+
+	case len(key) == 0:
+		gLog.Warning.Printf("%s",missingKey)
+		return
+	}
+
+	var (
+		req = datatype.StatObjRequestV2{
+			Client:     new(http.Client),
+			AccessKey:    viper.GetString("credential.access_key_id"),
+			SecretKey:    viper.GetString("credential.secret_access_key"),
+			Bucket: bucket,
+			Key: key,
+		}
+		resp, _ = api.StatObjectV2(req)
+	)
+	gLog.Info.Printf(resp.Status,resp.Header)
+
+
+}
 
 

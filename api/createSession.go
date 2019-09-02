@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/spf13/viper"
+
 )
 
 func CreateSession() *session.Session {
@@ -72,8 +73,6 @@ func CreateSession() *session.Session {
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
 			// HTTPClient:  &client,
-
-
 		})
 
 	}
@@ -81,3 +80,4 @@ func CreateSession() *session.Session {
 	return sess
 
 }
+

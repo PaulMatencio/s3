@@ -3,6 +3,7 @@ package datatype
 import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"net/http"
 )
 
 type GetObjRequest struct {
@@ -87,6 +88,17 @@ type StatObjRequest struct {
 	Bucket    string
 	Key       string
 }
+
+type StatObjRequestV2 struct {
+	Client      *http.Client
+	Request      string
+	AccessKey    string
+	SecretKey    string
+	Bucket   	 string
+	Key          string
+}
+
+
 
 type StatBucketRequest struct {
 	Service 	*s3.S3
