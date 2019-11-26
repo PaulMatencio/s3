@@ -16,10 +16,7 @@ func StatObject(req datatype.StatObjRequest) (*s3.HeadObjectOutput,error){
 		Key:    aws.String(req.Key),
 	}
 
-
 	return req.Service.HeadObject(input)
-
-
 }
 
 

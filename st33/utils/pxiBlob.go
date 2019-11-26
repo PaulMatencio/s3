@@ -19,7 +19,7 @@ type pxiBlob struct {
 
 func  NewPxiBlob(key string, records int) (*pxiBlob) {
 
-	var pxiblob = pxiBlob{
+	var pxiblob = pxiBlob {
 		Key : utils.Reverse(key)+".1",
 		Record: records,
 		Blob  :	 new(bytes.Buffer),
@@ -79,25 +79,26 @@ func buildBlob(r *St33Reader, blob *pxiBlob, buf[]byte) (int, error) {
 // build ST33 blob
 func buildST33Blob(r *St33Reader, v Conval, buf []byte, blob *pxiBlob )  (int, error) {
 
-	var (Big      			binary.ByteOrder = binary.BigEndian
+	var (
+		Big      			binary.ByteOrder = binary.BigEndian
 		blobl,blobRecs   	uint16
 		blobLength          uint32
 		recs                int = 0
 		err     			error
 	)
 
-	_ = binary.Read(bytes.NewReader(buf[84 : 86]), Big, &blobRecs)       // Number of Bloc records
-	_ = binary.Read(bytes.NewReader(buf[214 : 218]), Big, &blobLength)   // Total length of the BLOB
-	_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl)          // Get the length of the record of the BLOB
+	_ = binary.Read(bytes.NewReader(buf[84 : 86]), Big, &blobRecs)       // Number of ST33 Blob records
+	_ = binary.Read(bytes.NewReader(buf[214 : 218]), Big, &blobLength)   // Total length of this  ST33 BLOB
+	_ = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl)          // Get the length of image for this  BLOB
 
 	//
 	//   Append the first chunk to the Blob buffer
 	//
 
-	blobL := int(blobl)
+	blobLen := int(blobl)
 	blob.Blob.Write(buf[252 : 252+int64(blobl)])   // Append the first record to the blob
 	recs = 1
-	gLog.Trace.Printf("ST33 BLOB  Key: %s - Total Blob length:%d - Blob chunk length %d  - rec of/recs: %d/%d - Prev: x'%X' - Cur: x'%X'", blob.Key,  blobLength,blobl, 1, blobRecs,r.GetPrevious(),r.GetCurrent())
+	gLog.Trace.Printf("ST33 BLOB  Key: %s - Total Blob length: %d -  Blob's chunk length: %d  - rec of/Blob recs: %d/%d - Prev: x'%X' - Cur: x'%X'", blob.Key, blobLength, blobl, 1, blobRecs,r.GetPrevious(),r.GetCurrent())
 
 	 //
 	 //  Append all the St33 records to blob
@@ -109,12 +110,12 @@ func buildST33Blob(r *St33Reader, v Conval, buf []byte, blob *pxiBlob )  (int, e
 			recs++
 			if len(buf) > 252 {
 				err = binary.Read(bytes.NewReader(buf[250:252]), Big, &blobl) // blobl =length of a  chunk
-				gLog.Info.Printf("ST33 BLOB  Key: %s - Blob chunk length: %d  - rec of/recs: %d/%d - Prev: x'%X' - Cur: x'%X' ", blob.Key, blobl, rec, blobRecs, r.Previous, r.Current)
-				blobL += int(blobl) //  blobL = length of the BLOB
+				gLog.Info.Printf("ST33 BLOB  Key: %s - ST33 Blob's chunk length: %d  - rec of/ Blob recs: %d/%d - Prev @: x'%X' - Cur @: x'%X' ", blob.Key, blobl, rec, blobRecs, r.Previous, r.Current)
+				blobLen += int(blobl) //  add the lenght of this chunk to the total length of this BLOB
 				if int(blobl) + 252 > len(buf) {
-					blob.Blob.Write(buf[252:]) // Append the other records to the BLOB buffer
+					blob.Blob.Write(buf[252:]) // Append this  chunk to the BLOB
 				} else {
-					blob.Blob.Write(buf[252 : 252+int64(blobl)]) // Append a chunk to the BLOB buffer
+					blob.Blob.Write(buf[252 : 252+int64(blobl)]) // Append this  chunk to the BLOB
 				}
 			}
 		} else {
@@ -128,28 +129,31 @@ func buildST33Blob(r *St33Reader, v Conval, buf []byte, blob *pxiBlob )  (int, e
 	// the other number of records are taken from the control file
 	//
 
-	if int(blobLength) != blobL {
-		err = errors.New(fmt.Sprintf("==> ST33 Blob bad Header. %s - Total length:%d != Blob length:%d",blob.Size,blobL,blobLength))
+	if int(blobLength) != blobLen { //
+		err = errors.New(fmt.Sprintf("==> ST33 Blob bad Header. %s - Total length:%d != Blob length:%d",blob.Size,blobLen,blobLength))
 		gLog.Error.Printf("%v",err)
 	}
 
 	gLog.Trace.Printf("PXIID:%s - ST33 BLOB Key: %s - remaining Blob records: %d ",v.PxiId, blob.Key,blob.Record)
 
 	//
-	//  Read  other blob  records from the control file
-	//  the other blob records are taken from the control file
-	//  v.Records == blob.Record
+	//  Read  the other blob  records from the control file
+	//  The other blob records are taken from the control file
 	//
-
+	//  v.Records == blob.Record ( set by newPXIBlob() )
+	//
+	//
+	 /*
 	for rec := 1; rec <= int(blob.Record); rec++ {
-		gLog.Info.Printf("Blob record Prev : X'%x'  Cur: X'%x'",r.Previous,r.Current)
 		if buf,err = r.Read(); err == nil  {
+			gLog.Info.Printf("Other blob record - Buffer length %d - Prev @: X'%x' - Cur @: X'%x' ",len(buf),r.Previous,r.Current)
 			recs ++
 			blob.Blob.Write(buf)
 		} else   {
 			break
 		}
 	}
+	  */
 
 	gLog.Trace.Println("PXIID: %s - Key %s - Blob control records/Read records %d/%d",v.PxiId,utils.Reverse(v.PxiId),blobRecs,recs)
 
