@@ -68,7 +68,7 @@ func hash(key string, modulo int) {
 	 	v += int(key[k])
 	 }
 	 v1 := v % modulo
-	 fmt.Println(key, v1)
+	 fmt.Printf("key:%s - hash:%d - modulo %d : %d \n",key, v, modulo, v1)
 
 }
 
