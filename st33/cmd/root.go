@@ -19,7 +19,7 @@ var (
 	// log          = lumber.NewConsoleLogger(lumber.INFO)
 	conval,datval string
 	odir,pdir,bdir,ifile, lot string
-	loglevel,profiling,suffix int
+	loglevel,profiling,suffix,bucketNumber int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingKey = "Missing pxid - please provide a pxi id"
@@ -123,6 +123,7 @@ func initConfig() {
 
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
 	logCombine:= utils.GetLogCombine(*viper.GetViper())
+	bucketNumber = utils.GetNumberOfBucket(*viper.GetViper())
 
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
 	if logOutput != "terminal" {

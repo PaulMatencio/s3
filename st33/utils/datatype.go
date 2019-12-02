@@ -49,6 +49,7 @@ type ToS3Request struct {
 
 	File 		      string     `json:"input-file"`
 	Bucket 		      string     `json:"target-bucket"`
+	Number            int        `json:"number-of-bucket"`
 	LogBucket         string    `json:"logging-bucket"`
 	DatafilePrefix    string     `json:"data-file-prefix"`
 	CrlfilePrefix     string     `json:"control-file-prefix"`

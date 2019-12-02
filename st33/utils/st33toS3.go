@@ -45,6 +45,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 	var (
 		infile   = req.File
 		bucket   = req.Bucket
+		bucketNumber = req.Number
 		sbucket  = req.LogBucket
 		reload   = req.Reload
 		check    = req.Check
@@ -118,7 +119,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 	start0:= time.Now()
 	putReq  := datatype.PutObjRequest {
 		Service: svc,
-		Bucket: req.Bucket,
+		// Bucket: req.Bucket,
 	}
 
 	/* read ST33  file */
@@ -150,6 +151,8 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 				for p := 0; p < P; p++ {
 					// set the key of the s3 object
 					putReq.Key = KEY
+					putReq.Bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber))
+
 					putReq.Usermd = map[string]string{} // reset the  user metadata
 
 					if image,nrec, err, err1 := GetPage(r, v); err == nil  && err1 == nil  {
@@ -174,6 +177,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							// complete the request to write to S3
 							putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
 							putReq.Buffer = image.Img
+							gLog.Trace.Printf("Put Key:%s - Bucket: %s ",putReq.Key,putReq.Bucket)
 
 							/*
 								if _, err := writeToS3(putReq); err != nil {
@@ -245,8 +249,9 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					}
 
 					putReq.Buffer = pxiblob.Blob
-					putReq.Bucket = bucket
+					putReq.Bucket = bucket+"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber))
 					putReq.Key = pxiblob.Key
+					gLog.Trace.Printf("Put Key:%s - Bucket: %s ",putReq.Key,putReq.Bucket)
 
 					err = nil
 					if !check {
@@ -322,6 +327,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 	var (
 		infile   = req.File
 		bucket   = req.Bucket
+		bucketNumber = req.Number
 		sbucket  = req.LogBucket
 		reload   = req.Reload
 		check    = req.Check
@@ -420,6 +426,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 			stop = true
 		}
 		q:= step
+
 		// loop until all the requests are completed
 		for {
 			var (
@@ -457,10 +464,10 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 							v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
 
 							go func(key string, image *PxiImg, v Conval) {
-
+								// append the bucket number to the given bucket
 								req := datatype.PutObjRequest{ // build a PUT OBject request
 									Service: svc,
-									Bucket:  bucket,
+									Bucket:  bucket+"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber)),
 								}
 								// Add user metadata to page 1
 								pagenum, _ := strconv.Atoi(string(image.PageNum)) // Build user metadata for page 1
@@ -481,7 +488,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 								//  Prepare a response Block
 								s3Error := S3Error{Key: req.Key, Err: err} // forward error
 								image.Img.Reset()                          // reset the image buffer
-								ch <- &PutS3Response{bucket, req.Key, int(v.DocSize), s3Error}
+								ch <- &PutS3Response{req.Bucket, req.Key, int(v.DocSize), s3Error}
 
 							}(KEY, image, v)
 						} else {
@@ -528,7 +535,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 						go func(key string, pxiblob pxiBlob, v Conval) {
 							req := datatype.PutObjRequest{
 								Service: svc,
-								Bucket:  bucket,
+								Bucket:  bucket+"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber)),
 								Key:     pxiblob.Key,
 								Buffer:  pxiblob.Blob,
 							}
@@ -546,7 +553,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 							//Reset the Blob Content
 							pxiblob.Blob.Reset()
 							// Send a message to go routine listener
-							ch <- &PutS3Response{bucket, pxiblob.Key, int(v.DocSize), s3Error}
+							ch <- &PutS3Response{req.Bucket, req.Key, int(v.DocSize), s3Error}
 
 						}(KEY, *pxiblob, v)
 					} else {

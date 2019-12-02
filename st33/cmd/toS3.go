@@ -155,6 +155,7 @@ func toS3Func(cmd *cobra.Command, args []string) {
 			toS3 = st33.ToS3Request {
 				File: file,   //
 				Bucket: bucket,
+				Number: bucketNumber,
 				LogBucket: sBucket,
 				DatafilePrefix: datval,
 				CrlfilePrefix: conval,

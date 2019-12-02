@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
@@ -55,7 +56,7 @@ func checkS3(cmd *cobra.Command, args []string) {
 
 			req := datatype.StatObjRequest{
 				Service:  svc,
-				Bucket: bucket,
+				Bucket: bucket+"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber)),
 				Key:utils.Reverse(v.PxiId)+".1",
 			}
 
@@ -64,8 +65,10 @@ func checkS3(cmd *cobra.Command, args []string) {
 				p,_ := strconv.Atoi(*result.Metadata["Pages"]) // Number of pages of the document
 				vp := int(v.Pages) // number of pages taken from the control file
 				if vp != 0 && p != vp  {  // the number of pages of a blob document = 0
-					gLog.Warning.Printf("Conval index %d - Conval Key %s -  S3 Key %s  - Conval pages %d !=  S3 pages %d",k, v.PxiId, req.Key,v.Pages,p)
+					gLog.Warning.Printf("Conval index: %d - Conval Key: %s - S3 Key: %s - Bucket: %s - Conval pages: %d != S3 pages: %d",k, v.PxiId, req.Key,req.Bucket,v.Pages,p)
 					w++
+				} else {
+					gLog.Trace.Printf("Conval index: %d - Conval key: %s - S3 Key: %s S3 Bucket: %s # Pages: %d",k,v.PxiId,req.Key,req.Bucket,p)
 				}
 				pages += p
 
@@ -81,4 +84,8 @@ func checkS3(cmd *cobra.Command, args []string) {
 	} else {
 		gLog.Error.Println(err)
 	}
+}
+
+func ChkS3(page int,v st33.Conval) {
+
 }

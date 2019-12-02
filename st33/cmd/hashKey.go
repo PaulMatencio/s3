@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/s3/gLog"
 	st33 "github.com/s3/st33/utils"
+	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -61,7 +62,7 @@ func init() {
 }
 
 
-
+/*
 func hash(key string, modulo int) {
 	 v := 0;
 	 for k :=0; k < len(key); k++ {
@@ -71,6 +72,8 @@ func hash(key string, modulo int) {
 	 fmt.Printf("key:%s - hash:%d - modulo %d : %d \n",key, v, modulo, v1)
 
 }
+*/
+
 
 func hashFile(cmd *cobra.Command, args []string) {
 
@@ -82,7 +85,8 @@ func hashFile(cmd *cobra.Command, args []string) {
 	if c, err := st33.BuildConvalArray(ifile); err == nil {
 
 		for _, v := range *c {
-			hash(v.PxiId, modulo)
+			fmt.Printf("key: %s - key2ascii: %d - modulo: %d\n",v.PxiId,utils.KeyToAscii(v.PxiId),utils.HashKey(v.PxiId, modulo))
+
 		}
 	}
 }
