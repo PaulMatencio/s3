@@ -45,6 +45,7 @@ func initHoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
 	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object you'd like to check")
 	cmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
+	cmd.Flags().BoolVarP(&full,"fullKey","F",false,"given prefix is a full document key")
 }
 
 func init() {
@@ -80,15 +81,13 @@ func statObject(cmd *cobra.Command,args []string) {
 		return
 	}
 
-	var (
-
-		req = datatype.StatObjRequest{
+		req := datatype.StatObjRequest{
 			Service:  s3.New(api.CreateSession()),
 			Bucket: bucket,
 			Key: key,
 		}
-		result, err = api.StatObject(req)
-	)
+		result, err := api.StatObject(req)
+
 
 	/* handle error */
 
@@ -102,6 +101,7 @@ func statObject(cmd *cobra.Command,args []string) {
 
 }
 
+/* use  V2 Authentication*/
 func statObjectV2(cmd *cobra.Command,args []string) {
 
 	// handle any missing args

@@ -58,6 +58,7 @@ func init() {
 	initLoFlags(hmCmd)
 	gmetaCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
 	gmCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
+	hmCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory")
 }
 
 
@@ -79,6 +80,10 @@ func statObjects(cmd *cobra.Command,args []string) {
 	if len(odir) >0 {
 		pdir = filepath.Join(utils.GetHomeDir(),odir)
 		utils.MakeDir(pdir)
+	}
+	// if prefix is a full document key
+	if full {
+		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
 	}
 
 	req := datatype.ListObjRequest{

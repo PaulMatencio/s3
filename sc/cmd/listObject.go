@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/gLog"
 
@@ -37,7 +38,7 @@ var (
 	maxKey  int64
 	marker  string
 	delimiter string
-	loop  bool
+	loop,full  bool
 )
 
 func initLoFlags(cmd *cobra.Command) {
@@ -48,6 +49,7 @@ func initLoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
+	cmd.Flags().BoolVarP(&full,"fullKey","F",false,"given prefix is a full documemt key")
 }
 
 func init() {
@@ -70,7 +72,9 @@ func listObject(cmd *cobra.Command,args []string) {
 		utils.Return(start)
 		return
 	}
-
+	if full {
+		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
+	}
     req := datatype.ListObjRequest{
     	Service : s3.New(api.CreateSession()),
     	Bucket: bucket,

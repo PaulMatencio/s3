@@ -95,6 +95,11 @@ func getObjects(cmd *cobra.Command,args []string) {
 		}()
 	}
 
+	// if prefix is a full document key
+	if full {
+		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
+	}
+
 	req := datatype.ListObjRequest{
 		Service : s3.New(api.CreateSession()),
 		Bucket: bucket,
