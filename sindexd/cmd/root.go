@@ -32,7 +32,7 @@ var (
 	config,bucket	 string
 	verbose, Debug,autoCompletion 	 bool
 
-	loglevel,profiling int
+	loglevel,profiling, bucketNumber  int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingPrefix = "Missing prefix  - please provide the prefix of the keys"
@@ -112,6 +112,7 @@ func initConfig() {
 	}
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
+	bucketNumber = utils.GetNumberOfBucket(*viper.GetViper())
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 

@@ -178,7 +178,8 @@ func (r *St33Reader) ReadST33Tiff( v Conval, ind int) (int,int,bool){
 				numpages, _ = strconv.Atoi(string(ST33[76:80]))  //total number of pages
 				// The number of pages in the control file should match the number of pages in the Data file
 				if numpages == int(v.Pages)  {          //  if   match then rewind to the previous record
-					r.SetCurrent(r.GetPrevious() - 8)
+					// r.SetCurrent(r.GetPrevious() - 8)
+					RewindST33(v,r,1)
 					break
 				} else {
 					// loop until the number of pages are equal on both

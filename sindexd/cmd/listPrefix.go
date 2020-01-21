@@ -35,14 +35,15 @@ var (
 	Nextmarker = true
 	delimiter = ""
 	maxKey int
+
 	listPrefixCmd = &cobra.Command{
-	Use:   "listPrefix",
-	Short: "List sindexd prefix",
-	Long: ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		listPrefix(cmd,args)
-	},
-}
+		Use:   "listPrefix",
+		Short: "List Scality Sindexd prefix",
+		Long: ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			listPrefix(cmd,args)
+		},
+	}
 )
 
 func initLpFlags(cmd *cobra.Command) {

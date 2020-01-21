@@ -34,9 +34,12 @@ func GetPageV1( r *St33Reader,v Conval) (*PxiImg, int,error,error){
 		if buf,err    := r.Read(); err == nil {
 			if len(buf) > 214 {
 				ST33 := utils.Ebc2asci(buf[0:214])
-				numpages, _ := strconv.Atoi(string(ST33[76:80]))
-				if numpages == int(v.Pages) {    //  if   match then rewind to the previous record
+				numpages, _ := strconv.Atoi(string(ST33[76:80]))  // get the number of pages from the st33 header
+				if numpages == int(v.Pages) {
+					//  compare the number of pages against the directory entrs
+				    //  if match then rewind one record for BuildTiffImage and break
 					r.SetCurrent(r.GetPrevious() - 8)
+					// RewindST33(v,r,1)
 					if loop > 0 {
 						gLog.Warning.Printf("Loop: %d -  PIXID: %s - Pages are now equal [ %d = %d ] at the image  buffer at address: x'%x'",loop,v.PxiId,v.Pages, numpages, r.GetCurrent())
 					}

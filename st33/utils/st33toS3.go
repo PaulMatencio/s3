@@ -175,7 +175,13 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							}
 
 							// complete the request to write to S3
-							putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
+
+							// putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
+							if p+1 != pagenum {
+								gLog.Warning.Printf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ",v.PxiId,pagenum,p+1)
+							}
+							putReq.Key = putReq.Key + "." + strconv.Itoa(p+1)
+
 							putReq.Buffer = image.Img
 							gLog.Trace.Printf("Put Key:%s - Bucket: %s ",putReq.Key,putReq.Bucket)
 
@@ -463,7 +469,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 
 							v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
 
-							go func(key string, image *PxiImg, v Conval) {
+							go func(key string, p int, image *PxiImg, v Conval) {
 								// append the bucket number to the given bucket
 								req := datatype.PutObjRequest{ // build a PUT OBject request
 									Service: svc,
@@ -479,18 +485,28 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 
 								// S3 key is the reverse of the pxi id + '.' + page number
 								//  PUT OBJECT
-								req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
+
+
+								if p+1 != pagenum {
+
+									error := errors.New(fmt.Sprintf( "PxiId:%s - Inconsistent page number in st33 header: %d/%d ",v.PxiId,pagenum,p+1))
+									gLog.Warning.Printf("%v", error)
+									// inputError = append(inputError, S3Error{Key: v.PxiId, Err: error})
+
+								}
+								// req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
+								req.Key = utils.Reverse(key) + "." + strconv.Itoa(p+1)
 								req.Buffer = image.Img                                     //   add the image
 								err = nil
 								if !check {
 									_, err = writeToS3(req) //  upload the image  to S3
 								}
 								//  Prepare a response Block
-								s3Error := S3Error{Key: req.Key, Err: err} // forward error
+								s3Error := S3Error{Key: req.Key, Err: err}
 								image.Img.Reset()                          // reset the image buffer
 								ch <- &PutS3Response{req.Bucket, req.Key, int(v.DocSize), s3Error}
 
-							}(KEY, image, v)
+							}(KEY, p,image,v)
 						} else {
 							// should not happen unless input data is corrupted
 							if err != io.EOF  || err1 != nil {

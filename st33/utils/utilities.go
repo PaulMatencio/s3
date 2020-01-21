@@ -389,7 +389,11 @@ func SkipST33(v Conval,r *St33Reader,diff int) {
 		if buf,err := r.Read(); err == nil {
 			ST33 := utils.Ebc2asci(buf[0:214])
 			pagenum, _ := strconv.Atoi(string(ST33[17:21]))
-			gLog.Warning.Printf("PXIID %s - Skip record number %d", v.PxiId, pagenum)
+			/* ST33[5:17] */
+			section := ST33[9:17]
+			CC := ST33[7:9]
+			id := string(section) + string(CC)
+			gLog.Warning.Printf("PXIID: %s/%s - Skip %d record of page number: %d - Lenght of the record: %d", v.PxiId,id, m, pagenum,len(buf))
 		}
 	}
 }
