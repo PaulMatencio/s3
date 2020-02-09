@@ -20,6 +20,7 @@ var (
 	getObjsShort = "Command to download concurrently nultiple  objects and their metadata to a given directory"
 	loopc int
 	n = 1
+
 	getobjectsCmd = &cobra.Command{
 		Use:   "getObjects",
 		Short: getObjsShort,
@@ -48,6 +49,7 @@ func init() {
 	initLoFlags(getobjsCmd)
 	getobjectsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you'd like to save")
 	getobjsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you's like to save")
+
 
 	getobjectsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
 	getobjsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
@@ -99,7 +101,9 @@ func getObjects(cmd *cobra.Command,args []string) {
 	if full {
 		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
 	}
-
+	if R {
+		prefix = utils.Reverse(prefix)
+	}
 	req := datatype.ListObjRequest{
 		Service : s3.New(api.CreateSession()),
 		Bucket: bucket,

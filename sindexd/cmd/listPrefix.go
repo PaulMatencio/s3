@@ -24,6 +24,8 @@ import (
 	sindexd "github.com/moses/sindexd/lib"
 	hostpool "github.com/bitly/go-hostpool"
 	"strings"
+	"sync"
+	"time"
 
 	// "strings"
 )
@@ -48,10 +50,11 @@ var (
 
 func initLpFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
-	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
+	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the key separted by a comma")
 	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().IntVarP(&loop,"loop","L",1,"Number of loop using the next marker if there is one")
 }
 
 func init() {
@@ -70,25 +73,39 @@ func listPrefix(cmd *cobra.Command,args []string) {
 	}
 	// indSpecs := directory.GetIndexSpec(iIndex)
 
-	if len(prefix) == 0 {
+	if len(prefixs) == 0 {
 		gLog.Info.Println("%s", missingPrefix);
 		os.Exit(2)
 	}
-	gLog.Info.Println(sindexUrl, prefix)
+	gLog.Info.Println(sindexUrl, prefixs)
+	prefixa = strings.Split(prefixs,",")
 
 	sindexd.Delimiter = delimiter
 	// sindexd.Host = append(sindexd.Host, sindexUrl)
 	sindexd.Host = strings.Split(sindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
-
-	listPref(prefix)
-
+	start := time.Now()
+	if len(prefixa) > 0 {
+		var wg sync.WaitGroup
+		wg.Add(len(prefixa))
+		for _, prefix := range prefixa {
+			go func(prefix string ) {
+				defer wg.Done()
+				gLog.Info.Println(prefix, bucket)
+				  listPref(prefix);
+			}(prefix)
+		}
+		wg.Wait()
+	}
+	gLog.Info.Printf("Total Elapsed time: %v", time.Since(start))
 }
 
 func listPref (prefix string)  {
 	indSpecs := directory.GetIndexSpec(iIndex)
+	n:= 0
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+			n++
 			resp := response.Response
 			for k, v := range resp.Fetched {
 				if v1, err:= json.Marshal(v); err == nil {
@@ -98,7 +115,7 @@ func listPref (prefix string)  {
 					gLog.Error.Printf("Error %v -  Marshalling %v",err, v)
 				}
 			}
-			if len(resp.Next_marker) == 0 {
+			if len(resp.Next_marker) == 0  || n >= loop {
 				Nextmarker = false
 			} else {
 				marker = resp.Next_marker

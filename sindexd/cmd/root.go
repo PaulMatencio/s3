@@ -29,7 +29,7 @@ import (
 
 
 var (
-	config,bucket	 string
+	config,bucket,levelDBUrl	 string
 	verbose, Debug,autoCompletion 	 bool
 
 	loglevel,profiling, bucketNumber  int
@@ -113,6 +113,7 @@ func initConfig() {
 	logOutput:= utils.GetLogOutput(*viper.GetViper())
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
 	bucketNumber = utils.GetNumberOfBucket(*viper.GetViper())
+	levelDBUrl = utils.GetLevelDBUrl(*viper.GetViper())
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 

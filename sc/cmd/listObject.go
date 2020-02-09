@@ -38,7 +38,7 @@ var (
 	maxKey  int64
 	marker  string
 	delimiter string
-	loop,full  bool
+	loop,full,R  bool
 )
 
 func initLoFlags(cmd *cobra.Command) {
@@ -50,6 +50,8 @@ func initLoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
 	cmd.Flags().BoolVarP(&full,"fullKey","F",false,"given prefix is a full documemt key")
+	cmd.Flags().BoolVarP(&R,"reverse","R",false,"Reverse the prefix")
+
 }
 
 func init() {
@@ -74,6 +76,10 @@ func listObject(cmd *cobra.Command,args []string) {
 	}
 	if full {
 		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
+	}
+
+	if R {
+		prefix = utils.Reverse(prefix)
 	}
     req := datatype.ListObjRequest{
     	Service : s3.New(api.CreateSession()),

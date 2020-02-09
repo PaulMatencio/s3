@@ -16,18 +16,17 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
-	"errors"
 	"strings"
 	"time"
 )
@@ -36,6 +35,7 @@ import (
 
 var (
 	key string
+	reverse,con bool
 	getS3DocCmd = &cobra.Command{
 		Use:   "getS3Doc",
 		Short: "Command to get PXI S3 document(s)",
@@ -52,6 +52,8 @@ func init() {
 	getS3DocCmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the  bucket")
 	getS3DocCmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory (relative to the home directory)")
 	getS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input  file containing a list of pix ids to be downloaded")
+	getS3DocCmd.Flags().BoolVarP(&reverse,"reverse","r",false,"reverse the input key - Default false ")
+	getS3DocCmd.Flags().BoolVarP(&con,"async","a",false,"concurrent read")
 }
 
 
@@ -60,6 +62,8 @@ func getS3Doc(cmd *cobra.Command,args []string)  {
 	var (
 		start = utils.LumberPrefix(cmd)
 		Keys   []string
+		p  = 0
+		b = 0
 	)
 
 	if len(bucket) == 0 {
@@ -79,7 +83,7 @@ func getS3Doc(cmd *cobra.Command,args []string)  {
 	}
 
 	if len(ifile) >  0 {
-
+		/*
 		if b,err := ioutil.ReadFile(ifile); err == nil  {
 			Keys = strings.Split(string(b)," ")
 		} else {
@@ -87,75 +91,110 @@ func getS3Doc(cmd *cobra.Command,args []string)  {
 			utils.Return(start)
 			return
 		}
-	}
 
-	if len(odir) >0 {
+		 */
+		 if sc,err := utils.Scanner(ifile); err == nil {
+		 	if Keys,err = utils.ScanAllLines(sc); err == nil {
+		 		gLog.Error.Printf("Error %v reading file %s",err,ifile)
+			}
+		 }
+	}
+	gLog.Info.Printf("Nunber of documents to retieve: %d ",len(Keys))
+
+	if len(odir) > 0 {
 		pdir = filepath.Join(utils.GetHomeDir(),odir)
 		if _,err:=os.Stat(pdir); os.IsNotExist(err) {
 			utils.MakeDir(pdir)
 		}
-	}
-
-	for _,key := range Keys {
-
-		lp := len(key);
-		if key[lp-2:lp-1] == "P" {
-			if len(odir) == 0 {
-				getDocP(key)
-			} else {
-				saveDocP(key, pdir)
+		for  _,key := range Keys {
+			//key = strings.TrimSpace(key)
+			if checkDoc(key) == "P" {
+				p += saveDocP(key,pdir)
+			} else  if checkDoc(key) == "B"  {
+				getDocB(key, pdir)
+				b++
 			}
-
-		} else if key[lp-2:lp-1] == "B" {
-			getDocB(key, pdir)
+		}
+	} else {
+		for  _,key := range Keys {
+			key = strings.TrimSpace(key)
+			if checkDoc(key) == "P" {
+				p += getDocP(key)
+			} else  if checkDoc(key) == "B"  {
+				getDocB(key, pdir)
+				b++
+			}
 		}
 	}
-
+	gLog.Info.Printf("Total number of pages retrieved: %d - Total number of blob retrieved: %d",p,b)
 	utils.Return(start)
 }
 
+func checkDoc(key string) (string) {
+	typex := "P"
+	if !reverse {
+		if key[1:2] == "B" {
+			typex="B"
+		}
+	} else {
+		lp := len(key);
+		if key[lp-2:lp-1] == "B" {
+			typex="B"
+		}
+	}
+	return typex
+}
 
-func getDocP(key string ) {
-
-	KEY := utils.Reverse(key)
-	KEYx := KEY+".1"
+func getDocP(key string ) (int) {
+	var (
+		n = 0
+		buck = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
+	)
+	if reverse {
+		key= utils.Reverse(key)
+	}
+	KEYx := key+".1"
 	svc := s3.New(api.CreateSession())
 	req := datatype.GetObjRequest{
 		Service : svc,
-		Bucket: bucket,
+		Bucket: buck,
 		Key : KEYx,  // Get the first Object
 	}
-
+	start := time.Now()
 	if resp,err  := api.GetObject(req); err == nil {
 		var (
 			pages int
 			err   error
 			val   string
 		)
-
 		// the first page should contain PXI metadata
 		if val,err = utils.GetPxiMeta(resp.Metadata); err != nil {
 			gLog.Error.Printf("Key : %s - PXI metadata %s is missing ",KEYx)
-			return
+			return n
 		}
 
 		if pages,err = strconv.Atoi(val); err != nil || pages == 0 {
 			gLog.Error.Printf("Key : %s - PXI metadata %s is invalid", KEYx)
-			return
+			return n
 		}
-
-		//
-
-		readObject(KEYx,resp)
-
+		// read teh first page
+		readObject(KEYx,resp,start)
+		n++
+		// read the other pages
 		if pages > 1 {
-			readObjects(KEY, pages-1, svc)
+			if con {
+			n += readObjects(key, buck, pages-1, svc)
+			} else {
+				n += readObjs(key, buck, pages-1, svc)
+			}
 		}
 
+		gLog.Info.Printf("%d pages are retrieved for pxid %s",n,key)
 
 	} else {
 		gLog.Error.Printf("%v",err)
 	}
+	return n
 }
 
 //
@@ -163,17 +202,21 @@ func getDocP(key string ) {
 //
 //
 
-func saveDocP(key string,pdir string ) {
-
-	KEY := utils.Reverse(key)
-	KEYx := KEY+".1"
+func saveDocP(key string, pdir string )  (int) {
+	var (
+		n = 0
+		buck = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
+	)
+	if reverse {
+		key = utils.Reverse(key)
+	}
+	KEYx := key+".1"
 	svc := s3.New(api.CreateSession())
 	req := datatype.GetObjRequest{
 		Service : svc,
-		Bucket: bucket,
+		Bucket: buck,
 		Key : KEYx,  // Get the first Object
 	}
-
 
 	if resp,err  := api.GetObject(req); err == nil {
 		var (
@@ -185,29 +228,29 @@ func saveDocP(key string,pdir string ) {
 		// the first page should contain PXI metadata
 		if val,err = utils.GetPxiMeta(resp.Metadata); err != nil {
 			gLog.Error.Printf("Key : %s - PXI metadata %s is missing ",KEYx)
-			return
+			return n
 		}
 
 		if pages,err = strconv.Atoi(val); err != nil || pages == 0 {
 			gLog.Error.Printf("Key : %s - PXI metadata %s is invalid", KEYx)
-			return
+			return n
 		}
 
 		// Save first object and its metadata
 		saveMeta(KEYx,resp.Metadata)
 		if err := saveObject(KEYx,resp,pdir); err != nil {
-			gLog.Error.Printf("Saving object %s %v ",KEYx,err)
+			gLog.Error.Printf("Saving page %s %v ",KEYx,err)
 		}
-
+		n++
 		// save other objects
 		if pages > 1 {
-			saveObjects(KEY, pages-1, svc)
+			n += saveObjects(key, buck,pages-1, svc)
 		}
-
-
+		gLog.Trace.Printf("%d pages are retrieved for pxid %s",n,key)
 	} else {
 		gLog.Error.Printf("%v",err)
 	}
+	return n
 }
 
 //
@@ -219,17 +262,23 @@ func saveDocP(key string,pdir string ) {
 
 func getDocB(key string,pdir string) {
 
-	KEY := utils.Reverse(key)
+	var (
+		buck = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
+	)
+	if reverse {
+		key = utils.Reverse(key)
+	}
 	// Get the number of Pages
-	KEYx := KEY+".1"
+
+	KEYx := key+".1"
 	req := datatype.GetObjRequest{
 		Service : s3.New(api.CreateSession()),
-		Bucket: bucket,
+		Bucket: buck,
 		Key : KEYx,
 	}
 
+	start := time.Now()
 	if resp,err  := api.GetObject(req); err == nil {
-
 		var (
 			pages int
 			err error
@@ -245,16 +294,13 @@ func getDocB(key string,pdir string) {
 		}
 
 		if len(pdir) == 0 {
-			if err := readObject(KEYx, resp); err == nil {
-				gLog.Info.Printf("Pxi id %s is retrieved",key)
+			if err := readObject(KEYx, resp,start ); err == nil {
+				gLog.Info.Printf("Blob %s is retrieved",key)
 			}
-
-
 		} else {
-
 			saveMeta(KEYx,resp.Metadata)
 			if err := saveObject(KEYx, resp, pdir); err == nil { // save Object content
-				gLog.Info.Printf("Pxi id %s is downloaded to %s", key,pdir)
+				gLog.Info.Printf("Blob %s is saved to %s", key,pdir)
 			}
 		}
 
@@ -283,11 +329,12 @@ func saveObject(key string, resp *s3.GetObjectOutput,pdir string ) (error) {
 //  key : S3 key of the object
 //  resp :  S3 GetObjectOutput response
 
-func readObject(key string, resp*s3.GetObjectOutput) (error){
+func readObject(key string, resp*s3.GetObjectOutput,start time.Time) (error){
 
 	b, err := utils.ReadObject(resp.Body)
 	if err == nil {
-		gLog.Trace.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*resp.ETag,*resp.ContentLength,b.Len())
+		// gLog.Info.Printf("%d objects are retrieved for pxid %s",1,key)
+		gLog.Trace.Printf("GET Key: %s  - ETag: %s  - Content length: %d - Object length: %d - Elapsed time %v ",key,*resp.ETag,*resp.ContentLength,b.Len(),time.Since(start))
 	} else {
 		gLog.Error.Printf("%v",err)
 	}
@@ -304,13 +351,14 @@ func readObject(key string, resp*s3.GetObjectOutput) (error){
 //      svc : S3 service
 //
 
-func readObjects(key string, pages int,svc *s3.S3 ) {
+func readObjects(key string, bucket string,pages int,svc *s3.S3 ) (int) {
 
 	var (
 		N = pages
 		T = 0
 		ch  = make(chan *datatype.Rb)
 	)
+	// bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
 
 	for p:=1 ; p <= pages; p++ {
 
@@ -353,19 +401,43 @@ func readObjects(key string, pages int,svc *s3.S3 ) {
 		case rb := <-ch:
 			T++
 			if rb.Err == nil {
-				gLog.Trace.Printf("Key: %s  - ETag: %s  - Content length: %d - Object length: %d", rb.Key, *rb.Result.ETag, *rb.Result.ContentLength, len(rb.Object.Bytes()))
+				gLog.Trace.Printf("GET Key: %s  - ETag: %s  - Content length: %d - Object length: %d", rb.Key, *rb.Result.ETag, *rb.Result.ContentLength, len(rb.Object.Bytes()))
 			} else {
 				gLog.Error.Printf("Error getting object key %s: %v",rb.Key,rb.Err)
 			}
 			if T == N {
-				gLog.Info.Printf("%d objects are retrieved for pxid %s",N+1,key)
-				return
+				gLog.Trace.Printf("%d objects are retrieved for pxid %s",N,key)
+				return N
 			}
 		case <-time.After(300 * time.Millisecond):
 			fmt.Printf("w")
 		}
 	}
 }
+
+
+func readObjs(key string, bucket string,pages int,svc *s3.S3 ) (int) {
+	n:= 0
+	for p := 1; p <= pages; p++ {
+		KEYx := key + "." + strconv.Itoa(p)
+		req := datatype.GetObjRequest{
+			Service: svc,
+			Bucket:  bucket,
+			Key:     KEYx,
+		}
+		start := time.Now()
+		if resp, err := api.GetObject(req); err == nil {
+			n++
+			if b, err := utils.ReadObject(resp.Body); err == nil {
+				gLog.Trace.Printf("GET Key: %s  - ETag: %s  - Content length: %d - Object length: %d - Elapsed time %v ",KEYx,*resp.ETag,*resp.ContentLength,b.Len(),time.Since(start))
+			}
+		}
+
+	}
+	return n
+}
+
+
 
 //
 // Download  Objects from S3  to Folder
@@ -376,7 +448,7 @@ func readObjects(key string, pages int,svc *s3.S3 ) {
 // 		S3 service
 //
 
-func saveObjects(key string, pages int,svc *s3.S3 ) {
+func saveObjects(key string, bucket string, pages int,svc *s3.S3 ) (int) {
 
 	var (
 		N  = pages
@@ -421,8 +493,8 @@ func saveObjects(key string, pages int,svc *s3.S3 ) {
 				gLog.Error.Printf("Error getting object key %s: %v",ro.Key,ro.Err)
 			}
 			if T == N {
-				gLog.Info.Printf("%d objects are downloaded for pxid %s to %s",N+1,key, pdir)
-				return
+				gLog.Trace.Printf("%d objects are saved for pxiId %s to %s",N,key, pdir)
+				return N
 			}
 		case <-time.After(50 * time.Millisecond):
 			fmt.Printf("w")

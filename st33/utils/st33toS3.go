@@ -150,12 +150,13 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 				P := int(v.Pages)
 				for p := 0; p < P; p++ {
 					// set the key of the s3 object
+					cp:= p+1
 					putReq.Key = KEY
 					putReq.Bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber))
 
 					putReq.Usermd = map[string]string{} // reset the  user metadata
 
-					if image,nrec, err, err1 := GetPage(r, v); err == nil  && err1 == nil  {
+					if image,nrec, err, err1 := GetPage(r, v,cp); err == nil  && err1 == nil  {
 
 						pages++  // increment the number of pages for this PXI ID
 						recs += nrec // increment the number of records for this PXI ID
@@ -180,8 +181,8 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							if p+1 != pagenum {
 								gLog.Warning.Printf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ",v.PxiId,pagenum,p+1)
 							}
-							putReq.Key = putReq.Key + "." + strconv.Itoa(p+1)
-
+							// putReq.Key = putReq.Key + "." + strconv.Itoa(p+1)
+							putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
 							putReq.Buffer = image.Img
 							gLog.Trace.Printf("Put Key:%s - Bucket: %s ",putReq.Key,putReq.Bucket)
 
@@ -443,6 +444,7 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 			// for all documents listed in the control file
 			for e, v := range conVal[p:q] {   // loop tru teh control file
 				KEY := v.PxiId;
+
 				//	if KEY != "E1_______0011444808P1" && KEY != "E1_______001156770LP1"  && v.PxiId != "E1_______0031079902P1" { // lot p00001.00155, p00001.00164 p00002.00171
 
 				lp := len(KEY);
@@ -455,61 +457,70 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 					N += P              // total number of pages that are going to be processed
 					// Upload all the pages of the current document
 					for p := 0; p < P; p++ {
-
-						image, nrec, err, err1 := GetPage(r, v)   // Get the next page
-						if err1 != nil { // Broken page
+						cp:= p+1
+						image, nrec, err, err1 := GetPage(r, v, cp)   // Get the next page
+						if err1 != nil { // Broken page, should exit
 							inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
 						}
 
 						if err == nil  && err1 == nil {
-							recs += nrec                        // increment the number of records for this page
-							pages++                             //  increment the number of pages without error.
-							numpages++                          //  increment the number of pages for this lot
-							numrecs += nrec                     //  increment the number of records for this lot
+							recs += nrec // increment the number of records for this page
+							pages++      //  increment the number of pages without error.
+							//  increment the number of records for this lot
 
-							v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
+							if image.Img != nil {
 
-							go func(key string, p int, image *PxiImg, v Conval) {
-								// append the bucket number to the given bucket
-								req := datatype.PutObjRequest{ // build a PUT OBject request
-									Service: svc,
-									Bucket:  bucket+"-"+fmt.Sprintf("%02d",utils.HashKey(v.PxiId,bucketNumber)),
-								}
-								// Add user metadata to page 1
-								pagenum, _ := strconv.Atoi(string(image.PageNum)) // Build user metadata for page 1
-								if pagenum == 1 {
-									if usermd, err := BuildUsermd(v); err == nil {
-										req.Usermd = utils.AddMoreUserMeta(usermd, infile)
+
+								numpages++ //  increment the number of pages for this lot
+								numrecs += nrec
+								v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
+
+								go func(key string, p int, image *PxiImg, v Conval) {
+									// append the bucket number to the given bucket
+									req := datatype.PutObjRequest{ // build a PUT OBject request
+										Service: svc,
+										Bucket:  bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(v.PxiId, bucketNumber)),
 									}
-								}
+									// Add user metadata to page 1
+									pagenum, _ := strconv.Atoi(string(image.PageNum)) // Build user metadata for page 1
+									if pagenum == 1 {
+										if usermd, err := BuildUsermd(v); err == nil {
+											req.Usermd = utils.AddMoreUserMeta(usermd, infile)
+										}
+									}
 
-								// S3 key is the reverse of the pxi id + '.' + page number
-								//  PUT OBJECT
+									// S3 key is the reverse of the pxi id + '.' + page number
+									//  PUT OBJECT
 
+									if p+1 != pagenum {
 
-								if p+1 != pagenum {
+										error := errors.New(fmt.Sprintf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ", v.PxiId, pagenum, p+1))
+										gLog.Warning.Printf("%v", error)
+										// inputError = append(inputError, S3Error{Key: v.PxiId, Err: error})
 
-									error := errors.New(fmt.Sprintf( "PxiId:%s - Inconsistent page number in st33 header: %d/%d ",v.PxiId,pagenum,p+1))
-									gLog.Warning.Printf("%v", error)
-									// inputError = append(inputError, S3Error{Key: v.PxiId, Err: error})
+									}
+									req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
+									//req.Key = utils.Reverse(key) + "." + strconv.Itoa(p+1)
+									req.Buffer = image.Img //   add the image
+									err = nil
+									if !check {
+										_, err = writeToS3(req) //  upload the image  to S3
+									}
+									//  Prepare a response Block
+									s3Error := S3Error{Key: req.Key, Err: err}
+									image.Img.Reset() // reset the image buffer
+									ch <- &PutS3Response{req.Bucket, req.Key, int(v.DocSize), s3Error}
 
-								}
-								// req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
-								req.Key = utils.Reverse(key) + "." + strconv.Itoa(p+1)
-								req.Buffer = image.Img                                     //   add the image
-								err = nil
-								if !check {
-									_, err = writeToS3(req) //  upload the image  to S3
-								}
-								//  Prepare a response Block
-								s3Error := S3Error{Key: req.Key, Err: err}
-								image.Img.Reset()                          // reset the image buffer
-								ch <- &PutS3Response{req.Bucket, req.Key, int(v.DocSize), s3Error}
-
-							}(KEY, p,image,v)
+								}(KEY, p, image, v)
+							} else {
+								N--
+							}
 						} else {
 							// should not happen unless input data is corrupted
-							if err != io.EOF  || err1 != nil {
+							if err == io.EOF {
+								N--
+							}
+							if err != io.EOF  ||   err1 != nil {
 								gLog.Error.Printf("Err: %v Err1: %v  building image for Key:%s - Prev/Curr buffer address: X'%x'/ X'%x' ", err,err1, v.PxiId, r.Previous, r.Current)
 								gLog.Error.Printf("Exit while processing key: %s  at entry number: %d  of input file: %s",v.PxiId,e, infile)
 								os.Exit(100)

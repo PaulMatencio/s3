@@ -117,7 +117,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}  else {
-		log.Printf("Error %v  reading config file %s",err,viper.ConfigFileUsed())
+		log.Printf("Error %v reading config file %s",err,viper.ConfigFileUsed())
 		log.Printf("AWS sdk shared config will be used if present ")
 	}
 

@@ -86,6 +86,10 @@ func statObjects(cmd *cobra.Command,args []string) {
 		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
 	}
 
+	if R {
+		prefix = utils.Reverse(prefix)
+	}
+
 	req := datatype.ListObjRequest{
 		Service : s3.New(api.CreateSession()),
 		Bucket: bucket,
