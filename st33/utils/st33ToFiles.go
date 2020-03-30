@@ -48,6 +48,7 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 	if err == nil {
 
 		for _, v := range conVal {
+
 			var (
 				recs int = 0
 				pages int = 0
@@ -57,12 +58,14 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 			)
 
 			if v.PxiId[lp-2:lp-1] == "P" {  // TIFF IMAGE
+
 				gLog.Trace.Printf("Processing ST33 Key %s Number of Pages/Records: %d/%d",v.PxiId,v.Pages,v.Records)
 				s:= 0
 				KEY = utils.Reverse(KEY)
 				P := int(v.Pages)    // Total number of pages for this document
 				for p:= 0; p < P; p++ {
-					if image, nrec , err, err1 := GetPage(r,v); err == nil && err1==nil   {
+					cp:= p+1
+					if image, nrec , err, err1 := GetPage(r,v,cp); err == nil && err1==nil   {
 
 
 						pages++       // increment the number of pages of the PXIID
@@ -70,16 +73,25 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 
 						if image.Img!= nil {
 							s += image.Img.Len()
-							gLog.Trace.Printf("ST33 Key:%s - # Pages:%d - PxiId:%s Page number:%s - ImageLength:%d", KEY, v.Pages, string(image.PxiId), string(image.PageNum), image.Img.Len())
+							gLog.Trace.Printf("==> PixId:%s - ST33 Key:%s - # Pages:%d - PxiId from image:%s  - Page number  from image/iteration:%s/%d - ImageLength:%d", v.PxiId, KEY, v.Pages, string(image.PxiId), string(image.PageNum), p+1,image.Img.Len())
 							pagenum, _ := strconv.Atoi(string(image.PageNum))
 							 	if !test {
-									pathname = filepath.Join(odir, KEY+"."+strconv.Itoa(pagenum))
+							 		if pagenum != p + 1 {
+										gLog.Warning.Printf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ",v.PxiId,pagenum,p+1)
+									}
+
+									outdir := filepath.Join(odir,KEY)
+									utils.MakeDir(outdir)
+
+									//pathname = filepath.Join(outdir, KEY+"."+strconv.Itoa(p+1))
+									pathname = filepath.Join(outdir, KEY+"."+strconv.Itoa(pagenum))
 									if err := utils.WriteFile(pathname, image.Img.Bytes(), 0644); err != nil {
 										gLog.Error.Printf("Error %v writing image %s ", err, pathname)
 									}
 								}
 
-								if pagenum == 1 {
+								/* if pagenum == 1 { */
+								if p == 0 {
 									if usermd, err := BuildUsermd(v); err == nil {
 										utils.AddMoreUserMeta(usermd, ifile)
 										pathname += ".md"
@@ -97,7 +109,8 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 						}
 
 					} else {
-							gLog.Error.Printf("Err: %v - Err1: %v - getting  page number %d ", err,err1, p+1)
+							// gLog.Error.Printf("Err: %v - Err1: %v - getting  page number %d ", err,err1, p+1)
+							gLog.Error.Printf("PXIID: %s -  Err: %v  - Err1: %v ",v.PxiId,err,err1)
 							numerrors++
 							if err1 != nil {
 								return numpages,numrecs,numdocs,numerrors, err1
@@ -112,7 +125,7 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 				//  Total number of records of the control file should match the total number of records for this PXIID
 
 				if v.Records != recs {
-					gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file ",v.PxiId,v.Records,recs)
+					gLog.Warning.Printf("PXIID %s - Total number of records in the control file (%d)  != Total number of records (%d) in the data file ",v.PxiId,v.Records,recs)
 					diff := v.Records - recs
 					if diff < 0 {
 						RewindST33(v,r,diff)
@@ -123,7 +136,7 @@ func ToFilesV1(ifile string,  odir string, bdir string, test bool)  (int,int,int
 					}
 				}
 
-				gLog.Trace.Printf("PXIID: %s - Key %s - #records: %d/%d - #pages: %d/%d - Total #pages: %d ",v.PxiId,utils.Reverse(v.PxiId),v.Records,recs,v.Pages,pages,numpages)
+				gLog.Trace.Printf("PXIID: %s - Key %s - Number of records: %d/%d - #pages: %d/%d - Total number of pages: %d ",v.PxiId,utils.Reverse(v.PxiId),v.Records,recs,v.Pages,pages,numpages)
 
 			} else if v.PxiId[lp-2:lp-1] == "B"  {            // Regular BLOB
                 pxiblob := NewPxiBlob(KEY,v.Records)

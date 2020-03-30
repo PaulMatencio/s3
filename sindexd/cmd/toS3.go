@@ -17,7 +17,9 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/s3/datatype"
+	"github.com/s3/utils"
 	"strings"
 	"sync"
 
@@ -36,7 +38,7 @@ import (
 // toS3Cmd represents the toS3 command
 var toS3Cmd = &cobra.Command{
 	Use:   "toS3",
-	Short: "migrate sindexd tables to S3 buckets",
+	Short: "Migrate Scality Sindexd entries to S3 ",
 	Long: ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		migrateToS3(cmd,args)
@@ -90,9 +92,11 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 }
 
 func migToS3 (prefix string)  {
+	buck:= ""
 	indSpecs := directory.GetIndexSpec(iIndex)
 	svc      := s3.New(api.CreateSession())
 	num := 0
+
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -102,15 +106,24 @@ func migToS3 (prefix string)  {
 
 			for k, v := range resp.Fetched {
 				if v1, err:= json.Marshal(v); err == nil {
+					/* hash the country code which should be equal to prefix */
+					cc := strings.Split(k,"/")[0]
 
-					go func(svc *s3.S3,k string,value []byte) {
+					if cc == "XP" {
+						buck=bucket+"-05"
+					} else {
+						buck = bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+					}
+					go func(svc *s3.S3,k string,buck string,value []byte) {
 						defer wg.Done()
-						if r,err := writeToS3(svc, k, v1); err == nil {
-							gLog.Info.Println(*r.ETag)
+
+						if r,err := writeToS3(svc, k, buck,v1); err == nil {
+							gLog.Trace.Println(*r.ETag)
 						} else {
 							gLog.Error.Printf("Error %v  - Writing %s",err,k)
 						}
-					} (svc,k,v1)
+						// gLog.Info.Println(k,buck)
+					} (svc,k,buck,v1)
 
 				} else {
 					gLog.Error.Printf("Error %v - Marshalling %s:%v",err, k,v)
@@ -123,10 +136,12 @@ func migToS3 (prefix string)  {
 			} else {
 				marker = resp.Next_marker
 				num++
-				if num == 2 {
+				/*
+				if num == 100 {
 					Nextmarker = false
 				}
-				gLog.Info.Printf("Next marker => %s", marker)
+				 */
+				gLog.Info.Printf("Next marker => %s %d", marker,num)
 			}
 
 		} else {
@@ -136,10 +151,11 @@ func migToS3 (prefix string)  {
 	}
 }
 
-func writeToS3(svc  *s3.S3 ,key string, meta []byte) (*s3.PutObjectOutput,error) {
+func writeToS3(svc  *s3.S3 ,key string, bucket string, meta []byte) (*s3.PutObjectOutput,error) {
 
 	//gLog.Info.Printf("Writing key:%s - meta:%v to bucket:%s", key, meta, bucket)
     data := make([]byte,0,0)  // empty byte array
+    gLog.Trace.Println(bucket,key)
 	req:= datatype.PutObjRequest{
 		Service : svc,
 		Bucket: bucket,

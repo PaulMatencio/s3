@@ -103,7 +103,6 @@ func ReadLines(filename string) error {
 		defer fp.Close()
 		scanner := bufio.NewScanner(fp)
 		for scanner.Scan() {
-
 			fmt.Println(scanner.Text())
 		}
 	}
@@ -150,6 +149,33 @@ func ScanLines(scanner *bufio.Scanner, num int) ([]string, error) {
 
 	return linea[0:k], err
 }
+
+func ScanAllLines(scanner *bufio.Scanner) ([]string, error) {
+	var (
+		err error
+		linea []string
+	)
+	stop := false
+
+	for !stop {
+		scanner.Scan()
+		eof := false
+		if text := scanner.Text(); len(text) > 0 {
+
+			linea = append(linea,text)
+
+		} else {
+			eof = true
+		}
+		err = scanner.Err()
+		if eof || err != nil {
+			stop = true
+		}
+	}
+
+	return linea, err
+}
+
 
 func Scanner(pathname string) (*bufio.Scanner, error) {
 	var (

@@ -373,8 +373,6 @@ func CheckST33Length(v *Conval , r *St33Reader, buf []byte) (error) {
 	}
 }
 
-
-
 func RewindST33(v Conval, r *St33Reader,diff int) {
 	diff = -diff
 	gLog.Warning.Printf("PXIID %s - %s - rewinding by %d record from address X'%x'", v.PxiId,r.File.Name(), diff, r.Current)
@@ -384,12 +382,17 @@ func RewindST33(v Conval, r *St33Reader,diff int) {
 	}
 }
 
+
 func SkipST33(v Conval,r *St33Reader,diff int) {
 	for m:=1; m <= diff; m++ { // SKIP missing records
 		if buf,err := r.Read(); err == nil {
 			ST33 := utils.Ebc2asci(buf[0:214])
 			pagenum, _ := strconv.Atoi(string(ST33[17:21]))
-			gLog.Warning.Printf("PXIID %s - Skip record number %d", v.PxiId, pagenum)
+			/* ST33[5:17] */
+			section := ST33[9:17]
+			cc := ST33[7:9]
+			id := string(section) + string(cc)
+			gLog.Warning.Printf("PXIID: %s/%s - Skip %d record of page number: %d - Length of the record: %d", v.PxiId,id, m, pagenum,len(buf))
 		}
 	}
 }

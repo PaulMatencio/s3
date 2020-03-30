@@ -118,9 +118,9 @@ func (vb *VBRecord)  GetRecord(n int) ( []byte,error) {
 // read  b bytes from the current  position
 //
 func (vb *VBRecord) ReadAt(b []byte) (int, error){
-
 	f := vb.File
 	c := vb.Current
+	gLog.Trace.Printf("Reading n bytes: %d at byte address: X'%x' ",len(b),c)
 	return f.ReadAt(b, c)
 }
 

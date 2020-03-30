@@ -43,6 +43,10 @@ func GetNumberOfBucket(viper viper.Viper) (int) {
   return viper.GetInt("buckets.number")
 }
 
+func GetLevelDBUrl(viper viper.Viper) (string) {
+	return viper.GetString("levelDB.url")
+}
+
 func InitConfig(config string,viper viper.Viper,rootcmd cobra.Command) {
 
 	var configPath string
