@@ -15,53 +15,60 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
-	"github.com/s3/datatype"
-	"strings"
-	"sync"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/api"
 	"github.com/s3/gLog"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 
-	"github.com/spf13/cobra"
+	hostpool "github.com/bitly/go-hostpool"
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
-	hostpool "github.com/bitly/go-hostpool"
+	"github.com/spf13/cobra"
 )
 
-// toS3Cmd represents the toS3 command
-var toS3Cmd = &cobra.Command{
-	Use:   "toS3",
-	Short: "migrate sindexd tables to S3 buckets",
-	Long: ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		migrateToS3(cmd,args)
-	},
-}
+
+var (
+	toSindexUrl string
+	toSindexdCmd = &cobra.Command{
+		Use:   "toSindexd",
+		Short: "Copy sindexd tables to sindexd tables",
+		Long: ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			toSindexd(cmd,args)
+		},
+	}
+)
 
 func init() {
-	RootCmd.AddCommand(toS3Cmd)
-	initToS3Flags(toS3Cmd)
+	RootCmd.AddCommand(toSindexdCmd)
+	initCopyFlags(toSindexdCmd)
 }
 
-func initToS3Flags(cmd *cobra.Command) {
+func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
+	cmd.Flags().StringVarP(&toSindexUrl,"toSindexd","t","","target sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
 	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
+
 
 }
 
-func migrateToS3(cmd *cobra.Command,args []string) {
+func toSindexd(cmd *cobra.Command,args []string) {
 
 	if len(sindexUrl) == 0 {
-		sindexUrl = viper.GetString("sindexd.url")
+		if sindexUrl = viper.GetString("sindexd.url"); len(sindexUrl) ==0 {
+			gLog.Info.Println("%s", "missing source  sindexed URL");
+			os.Exit(2)
+		}
+	}
+	if len(toSindexUrl) == 0 {
+		if toSindexUrl = viper.GetString("toSindexd.url"); len(toSindexUrl) == 0 {
+			gLog.Info.Println("%s", "missing target sindexed URL");
+			os.Exit(2)
+		}
 	}
 	if len(iIndex) == 0 {
 		iIndex = "PN"
@@ -73,57 +80,55 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 		os.Exit(2)
 	}
 
-	if len(bucket) == 0 {
-		if bucket = viper.GetString("s3.bucket"); len(bucket) == 0 {
-			gLog.Info.Println("%s", missingBucket);
-			os.Exit(2)
-		}
-	}
 
 	sindexd.Delimiter = delimiter
 	// sindexd.Host = append(sindexd.Host, sindexUrl)
 	sindexd.Host = strings.Split(sindexUrl,",")
+	sindexd.TargetHost = strings.Split(toSindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
-
-	migToS3(prefix)
+	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
+	cpSindexd()
 
 }
 
-func migToS3 (prefix string)  {
+func cpSindexd ()  {
 	indSpecs := directory.GetIndexSpec(iIndex)
-	svc      := s3.New(api.CreateSession())
 	num := 0
+	keyObj := make(map[string]string)
+	keyObj1 := make(map[string]string)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
-
-			var wg sync.WaitGroup
-			wg.Add(len(resp.Fetched))
-
 			for k, v := range resp.Fetched {
+				keys := strings.Split(k,"/")
+				k1 := keys[0]
+				for i := 4; i <= len(keys); i++ {
+					k1 += "/"+keys[i]
+				}
 				if v1, err:= json.Marshal(v); err == nil {
-
-					go func(svc *s3.S3,k string,value []byte) {
-						defer wg.Done()
-						if r,err := writeToS3(svc, k, v1); err == nil {
-							gLog.Info.Println(*r.ETag)
-						} else {
-							gLog.Error.Printf("Error %v  - Writing %s",err,k)
-						}
-					} (svc,k,v1)
-
-				} else {
-					gLog.Error.Printf("Error %v - Marshalling %s:%v",err, k,v)
-					wg.Done()
+					vs := string(v1)
+					gLog.Info.Println(k, vs)
+					gLog.Info.Println(k1,vs)
+					keyObj[k] = vs
+					keyObj1[k]= vs
 				}
 			}
-			wg.Wait()
+
+
+			// directory.AddSerialPrefix(prefix,indSpecs,keyObject1)
+
+			// reset the map to be reused
+
+			for k := range keyObj{ delete(keyObj,k)}
+			for k := range keyObj1{ delete(keyObj1,k)}
+
+
 			if len(resp.Next_marker) == 0 {
 				Nextmarker = false
 			} else {
 				marker = resp.Next_marker
 				num++
-				if num == 2 {
+				if num == 10 {
 					Nextmarker = false
 				}
 				gLog.Info.Printf("Next marker => %s", marker)
@@ -135,24 +140,3 @@ func migToS3 (prefix string)  {
 		}
 	}
 }
-
-func writeToS3(svc  *s3.S3 ,key string, meta []byte) (*s3.PutObjectOutput,error) {
-
-	//gLog.Info.Printf("Writing key:%s - meta:%v to bucket:%s", key, meta, bucket)
-    data := make([]byte,0,0)  // empty byte array
-	req:= datatype.PutObjRequest{
-		Service : svc,
-		Bucket: bucket,
-		Key: key,
-		Buffer: bytes.NewBuffer(data), // convert []byte into *bytes.Buffer
-		Meta : meta,
-	}
-	return api.PutObject(req)
-
-}
-
-
-
-
-
-
