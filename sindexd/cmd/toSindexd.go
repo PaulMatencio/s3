@@ -102,7 +102,7 @@ func cpSindexd ()  {
 			for k, v := range resp.Fetched {
 				keys := strings.Split(k,"/")
 				k1 := keys[0]
-				for i := 4; i <= len(keys); i++ {
+				for i := 4; i < len(keys); i++ {
 					k1 += "/"+keys[i]
 				}
 				if v1, err:= json.Marshal(v); err == nil {
