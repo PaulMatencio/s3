@@ -145,7 +145,8 @@ func migToS3 (prefix string)  {
 			}
 
 		} else {
-			gLog.Error.Printf("%v",response.Err)
+			// gLog.Error.Printf("%v",response.Err)
+			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
 			Nextmarker = false
 		}
 	}

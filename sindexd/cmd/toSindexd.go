@@ -87,12 +87,24 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHost = strings.Split(toSindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
-	cpSindexd()
+	bkupSindexd()
 
 }
 
-func cpSindexd ()  {
-	indSpecs := directory.GetIndexSpec(iIndex)
+func bkupSindexd ()  {
+	/*
+		List prefix sindexd table ( "PD")
+	    for each key,value  {
+	       map[key] = value
+	       key1 = key  -  YYYY/MM/DD  = Publication number
+	       map[key1] =value
+	    }
+	    add map[key] to target PD  tables
+	    add map[key1] to target PN tables
+
+	 */
+	indSpecs := directory.GetIndexSpec("PD")
+	indSpecs1 := directory.GetIndexSpec("PN")
 	num := 0
 	keyObj := make(map[string]string)
 	keyObj1 := make(map[string]string)
@@ -115,7 +127,25 @@ func cpSindexd ()  {
 			}
 
 
-			// directory.AddSerialPrefix(prefix,indSpecs,keyObject1)
+			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
+				if r.Response.Status == 200 {
+					if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs1, keyObj1); r1.Err != nil {
+						gLog.Error.Printf("Error: %v  adding key after marker %s to %s", r1.Err, marker,indSpecs1)
+						os.Exit(100)
+					} else {
+						if r1.Response.Status != 200 {
+							gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs1)
+							os.Exit(100)
+						}
+					}
+				}  else {
+					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+					os.Exit(100)
+				}
+			} else {
+				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
+				os.Exit(100)
+			}
 
 			// reset the map to be reused
 
@@ -135,7 +165,7 @@ func cpSindexd ()  {
 			}
 
 		} else {
-			gLog.Error.Printf("%v",response.Err)
+			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
 			Nextmarker = false
 		}
 	}
