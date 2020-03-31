@@ -125,7 +125,7 @@ func bkupSindexd ()  {
 					gLog.Info.Println(k, vs)
 					gLog.Info.Println(k1,vs)
 					keyObj[k] = vs
-					keyObj1[k]= vs
+					keyObj1[k1]= vs
 				}
 			}
 			/*
@@ -163,9 +163,11 @@ func bkupSindexd ()  {
 			} else {
 				marker = resp.Next_marker
 				num++
+                                
 				if num == 10 {
 					Nextmarker = false
 				}
+                               
 				gLog.Info.Printf("Next marker => %s", marker)
 			}
 
