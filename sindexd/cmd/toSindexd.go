@@ -108,6 +108,9 @@ func bkupSindexd ()  {
 	num := 0
 	keyObj := make(map[string]string)
 	keyObj1 := make(map[string]string)
+	/*
+		Loop until Next marker is false
+	 */
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -125,8 +128,11 @@ func bkupSindexd ()  {
 					keyObj1[k]= vs
 				}
 			}
-
-
+			/*
+				add keys to tge PD sindexd tables
+			    add keys to the PN sindexd tables
+				Exit if any error ot sindexd status != 200
+			*/
 			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
 				if r.Response.Status == 200 {
 					if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs1, keyObj1); r1.Err != nil {
@@ -147,11 +153,10 @@ func bkupSindexd ()  {
 				os.Exit(100)
 			}
 
-			// reset the map to be reused
-
+			// Reuse the MAP storage rather then let the Garbage free the unused storage
+			// this may  create overhead without real benefit
 			for k := range keyObj{ delete(keyObj,k)}
 			for k := range keyObj1{ delete(keyObj1,k)}
-
 
 			if len(resp.Next_marker) == 0 {
 				Nextmarker = false
