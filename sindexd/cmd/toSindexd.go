@@ -205,7 +205,7 @@ func bkupBnsId ()  {
 					keyObj[k] = vs
 				}
 			}
-		    /*
+		    
 			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
 				if r.Response.Status != 200 {
 					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
@@ -215,7 +215,7 @@ func bkupBnsId ()  {
 				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
 				os.Exit(100)
 			}
-			*/
+		
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
 			// this may  create overhead without real benefit
 			for k := range keyObj{ delete(keyObj,k)}
