@@ -49,7 +49,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&toSindexUrl,"toSindexd","t","","target sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<JS>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 
@@ -87,7 +87,15 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHost = strings.Split(toSindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
-	bkupSindexd()
+	if iIndex == "PN" || iIndex == "PD" {
+		bkupSindexd()
+	} else if iIndex =="JS" {
+		bkupBnsId()
+	} else {
+		gLog.Info.Println("%s", "invalid index table : <PN>/<PD>/<JS>");
+		os.Exit(2)
+	}
+
 
 }
 
@@ -103,6 +111,7 @@ func bkupSindexd ()  {
 	    add map[key1] to target PN tables
 
 	 */
+
 	indSpecs := directory.GetIndexSpec("PD")
 	indSpecs1 := directory.GetIndexSpec("PN")
 	num := 0
@@ -163,12 +172,11 @@ func bkupSindexd ()  {
 			} else {
 				marker = resp.Next_marker
 				num++
-                                /* 
+                /*
 				if num == 10 {
 					Nextmarker = false
 				}
-                                */
-                               
+                */
 				gLog.Info.Printf("Next marker => %s", marker)
 			}
 
@@ -178,3 +186,57 @@ func bkupSindexd ()  {
 		}
 	}
 }
+
+func bkupBnsId ()  {
+
+	indSpecs := directory.GetIndexSpec("JS")
+	num := 0
+	keyObj := make(map[string]string)
+	/*
+		Loop until Next marker is false
+	*/
+	for Nextmarker {
+		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+			resp := response.Response
+			for k, v := range resp.Fetched {
+				if v1, err:= json.Marshal(v); err == nil {
+					vs := string(v1)
+					gLog.Info.Println(k, vs)
+					keyObj[k] = vs
+				}
+			}
+		    /*
+			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
+				if r.Response.Status != 200 {
+					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+					os.Exit(100)
+				}
+			} else {
+				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
+				os.Exit(100)
+			}
+			*/
+			// Reuse the MAP storage rather then let the Garbage free the unused storage
+			// this may  create overhead without real benefit
+			for k := range keyObj{ delete(keyObj,k)}
+
+			if len(resp.Next_marker) == 0 {
+				Nextmarker = false
+			} else {
+				marker = resp.Next_marker
+				num++
+				/*
+					if num == 10 {
+						Nextmarker = false
+					}
+				*/
+				gLog.Info.Printf("Next marker => %s", marker)
+			}
+
+		} else {
+			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
+			Nextmarker = false
+		}
+	}
+}
+
