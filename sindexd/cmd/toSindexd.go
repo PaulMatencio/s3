@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"github.com/s3/gLog"
 	"github.com/spf13/viper"
+	"net/url"
 	"os"
 	"strings"
 
@@ -30,6 +31,7 @@ import (
 
 var (
 	toSindexUrl string
+	force bool
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
 		Short: "Copy sindexd tables to a remote sindexd tables",
@@ -52,6 +54,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().BoolVarP(&force,"force","f",false,"Force to allow overwriting -- Be careful --")
 
 
 }
@@ -67,16 +70,32 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	if len(toSindexUrl) == 0 {
 		if toSindexUrl = viper.GetString("toSindexd.url"); len(toSindexUrl) == 0 {
 			gLog.Info.Println("%s", "missing target sindexed URL");
-			os.Exit(2)
+			os.Exit( 2)
 		}
+		/* check  from and to Url to avoid overwriting */
+		url, _ := url.Parse(sindexUrl)
+		toUrl, _ := url.Parse(toSindexUrl)
+		toHostname:= toUrl.Hostname()
+		hostname := url.Hostname()
+		to := strings.Split(toHostname,".")
+		from :=  strings.Split(hostname,".")
+		if to[0] == from[0] && to[1] == from[1] && to[2]== from[2] {
+			gLog.Warning.Printf("From Sindexd cluster %v = to sindexd cluster %v cluster ... use -f to allow overwriting",hostname,toHostname)
+			if !force {
+				os.Exit(2)
+			}
+
+		}
+
 	}
+
 	if len(iIndex) == 0 {
 		iIndex = "PN"
 	}
 	// indSpecs := directory.GetIndexSpec(iIndex)
 
 	if len(prefix) == 0 {
-		gLog.Info.Println("%s", missingPrefix);
+		gLog.Info.Printf("%s", missingPrefix);
 		os.Exit(2)
 	}
 
