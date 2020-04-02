@@ -74,7 +74,7 @@ func listPrefix(cmd *cobra.Command,args []string) {
 	// indSpecs := directory.GetIndexSpec(iIndex)
 
 	if len(prefixs) == 0 {
-		gLog.Info.Println("%s", missingPrefix);
+		gLog.Info.Printf("%s", missingPrefix);
 		os.Exit(2)
 	}
 	gLog.Info.Println(sindexUrl, prefixs)
