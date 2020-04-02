@@ -115,7 +115,7 @@ func listPref (prefix string)  {
 					gLog.Error.Printf("Error %v -  Marshalling %v",err, v)
 				}
 			}
-			if len(resp.Next_marker) == 0  || n >= loop {
+			if len(resp.Next_marker) == 0  || (n >= loop && loop != 0) {
 				Nextmarker = false
 			} else {
 				marker = resp.Next_marker

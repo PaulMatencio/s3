@@ -221,7 +221,7 @@ func bkupBnsId ()  {
 			for k, v := range resp.Fetched {
 				if v1, err:= json.Marshal(v); err == nil {
 					vs := string(v1)
-					gLog.Info.Println(k, vs)
+					gLog.Trace.Println(k, vs)
 					keyObj[k] = vs
 				}
 			}
