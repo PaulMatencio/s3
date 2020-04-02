@@ -80,6 +80,7 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 			gLog.Info.Println("%s", missingBucket);
 			os.Exit(2)
 		}
+		bucket = bucket+"-"+strings.ToLower(iIndex)
 	}
 
 	sindexd.Delimiter = delimiter

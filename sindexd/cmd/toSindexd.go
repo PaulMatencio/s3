@@ -131,8 +131,8 @@ func bkupSindexd ()  {
 				}
 				if v1, err:= json.Marshal(v); err == nil {
 					vs := string(v1)
-					gLog.Info.Println(k, vs)
-					gLog.Info.Println(k1,vs)
+					gLog.Trace.Println(k, vs)
+					gLog.Trace.Println(k1,vs)
 					keyObj[k] = vs
 					keyObj1[k1]= vs
 				}
@@ -140,7 +140,8 @@ func bkupSindexd ()  {
 			/*
 				add keys to tge PD sindexd tables
 			    add keys to the PN sindexd tables
-				Exit if any error ot sindexd status != 200
+				Exit if any error or sindexd status != 200
+
 			*/
 			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
 				if r.Response.Status == 200 {
@@ -205,7 +206,7 @@ func bkupBnsId ()  {
 					keyObj[k] = vs
 				}
 			}
-		    /*
+
 			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
 				if r.Response.Status != 200 {
 					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
@@ -215,7 +216,7 @@ func bkupBnsId ()  {
 				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
 				os.Exit(100)
 			}
-			*/
+
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
 			// this may  create overhead without real benefit
 			for k := range keyObj{ delete(keyObj,k)}
