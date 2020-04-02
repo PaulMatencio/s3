@@ -32,8 +32,8 @@ var (
 	toSindexUrl string
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
-		Short: "Copy sindexd tables to sindexd tables",
-		Long: ``,
+		Short: "Copy sindexd tables to a remote sindexd tables",
+		Long: `Copy sindexd tables to sindexd tables: There are set of tables: PN=>Publication number tables - PD=>Publication date tables- BN=>BNS id tables`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
@@ -49,7 +49,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&toSindexUrl,"toSindexd","t","","target sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<JS>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 
@@ -89,10 +89,10 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
 	if iIndex == "PN" || iIndex == "PD" {
 		bkupSindexd()
-	} else if iIndex =="JS" {
+	} else if iIndex =="BN" {
 		bkupBnsId()
 	} else {
-		gLog.Info.Println("%s", "invalid index table : <PN>/<PD>/<JS>");
+		gLog.Info.Println("%s", "invalid index table : <PN>/<PD>/<BN>");
 		os.Exit(2)
 	}
 
@@ -190,7 +190,7 @@ func bkupSindexd ()  {
 
 func bkupBnsId ()  {
 
-	indSpecs := directory.GetIndexSpec("JS")
+	indSpecs := directory.GetIndexSpec("BN")
 	num := 0
 	keyObj := make(map[string]string)
 	/*
