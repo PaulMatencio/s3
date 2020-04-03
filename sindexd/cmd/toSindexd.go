@@ -140,12 +140,12 @@ func bkupSindexd (index string, check bool)  {
 	if index == "OT" {
 		prefix=""
 		i := indSpecs["OTHER"]
-		i1 := indSpecs["OTHER"]
+		i1 := indSpecs1["OTHER"]
 		if i == nil || i1 == nil {
 			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",i1,i)
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",*i1,*i)
 	}
 
 	for Nextmarker {
@@ -227,12 +227,11 @@ func bkupBnsId (index string,check bool)  {
 	if index == "OT" {
 		prefix=""
 		i := indSpecs["OTHER"]
-		i1 := indSpecs["OTHER"]
-		if i == nil || i1 == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+		if i == nil {
+			gLog.Error.Printf("No OTHER entry in BN Index spcification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",i1,i)
+		gLog.Info.Printf("Indexd specification BN: %v",*i)
 	}
 	/*
 		Loop until Next marker is false
