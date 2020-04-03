@@ -33,7 +33,14 @@ var (
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
 		Short: "Copy sindexd tables to a remote sindexd tables",
-		Long: `Copy sindexd tables to sindexd tables: There are set of tables: PN=>Publication number tables - PD=>Publication date tables- BN=>BNS id tables`,
+		Long: `Copy sindexd tables to sindexd tables: 
+               There are 6 set of tables: 
+               PN => Publication number tables
+               PD => Publication date tables
+               NP => Cite NPL table
+	           OM => Other publication/date Moses tables
+               OB => Other publication legacy BNS tables 
+               BN => BNS id tables`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
@@ -49,7 +56,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&toSindexUrl,"toSindexd","t","","target sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>/<OM>/<OB>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>/<NP>/<OM>/<OB>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().BoolVarP(&force,"force","f",false,"Force to allow overwriting -- Be careful --")
@@ -108,6 +115,9 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupSindexd(iIndex,check)
 		case "OB":   /* other legacy BNS indexes */
 			bkupBnsId(iIndex,check)
+		case "NP":
+			bkupSindexd(iIndex,check)
+			bkupBnsId(iIndex,check)
 		default:
 		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
@@ -136,15 +146,27 @@ func bkupSindexd (index string, check bool)  {
 	/*
 		Loop until Next marker is false
 	 */
-	if index == "OM" {
-		prefix=""
+	switch (index) {
+	case  "OM" :
+		prefix = ""
 		i := indSpecs["OTHER"]
 		i1 := indSpecs1["OTHER"]
 		if i == nil || i1 == nil {
 			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",*i1,*i)
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
+	case "NP" :
+		prefix ="XP"
+		i := indSpecs["NP"]
+		i1 := indSpecs1["NP"]
+		if i == nil || i1 == nil {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
+	default:
+		/*  continue */
 	}
 
 	for Nextmarker {
@@ -210,7 +232,6 @@ func bkupSindexd (index string, check bool)  {
                 */
 				gLog.Info.Printf("Next marker => %s", marker)
 			}
-
 		} else {
 			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
 			Nextmarker = false
@@ -219,18 +240,28 @@ func bkupSindexd (index string, check bool)  {
 }
 
 func bkupBnsId (index string,check bool)  {
-
 	indSpecs := directory.GetIndexSpec("BN")
 	num := 0
 	keyObj := make(map[string]string)
-	if index == "OB" {
-		prefix=""
-		i := indSpecs["OTHER"]
-		if i == nil {
-			gLog.Error.Printf("No OTHER entry in BN Index spcification tables")
+	switch (index) {
+		case "OB" :
+			prefix = ""
+			i := indSpecs["OTHER"]
+			if i == nil {
+				gLog.Error.Printf("No OTHER entry in BN Index spcification tables")
+				os.Exit(2)
+			}
+			gLog.Info.Printf("Indexd specification BN: %v", *i)
+	case "NP" :
+		prefix ="XP"
+		i := indSpecs["NP"]
+		if i == nil  {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification BN: %v",*i)
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",  *i)
+	default:
+		/*  continue */
 	}
 	/*
 		Loop until Next marker is false
