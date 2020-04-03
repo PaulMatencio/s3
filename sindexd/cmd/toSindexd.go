@@ -21,13 +21,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
-
 	hostpool "github.com/bitly/go-hostpool"
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
 	"github.com/spf13/cobra"
 )
-
 
 var (
 	toSindexUrl string
@@ -51,11 +49,11 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&toSindexUrl,"toSindexd","t","","target sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>/<OM>/<OB>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().BoolVarP(&force,"force","f",false,"Force to allow overwriting -- Be careful --")
-	cmd.Flags().BoolVarP(&check,"check","v",true,"Check mode")
+	cmd.Flags().BoolVarP(&check,"check","v",false,"Check mode")
 }
 
 func toSindexd(cmd *cobra.Command,args []string) {
@@ -104,13 +102,14 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
 
 	switch (iIndex) {
-		case "PN","PD": bkupSindexd("",check)
-		case "BN": bkupBnsId("",check)
-		case "OT":
+		case "PN","PD": bkupSindexd("",check)  // Moses and Epoque indexes
+		case "BN": bkupBnsId("",check)  // legay BNS indexes
+		case "OM":   /* Other MOSES and Epoque  indexes*/
 			bkupSindexd(iIndex,check)
-			/* bkupBnsId(iIndex,check) */
+		case "OB":   /* other legacy BNS indexes */
+			bkupBnsId(iIndex,check)
 		default:
-		gLog.Info.Println("%s", "invalid index table : <PN>/<PD>/<BN>");
+		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>");
 		os.Exit(2)
 	}
 }
@@ -260,6 +259,7 @@ func bkupBnsId (index string,check bool)  {
 
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
 			// this may  create overhead without real benefit
+
 			for k := range keyObj{ delete(keyObj,k)}
 
 			if len(resp.Next_marker) == 0 {
