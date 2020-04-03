@@ -97,8 +97,10 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	}
 	// indSpecs := directory.GetIndexSpec(iIndex)
 	if len(prefix) == 0 {
-		gLog.Info.Printf("%s", missingPrefix);
-		os.Exit(2)
+		if iIndex == "PN" || iIndex == "PD" || iIndex == "BN" {
+			gLog.Info.Printf("%s", missingPrefix);
+			os.Exit(2)
+		}
 	}
 
 	sindexd.Delimiter = delimiter
@@ -194,9 +196,9 @@ func bkupSindexd (index string, check bool)  {
 
 			*/
 			if !check {
-				if r := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs, keyObj); r.Err == nil {
+				if r := directory.AddSerialPrefix1(sindexd.TargetHP, iIndex,prefix, indSpecs, keyObj); r.Err == nil {
 					if r.Response.Status == 200 {
-						if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs1, keyObj1); r1.Err != nil {
+						if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, iIndex,prefix, indSpecs1, keyObj1); r1.Err != nil {
 							gLog.Error.Printf("Error: %v  adding key after marker %s to %s", r1.Err, marker, indSpecs1)
 							os.Exit(100)
 						} else {
@@ -252,14 +254,14 @@ func bkupBnsId (index string,check bool)  {
 				os.Exit(2)
 			}
 			gLog.Info.Printf("Indexd specification BN: %v", *i)
-	case "NP" :
-		prefix ="XP"
-		i := indSpecs["NP"]
-		if i == nil  {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
-			os.Exit(2)
-		}
-		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",  *i)
+		case "NP" :
+			prefix ="XP"
+			i := indSpecs["NP"]
+			if i == nil  {
+				gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+				os.Exit(2)
+			}
+			gLog.Info.Printf("Indexd specification PN: %v  - PD %v",  *i)
 	default:
 		/*  continue */
 	}
@@ -277,7 +279,7 @@ func bkupBnsId (index string,check bool)  {
 				}
 			}
 			if !check {
-				if r := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs, keyObj); r.Err == nil {
+				if r := directory.AddSerialPrefix1(sindexd.TargetHP, iIndex, prefix, indSpecs, keyObj); r.Err == nil {
 					if r.Response.Status != 200 {
 						gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
 						os.Exit(100)
