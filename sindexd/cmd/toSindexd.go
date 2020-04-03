@@ -84,6 +84,7 @@ func toSindexd(cmd *cobra.Command,args []string) {
 				os.Exit(2)
 			}
 		}
+		gLog.Info.Printf("Copying sindexd tables from host %s to host %s ",hostname,toHostname)
 	}
 
 	if len(iIndex) == 0 {
@@ -138,6 +139,13 @@ func bkupSindexd (index string, check bool)  {
 	 */
 	if index == "OT" {
 		prefix=""
+		i := indSpecs["OTHER"]
+		i1 := indSpecs["OTHER"]
+		if i == nil || i1 == nil {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",i1,i)
 	}
 
 	for Nextmarker {
@@ -218,6 +226,13 @@ func bkupBnsId (index string,check bool)  {
 	keyObj := make(map[string]string)
 	if index == "OT" {
 		prefix=""
+		i := indSpecs["OTHER"]
+		i1 := indSpecs["OTHER"]
+		if i == nil || i1 == nil {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v",i1,i)
 	}
 	/*
 		Loop until Next marker is false
