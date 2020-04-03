@@ -31,7 +31,7 @@ import (
 
 var (
 	toSindexUrl string
-	force bool
+	force, check bool
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
 		Short: "Copy sindexd tables to a remote sindexd tables",
@@ -55,8 +55,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().BoolVarP(&force,"force","f",false,"Force to allow overwriting -- Be careful --")
-
-
+	cmd.Flags().BoolVarP(&check,"check","v",true,"Check mode")
 }
 
 func toSindexd(cmd *cobra.Command,args []string) {
@@ -84,21 +83,17 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			if !force {
 				os.Exit(2)
 			}
-
 		}
-
 	}
 
 	if len(iIndex) == 0 {
 		iIndex = "PN"
 	}
 	// indSpecs := directory.GetIndexSpec(iIndex)
-
 	if len(prefix) == 0 {
 		gLog.Info.Printf("%s", missingPrefix);
 		os.Exit(2)
 	}
-
 
 	sindexd.Delimiter = delimiter
 	// sindexd.Host = append(sindexd.Host, sindexUrl)
@@ -106,19 +101,21 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHost = strings.Split(toSindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
-	if iIndex == "PN" || iIndex == "PD" {
-		bkupSindexd()
-	} else if iIndex =="BN" {
-		bkupBnsId()
-	} else {
+
+	switch (iIndex) {
+		case "PN","PD": bkupSindexd("",check)
+		case "BN": bkupBnsId("",check)
+		case "OT":
+			bkupSindexd(iIndex,check)
+			/* bkupBnsId(iIndex,check) */
+		default:
 		gLog.Info.Println("%s", "invalid index table : <PN>/<PD>/<BN>");
 		os.Exit(2)
 	}
-
-
 }
 
-func bkupSindexd ()  {
+func bkupSindexd (index string, check bool)  {
+
 	/*
 		List prefix sindexd table ( "PD")
 	    for each key,value  {
@@ -139,6 +136,10 @@ func bkupSindexd ()  {
 	/*
 		Loop until Next marker is false
 	 */
+	if index == "OT" {
+		prefix=""
+	}
+
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -156,34 +157,37 @@ func bkupSindexd ()  {
 					keyObj1[k1]= vs
 				}
 			}
+
 			/*
 				add keys to tge PD sindexd tables
 			    add keys to the PN sindexd tables
 				Exit if any error or sindexd status != 200
 
 			*/
-			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
-				if r.Response.Status == 200 {
-					if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs1, keyObj1); r1.Err != nil {
-						gLog.Error.Printf("Error: %v  adding key after marker %s to %s", r1.Err, marker,indSpecs1)
-						os.Exit(100)
-					} else {
-						if r1.Response.Status != 200 {
-							gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs1)
+			if !check {
+				if r := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs, keyObj); r.Err == nil {
+					if r.Response.Status == 200 {
+						if r1 := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs1, keyObj1); r1.Err != nil {
+							gLog.Error.Printf("Error: %v  adding key after marker %s to %s", r1.Err, marker, indSpecs1)
 							os.Exit(100)
+						} else {
+							if r1.Response.Status != 200 {
+								gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs1)
+								os.Exit(100)
+							}
 						}
+					} else {
+						gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+						os.Exit(100)
 					}
-				}  else {
-					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+				} else {
+					gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpecs)
 					os.Exit(100)
 				}
-			} else {
-				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
-				os.Exit(100)
 			}
 
-			// Reuse the MAP storage rather then let the Garbage free the unused storage
-			// this may  create overhead without real benefit
+			// Reuse the MAP storage rather then let the Garbage collector free the unused storage
+			// this may introduce extra overhead without actual benefit
 			for k := range keyObj{ delete(keyObj,k)}
 			for k := range keyObj1{ delete(keyObj1,k)}
 
@@ -207,11 +211,14 @@ func bkupSindexd ()  {
 	}
 }
 
-func bkupBnsId ()  {
+func bkupBnsId (index string,check bool)  {
 
 	indSpecs := directory.GetIndexSpec("BN")
 	num := 0
 	keyObj := make(map[string]string)
+	if index == "OT" {
+		prefix=""
+	}
 	/*
 		Loop until Next marker is false
 	*/
@@ -225,15 +232,16 @@ func bkupBnsId ()  {
 					keyObj[k] = vs
 				}
 			}
-
-			if r := directory.AddSerialPrefix1(sindexd.TargetHP,prefix,indSpecs,keyObj); r.Err == nil {
-				if r.Response.Status != 200 {
-					gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+			if !check {
+				if r := directory.AddSerialPrefix1(sindexd.TargetHP, prefix, indSpecs, keyObj); r.Err == nil {
+					if r.Response.Status != 200 {
+						gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpecs)
+						os.Exit(100)
+					}
+				} else {
+					gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpecs)
 					os.Exit(100)
 				}
-			} else {
-				gLog.Error.Printf("Error: %v adding key after marker %s to %s",r.Err,marker,indSpecs)
-				os.Exit(100)
 			}
 
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
