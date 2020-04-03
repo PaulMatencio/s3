@@ -109,7 +109,7 @@ func toSindexd(cmd *cobra.Command,args []string) {
 		case "OB":   /* other legacy BNS indexes */
 			bkupBnsId(iIndex,check)
 		default:
-		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>");
+		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
 	}
 }
@@ -136,7 +136,7 @@ func bkupSindexd (index string, check bool)  {
 	/*
 		Loop until Next marker is false
 	 */
-	if index == "OT" {
+	if index == "OM" {
 		prefix=""
 		i := indSpecs["OTHER"]
 		i1 := indSpecs1["OTHER"]
@@ -223,7 +223,7 @@ func bkupBnsId (index string,check bool)  {
 	indSpecs := directory.GetIndexSpec("BN")
 	num := 0
 	keyObj := make(map[string]string)
-	if index == "OT" {
+	if index == "OB" {
 		prefix=""
 		i := indSpecs["OTHER"]
 		if i == nil {
