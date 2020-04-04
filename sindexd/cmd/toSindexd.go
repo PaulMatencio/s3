@@ -16,15 +16,16 @@ package cmd
 
 import (
 	"encoding/json"
-	"github.com/s3/gLog"
-	"github.com/spf13/viper"
-	"net/url"
-	"os"
-	"strings"
 	hostpool "github.com/bitly/go-hostpool"
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
+	"github.com/s3/gLog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"net/url"
+	"os"
+	"sort"
+	"strings"
 )
 
 var (
@@ -32,21 +33,27 @@ var (
 	force, check bool
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
-		Short: "Copy sindexd tables to a remote sindexd tables",
-		Long: `Copy sindexd tables to sindexd tables: 
+		Short: "backup sindexd tables to remote sindexd tables",
+		Long: `Backup  sindexd tables to remote sindexd tables: 
                There are 6 set of tables: 
                PN => Publication number tables
                PD => Publication date tables
                NP => Cite NPL table
 	           OM => Other publication/date table
                OB => Other publication legacy BNS tables 
-               BN => Legacy BNS id tables`,
+               BN => Legacy BNS id tables
+		       IN => For incremental backup`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
 	}
 
 )
+
+type Loaded struct {
+	LoadDate string `json:"loadDate""`
+	PubDate  string `json:pubdate""`
+}
 
 func init() {
 	RootCmd.AddCommand(toSindexdCmd)
@@ -98,7 +105,7 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	}
 	// indSpecs := directory.GetIndexSpec(iIndex)
 	if len(prefix) == 0 {
-		if iIndex == "PN" || iIndex == "PD" || iIndex == "BN" {
+		if iIndex == "PN" || iIndex == "PD" || iIndex == "BN" || iIndex == "XX"{
 			gLog.Info.Printf("%s", missingPrefix);
 			os.Exit(2)
 		}
@@ -120,8 +127,8 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupBnsId(iIndex,check)
 		case "NP":   /* Cite NPL */
 			bkupSindexd(iIndex,check)
-		case "XX":
-			incSindexd(iIndex,check)
+		case "IN":
+			incSindexd("XX",check)
 		default:
 		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
@@ -319,10 +326,80 @@ func bkupBnsId (index string,check bool)  {
 
 func incSindexd(index string ,check bool) {
 
-	/*
-	indSpecs := directory.GetIndexSpec("XX")
-	num := 0
-	keyObj := make(map[string]string)
-	*/
+	Key1 := []string{}
+	indSpecs := directory.GetIndexSpec(index)
+	indSpecs1 := directory.GetIndexSpec("PD")
+	keyObj := make(map[string][]byte)
 
+	num := 0
+	loaded:= new(Loaded)
+	for Nextmarker {
+		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+			resp := response.Response
+			for k, v := range resp.Fetched {
+				if v1, err:= json.Marshal(v); err == nil {
+					// vs := string(v1)
+					gLog.Trace.Println(k, v1)
+					keyObj[k] = v1
+				}
+			}
+			//  Build an array of document keys  Key1 to be retrieved
+			if !check {
+				for k,v := range keyObj {
+					if err := json.Unmarshal(v, &loaded); err == nil {
+						K := strings.Split(k, "/")
+						pubDate := loaded.PubDate[0:3]+"/"+ loaded.PubDate[4:5]+"/"+ loaded.PubDate[6:7]
+						if len(K) == 4 {
+							// k1 := K[1] + pubDate +  "/" + K[2] + "/" + K[3]
+							Key1 = append(Key1,K[1] + pubDate +  "/" + K[2] + "/" + K[3])
+						} else {
+							gLog.Warning.Printf("Invalid input key: %s is discarded",k)
+						}
+					}
+				}
+
+				//  sort the  key array Key1
+				sort.Strings(Key1)
+				// retrieve the document new
+				// Build an index
+				specs := make(map[string][]string)
+				for _, v := range Key1 {
+					// index := aKey[i][0:2]
+					index := v[0:2]
+					if indSpecs1[index] == nil {
+						index = "OTHER"
+					}
+					specs[index] = append(specs[index], v)
+				}
+				responses := directory.GetAsyncKeys(specs, indSpecs1)
+				directory.PrintResponse(responses)
+
+			}
+
+			// Reuse the MAP storage rather then let the Garbage free the unused storage
+			// this may  create overhead without real benefit
+
+			for k := range keyObj{ delete(keyObj,k)}
+			Key1 = Key1[:0]
+
+			if len(resp.Next_marker) == 0 {
+				Nextmarker = false
+			} else {
+				marker = resp.Next_marker
+				num++
+				/*
+					if num == 10 {
+						Nextmarker = false
+					}
+				*/
+				gLog.Info.Printf("Next marker => %s", marker)
+			}
+
+		} else {
+			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
+			Nextmarker = false
+		}
+	}
 }
+
+

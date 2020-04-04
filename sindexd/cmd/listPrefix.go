@@ -59,7 +59,8 @@ func initLpFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
 	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>/<NP>/<OM>/<OB>")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
-	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().StringVarP(&delimiter, "delimiter", "d", "","Delimiter of the list for the Get Prefix ")
+	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"Limit number of keys to be processed concurrently")
 	cmd.Flags().IntVarP(&loop,"loop","L",1,"Number of loop using the next marker if there is one")
 }
 
@@ -117,7 +118,7 @@ func listPref (prefix string)  {
 		}
 		iIndex = "NP"
 	}
-	gLog.Info.Println(prefix,iIndex,indSpecs)
+	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 
 	n:= 0
 	for Nextmarker {
