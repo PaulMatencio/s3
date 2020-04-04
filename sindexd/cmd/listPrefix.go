@@ -41,13 +41,12 @@ var (
 		Use:   "listPrefix",
 		Short: "List Scality Sindexd prefix",
 		Long: `List Scality Sindexd prefix: 
-            There are 6 set of tables: 
+            There are 5 set of tables: 
             PN => Publication number tables
             PD => Publication date tables
-			NP => Cite NPL table
-			XX => New loaded document id	
-            BN => Legacy BNS id tables`,
-
+            NP => Cite NPL table
+            XX => New loaded document id table	
+            BN => Legacy BNS id table`,
 		Run: func(cmd *cobra.Command, args []string) {
 			listPrefix(cmd,args)
 		},
@@ -119,7 +118,7 @@ func listPref (prefix string)  {
 		iIndex = "NP"
 	}
 	gLog.Info.Println(prefix,iIndex,indSpecs)
-	return
+
 	n:= 0
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {

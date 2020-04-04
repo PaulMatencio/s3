@@ -38,9 +38,9 @@ var (
                PN => Publication number tables
                PD => Publication date tables
                NP => Cite NPL table
-	           OM => Other publication/date Moses tables
+	           OM => Other publication/date table
                OB => Other publication legacy BNS tables 
-               BN => BNS id tables`,
+               BN => Legacy BNS id tables`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
@@ -118,9 +118,8 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupSindexd(iIndex,check)
 		case "OB":   /* other legacy BNS indexes */
 			bkupBnsId(iIndex,check)
-		case "NP":
+		case "NP":   /* Cite NPL */
 			bkupSindexd(iIndex,check)
-			/* bkupBnsId(iIndex,check) */
 		case "XX":
 			incSindexd(iIndex,check)
 		default:
