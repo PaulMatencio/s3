@@ -348,10 +348,10 @@ func incSindexd(index string ,check bool) {
 				for k,v := range keyObj {
 					if err := json.Unmarshal(v, &loaded); err == nil {
 						K := strings.Split(k, "/")
-						pubDate := loaded.PubDate[0:3]+"/"+ loaded.PubDate[4:5]+"/"+ loaded.PubDate[6:7]
+						pubDate := loaded.PubDate[0:4]+"/"+ loaded.PubDate[4:6]+"/"+ loaded.PubDate[6:8]
 						if len(K) == 4 {
 							// k1 := K[1] + pubDate +  "/" + K[2] + "/" + K[3]
-							Key1 = append(Key1,K[1] + pubDate +  "/" + K[2] + "/" + K[3])
+							Key1 = append(Key1,K[1] + "/" + pubDate +  "/" + K[2] + "/" + K[3])
 						} else {
 							gLog.Warning.Printf("Invalid input key: %s is discarded",k)
 						}
