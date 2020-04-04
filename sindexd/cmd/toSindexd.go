@@ -127,8 +127,8 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupBnsId(iIndex,check)
 		case "NP":   /* Cite NPL */
 			bkupSindexd(iIndex,check)
-		case "IN":
-			incSindexd("XX",check)
+		case "XX":
+			incSindexd(iIndex,check)
 		default:
 		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
@@ -334,7 +334,7 @@ func incSindexd(index string ,check bool) {
 	num := 0
 	loaded:= new(Loaded)
 	for Nextmarker {
-		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
 			for k, v := range resp.Fetched {
 				if v1, err:= json.Marshal(v); err == nil {
