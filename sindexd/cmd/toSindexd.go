@@ -45,6 +45,7 @@ var (
 			toSindexd(cmd,args)
 		},
 	}
+
 )
 
 func init() {
@@ -119,7 +120,9 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupBnsId(iIndex,check)
 		case "NP":
 			bkupSindexd(iIndex,check)
-			bkupBnsId(iIndex,check)
+			/* bkupBnsId(iIndex,check) */
+		case "XX":
+			incSindexd(iIndex,check)
 		default:
 		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
@@ -258,7 +261,7 @@ func bkupBnsId (index string,check bool)  {
 			prefix ="XP"
 			i := indSpecs["NP"]
 			if i == nil  {
-				gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+				gLog.Error.Printf("No NP entry in PD or PN Index spcification tables")
 				os.Exit(2)
 			}
 			gLog.Info.Printf("Indexd specification PN: %v  - PD %v",  *i)
@@ -315,3 +318,12 @@ func bkupBnsId (index string,check bool)  {
 	}
 }
 
+func incSindexd(index string ,check bool) {
+
+	/*
+	indSpecs := directory.GetIndexSpec("XX")
+	num := 0
+	keyObj := make(map[string]string)
+	*/
+
+}
