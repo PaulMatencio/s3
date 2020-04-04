@@ -349,7 +349,7 @@ func incSindexd(index string ,check bool) {
 					if err := json.Unmarshal(v, &loaded); err == nil {
 						K := strings.Split(k, "/")
 						pubDate := loaded.PubDate[0:4]+"/"+ loaded.PubDate[4:6]+"/"+ loaded.PubDate[6:8]
-						switch (len(k)) {
+						switch (len(K)) {
 						case 3: Key1 = append(Key1,K[1] + "/" + pubDate +  "/" + K[2])
 						case 4: Key1 = append(Key1,K[1] + "/" + pubDate +  "/" + K[2] + "/" + K[3])
 						default:
