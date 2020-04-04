@@ -365,10 +365,19 @@ func incSindexd(index string ,check bool) {
 				specs := make(map[string][]string)
 				for _, v := range Key1 {
 					// index := aKey[i][0:2]
+
 					index := v[0:2]
+					if index =="XP" {
+						pn := strings.Split(v,"/")
+						if pn[1] >= "5500000" {
+							index ="PN"
+						}
+					}
 					if indSpecs1[index] == nil {
 						index = "OTHER"
 					}
+
+
 					specs[index] = append(specs[index], v)
 				}
 				responses := directory.GetAsyncKeys(specs, indSpecs1)
