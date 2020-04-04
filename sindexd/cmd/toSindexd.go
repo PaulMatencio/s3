@@ -367,9 +367,9 @@ func incSindexd(index string ,check bool) {
 					// index := aKey[i][0:2]
 
 					index := v[0:2]
-					if index =="XP" {
+					if index == "XP" {
 						pn := strings.Split(v,"/")
-						if pn[1] >= "5500000" {
+						if pn[1] >= "55000000" {
 							index ="PN"
 						}
 					}
