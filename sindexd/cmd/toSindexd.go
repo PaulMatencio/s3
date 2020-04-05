@@ -364,7 +364,7 @@ func incSindexd(index string ,index1 string, check bool) {
 						} else {
 							Key1 = append(Key1,K[1]+"/"+K[2]+ "/"+K[3]  )
 						}
-					} else if len(k) == 3 {
+					} else if len(K) == 3 {
 						if index1 == "PD" {
 							Key1 = append(Key1, K[1]+"/"+pubDate+"/"+K[2] )
 						} else {
