@@ -348,7 +348,7 @@ func incSindexd(index string ,index1 string, check bool) {
 			for k, v := range resp.Fetched {
 				if v1, err:= json.Marshal(v); err == nil {
 					// vs := string(v1)
-					gLog.Trace.Println(k, v1)
+					gLog.Trace.Println(k, string(v1))
 					keyObj[k] = v1
 				}
 			}
