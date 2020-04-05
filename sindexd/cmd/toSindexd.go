@@ -119,8 +119,8 @@ func toSindexd(cmd *cobra.Command,args []string) {
 	sindexd.TargetHP = hostpool.NewEpsilonGreedy(sindexd.TargetHost, 0, &hostpool.LinearEpsilonValueCalculator{})
 
 	switch (iIndex) {
-		case "PN","PD": bkupSindexd("",check)  // Moses and Epoque indexes
-		case "BN": bkupBnsId("",check)  // legay BNS indexes
+		case "PN","PD": bkupSindexd("",check)  // Used prefix for index
+		case "BN": bkupBnsId("",check)  // Use prefix for BNS
 		case "OM":   /* Other MOSES and Epoque  indexes*/
 			bkupSindexd(iIndex,check)
 		case "OB":   /* other legacy BNS indexes */
@@ -179,7 +179,7 @@ func bkupSindexd (index string, check bool)  {
 	default:
 		/*  continue */
 	}
-	gLog.Info.Printf("Index: %s - Prefix: %s - Index Specification:%v",index,prefix,indSpecs)
+	gLog.Info.Printf("Index: %s - Prefix: %s ",index,prefix)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -278,7 +278,7 @@ func bkupBnsId (index string,check bool)  {
 	/*
 		Loop until Next marker is false
 	*/
-	gLog.Info.Printf("Index: %s - Prefix: %s - Index Specification: %v",index,prefix,indSpecs)
+	gLog.Info.Printf("Index: %s - Prefix: %s ",index,prefix)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -383,8 +383,12 @@ func incSindexd(index string ,check bool) {
 					specs[index] = append(specs[index], v)
 				}
 				responses := directory.GetAsyncKeys(specs, indSpecs1)
+				for i,r := range responses {
+					gLog.Info.Println(i,r.Response.Index_id,r.Response.PrintFetched())
+				}
 
-				directory.PrintResponse(responses)
+
+				// directory.GetResponse1(responses)
 
 			}
 
