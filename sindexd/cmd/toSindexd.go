@@ -374,11 +374,14 @@ func incSindexd(index string ,index1 string, check bool) {
 			}
 				//  sort the  key array Key1
 			sort.Strings(Key1)
+
 			// retrieve the document new
 			// Build an index
+
 			specs := make(map[string][]string)
 			for _, v := range Key1 {
 				// index := aKey[i][0:2]
+				gLog.Trace.Println(v)
 				index := v[0:2]
 				if index == "XP" {
 					pn := strings.Split(v, "/")
