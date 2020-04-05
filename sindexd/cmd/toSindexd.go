@@ -388,7 +388,7 @@ func incSindexd(index string ,index1 string, check bool) {
 			specs := make(map[string][]string)
 			for _, v := range Key1 {
 				// index := aKey[i][0:2]
-				gLog.Trace.Println(v)
+				// gLog.Trace.Println(v)
 				index := v[0:2]
 				if index == "XP" {
 					pn := strings.Split(v, "/")
