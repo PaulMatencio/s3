@@ -334,14 +334,16 @@ func bkupBnsId (index string,check bool)  {
 /*    incremental backup */
 
 func incSindexd(index string ,index1 string, check bool) {
+    var (
+    	Key1 = []string{}
+		indSpecs = directory.GetIndexSpec(index)
+		indSpecs1 = directory.GetIndexSpec(index1)
+		keyObj = make(map[string][]byte)
+		keyObj1 = make(map[string]string)
+		num = 0
+		loaded  = new(Loaded)
 
-	Key1 := []string{}
-	indSpecs := directory.GetIndexSpec(index)
-	indSpecs1 := directory.GetIndexSpec(index1)
-	keyObj := make(map[string][]byte)
-	keyObj1 := make(map[string]string)
-	num := 0
-	loaded:= new(Loaded)
+	)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -400,28 +402,30 @@ func incSindexd(index string ,index1 string, check bool) {
 				specs[index] = append(specs[index], v)
 			}
 			responses := directory.GetAsyncKeys(specs, indSpecs1)
+			var indSpec *sindexd.Index_spec
 			for _, r := range responses {
 				for k, v := range r.Response.Fetched {
-					indSpec := r.Index_Spec
+					indSpec = r.Index_Spec
 					if v1, err := json.Marshal(v); err == nil {
 						vs := string(v1)
 						gLog.Trace.Println(k, vs)
 						keyObj1[k] = vs
 					}
-					if !check {
-						if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
-							if r.Response.Status != 200 {
-								gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
-								os.Exit(100)
-							}
-						} else {
-							gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpec)
+				}
+				if !check {
+					if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
+						if r.Response.Status != 200 {
+							gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
 							os.Exit(100)
 						}
+					} else {
+						gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpec)
+						os.Exit(100)
 					}
 				}
-				for k := range keyObj1{ delete(keyObj1,k)}
 			}
+			for k := range keyObj1{ delete(keyObj1,k)}
+
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
 			// this may  create overhead without real benefit
 
