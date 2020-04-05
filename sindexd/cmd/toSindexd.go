@@ -33,8 +33,8 @@ var (
 	force, check bool
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
-		Short: "backup sindexd tables to remote sindexd tables",
-		Long: `Backup  sindexd tables to remote sindexd tables: 
+		Short: "Replication of sindexd tables to remote Sindexd tables",
+		Long: `Reoplication of sindexd tables to remote sindexd tables: 
                There are 6 set of tables: 
                PN => Publication number tables
                PD => Publication date tables
@@ -42,7 +42,7 @@ var (
 	           OM => Other publication/date table
                OB => Other publication legacy BNS tables 
                BN => Legacy BNS id tables
-		       IN => For incremental backup`,
+		       XX => For incremental replication`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
@@ -127,8 +127,12 @@ func toSindexd(cmd *cobra.Command,args []string) {
 			bkupBnsId(iIndex,check)
 		case "NP":   /* Cite NPL */
 			bkupSindexd(iIndex,check)
-		case "XX":
-			incSindexd(iIndex,check)
+		case "XX-PN":
+			incSindexd("XX","PN",check)
+		case "XX-PD":
+			incSindexd("XX","PD",check)
+		case "XX-BN":
+			incSindexd("XX","BN",check)
 		default:
 		gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
 		os.Exit(2)
@@ -326,13 +330,16 @@ func bkupBnsId (index string,check bool)  {
 	}
 }
 
-func incSindexd(index string ,check bool) {
+
+/*    incremental backup */
+
+func incSindexd(index string ,index1 string, check bool) {
 
 	Key1 := []string{}
 	indSpecs := directory.GetIndexSpec(index)
-	indSpecs1 := directory.GetIndexSpec("PD")
+	indSpecs1 := directory.GetIndexSpec(index1)
 	keyObj := make(map[string][]byte)
-
+	keyObj1 := make(map[string]string)
 	num := 0
 	loaded:= new(Loaded)
 	for Nextmarker {
@@ -346,52 +353,67 @@ func incSindexd(index string ,check bool) {
 				}
 			}
 			//  Build an array of document keys  Key1 to be retrieved
-			if !check {
-				for k,v := range keyObj {
-					if err := json.Unmarshal(v, &loaded); err == nil {
-						K := strings.Split(k, "/")
-						pubDate := loaded.PubDate[0:4]+"/"+ loaded.PubDate[4:6]+"/"+ loaded.PubDate[6:8]
-						switch (len(K)) {
-						case 3: Key1 = append(Key1,K[1] + "/" + pubDate +  "/" + K[2])
-						case 4: Key1 = append(Key1,K[1] + "/" + pubDate +  "/" + K[2] + "/" + K[3])
-						default:
-							gLog.Warning.Printf("Invalid input key: %s is discarded",k)
+
+			for k, v := range keyObj {
+				if err := json.Unmarshal(v, &loaded); err == nil {
+					K := strings.Split(k, "/")
+					pubDate := loaded.PubDate[0:4] + "/" + loaded.PubDate[4:6] + "/" + loaded.PubDate[6:8]
+					if len(K)  > 3 && len(K) <= 4 {
+						if index1 == "PD" {
+							Key1 = append(Key1, K[1]+"/"+pubDate+"/"+K[2])
+						} else {
+							Key1 = append(Key1,K[1]+"/"+K[2])
 						}
-					}
-				}
-
-				//  sort the  key array Key1
-
-				sort.Strings(Key1)
-				// retrieve the document new
-				// Build an index
-				specs := make(map[string][]string)
-				for _, v := range Key1 {
-					// index := aKey[i][0:2]
-					index := v[0:2]
-					if index == "XP" {
-						pn := strings.Split(v,"/")
-						if pn[1] >= "55000000" {
-							index ="PN"
+						if len(K) == 4 {
+							Key1 = append(Key1, "/"+ K[3])
 						}
+					}  else {
+						gLog.Warning.Printf("Invalid input key: %s is discarded", k)
 					}
-					if indSpecs1[index] == nil {
-						index = "OTHER"
-					}
-
-
-					specs[index] = append(specs[index], v)
 				}
-				responses := directory.GetAsyncKeys(specs, indSpecs1)
-				for _,r := range responses {
-					gLog.Info.Println(r.Index_Spec,r.Response.Index_id,r.Response.PrintFetched())
-				}
-
-
-				// directory.GetResponse1(responses)
-
 			}
-
+				//  sort the  key array Key1
+			sort.Strings(Key1)
+			// retrieve the document new
+			// Build an index
+			specs := make(map[string][]string)
+			for _, v := range Key1 {
+				// index := aKey[i][0:2]
+				index := v[0:2]
+				if index == "XP" {
+					pn := strings.Split(v, "/")
+					if pn[1] >= "55000000" {
+						index = "PN"
+					}
+				}
+				if indSpecs1[index] == nil {
+					index = "OTHER"
+				}
+				specs[index] = append(specs[index], v)
+			}
+			responses := directory.GetAsyncKeys(specs, indSpecs1)
+			for _, r := range responses {
+				for k, v := range r.Response.Fetched {
+					indSpec := r.Index_Spec
+					if v1, err := json.Marshal(v); err == nil {
+						vs := string(v1)
+						gLog.Trace.Println(k, vs)
+						keyObj1[k] = vs
+					}
+					if !check {
+						if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
+							if r.Response.Status != 200 {
+								gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
+								os.Exit(100)
+							}
+						} else {
+							gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpec)
+							os.Exit(100)
+						}
+					}
+				}
+				for k := range keyObj1{ delete(keyObj1,k)}
+			}
 			// Reuse the MAP storage rather then let the Garbage free the unused storage
 			// this may  create overhead without real benefit
 
@@ -403,14 +425,8 @@ func incSindexd(index string ,check bool) {
 			} else {
 				marker = resp.Next_marker
 				num++
-				/*
-					if num == 10 {
-						Nextmarker = false
-					}
-				*/
 				gLog.Info.Printf("Next marker => %s", marker)
 			}
-
 		} else {
 			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
 			Nextmarker = false
