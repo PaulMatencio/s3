@@ -163,7 +163,7 @@ func bkupSindexd (index string, check bool)  {
 		i := indSpecs["OTHER"]
 		i1 := indSpecs1["OTHER"]
 		if i == nil || i1 == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			gLog.Error.Printf("No OTHER table in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
@@ -179,11 +179,12 @@ func bkupSindexd (index string, check bool)  {
 	default:
 		/*  continue */
 	}
-
+	gLog.Info.Printf("Index: %s - Prefix: %s - Index Specification:%v",index,prefix,indSpecs)
 	for Nextmarker {
-		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
 			for k, v := range resp.Fetched {
+				/*   key  foramt CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )    */
 				keys := strings.Split(k,"/")
 				k1 := keys[0]
 				for i := 4; i < len(keys); i++ {
@@ -277,6 +278,7 @@ func bkupBnsId (index string,check bool)  {
 	/*
 		Loop until Next marker is false
 	*/
+	gLog.Info.Printf("Index: %s - Prefix: %s - Index Specification: %v",index,prefix,indSpecs)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -359,13 +361,13 @@ func incSindexd(index string ,check bool) {
 				}
 
 				//  sort the  key array Key1
+
 				sort.Strings(Key1)
 				// retrieve the document new
 				// Build an index
 				specs := make(map[string][]string)
 				for _, v := range Key1 {
 					// index := aKey[i][0:2]
-
 					index := v[0:2]
 					if index == "XP" {
 						pn := strings.Split(v,"/")
@@ -381,6 +383,7 @@ func incSindexd(index string ,check bool) {
 					specs[index] = append(specs[index], v)
 				}
 				responses := directory.GetAsyncKeys(specs, indSpecs1)
+
 				directory.PrintResponse(responses)
 
 			}
