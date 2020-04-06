@@ -436,7 +436,7 @@ func incSindexd(index string ,index1 string, check bool) {
 							os.Exit(100)
 						}
 					} else {
-						gLog.Warning.Printf("There is no key to add to %v",indSpec)
+						gLog.Warning.Printf("There is no key to add to %v %v",specs,indSpecs1)
 					}
 				}
 			}
