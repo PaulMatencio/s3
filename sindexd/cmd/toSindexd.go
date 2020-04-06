@@ -401,6 +401,7 @@ func incSindexd(index string ,index1 string, check bool) {
 				}
 				specs[index] = append(specs[index], v)
 			}
+			gLog.Trace.Println(specs)
 			responses := directory.GetAsyncKeys(specs, indSpecs1)
 			var indSpec *sindexd.Index_spec
 			for _, r := range responses {
