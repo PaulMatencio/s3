@@ -424,6 +424,10 @@ func incSindexd(index string ,index1 string, check bool) {
 						keyObj1[k] = vs
 					}
 				}
+				for _, v := range r.Response.Not_found {
+					gLog.Warning.Printf("Key %s is not found",v)
+				}
+
 				if !check {
 					if len(keyObj1) > 0 {
 						if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
@@ -436,7 +440,10 @@ func incSindexd(index string ,index1 string, check bool) {
 							os.Exit(100)
 						}
 					} else {
-						gLog.Warning.Printf("There is no key to add to %v for ",specs, index1)
+						gLog.Warning.Printf("Some keys can't be found")
+						for _,v := range r.Response.Not_found{
+							gLog.Warning.Println(v)
+						}
 					}
 				}
 			}
