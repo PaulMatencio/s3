@@ -334,6 +334,7 @@ func bkupBnsId (index string,check bool)  {
 /*    incremental backup */
 
 func incSindexd(index string ,index1 string, check bool) {
+
     var (
     	Key1 = []string{}
 		indSpecs = directory.GetIndexSpec(index)
@@ -392,8 +393,18 @@ func incSindexd(index string ,index1 string, check bool) {
 				index := v[0:2]
 				if index == "XP" {
 					pn := strings.Split(v, "/")
-					if pn[1] >= "55000000" {
-						index = "NP"
+					switch (index1) {
+					case "PD":
+						if pn[4] >= "55000000" {
+							index = "PN"
+						}
+					case "PN","BN":
+						if pn[1] >= "55000000" {
+							index = "PN"
+						}
+
+					default:
+						gLog.Error.Println("Wrong value of index1 %s",index1)
 					}
 				}
 				if indSpecs1[index] == nil {
@@ -414,14 +425,18 @@ func incSindexd(index string ,index1 string, check bool) {
 					}
 				}
 				if !check {
-					if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
-						if r.Response.Status != 200 {
-							gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
+					if len(keyObj1) > 0 {
+						if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
+							if r.Response.Status != 200 {
+								gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
+								os.Exit(100)
+							}
+						} else {
+							gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpec)
 							os.Exit(100)
 						}
 					} else {
-						gLog.Error.Printf("Error: %v adding key after marker %s to %s", r.Err, marker, indSpec)
-						os.Exit(100)
+						gLog.Warning.Printf("There is no key to add to %v",indSpec)
 					}
 				}
 			}
