@@ -396,11 +396,11 @@ func incSindexd(index string ,index1 string, check bool) {
 					switch (index1) {
 					case "PD":
 						if pn[4] >= "55000000" {
-							index = "PN"
+							index = "NP"
 						}
 					case "PN","BN":
 						if pn[1] >= "55000000" {
-							index = "PN"
+							index = "NP"
 						}
 
 					default:
