@@ -393,7 +393,7 @@ func incSindexd(index string ,index1 string, check bool) {
 				if index == "XP" {
 					pn := strings.Split(v, "/")
 					if pn[1] >= "55000000" {
-						index = "PN"
+						index = "NP"
 					}
 				}
 				if indSpecs1[index] == nil {
