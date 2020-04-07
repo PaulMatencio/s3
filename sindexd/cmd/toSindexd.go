@@ -33,16 +33,54 @@ var (
 	force, check bool
 	toSindexdCmd = &cobra.Command{
 		Use:   "toSindexd",
-		Short: "Replication of sindexd tables to remote Sindexd tables",
-		Long: `Reoplication of sindexd tables to remote sindexd tables: 
-               There are 6 set of tables: 
-               PN => Publication number tables
-               PD => Publication date tables
-               NP => Cite NPL table
-	           OM => Other publication/date table
-               OB => Other publication legacy BNS tables 
-               BN => Legacy BNS id tables
-		       XX => For incremental replication`,
+		Short: "Replication of Sindexd tables to remote Sindexd tables",
+		Long:  `Replication of Sindexd tables to remote Sindexd tables: 
+
+     See Usage for the description of the other -- flags. See Examples below for full and incremental replications below 
+     
+     Explanation of the --index flag
+        PN or PD => Full replication of Publication number and Publication data tables for a given country
+        BN => Full replication of the Legacy BNS id table for a given country	
+        NP => Full replication of Cite NPL table
+        OM => Full replication of publication number and publication date tables for other countries
+        OB => Full replication of legacy BNS tables for other countries
+        XX-PN => Incremental replication of publication number tables ( every or specific country, XP and Cite NPL inclusive )
+        XX-PD => Incremental replication of publication number tables ( every or specific country, XP and Cite NPL inclusive)
+        XX-BN => Incremental replication of legacy BNS tables ( every country ,XP inclusive)
+
+        Note : XP table contains the indexes of the Non Patent Literature documents
+               Cite NPL  contains the indexes of the Cite NPL documents 
+               
+        Examples
+
+        - Full replication
+                    
+           - There are 3 indexes tables per large country ( check the documentation for such countries)
+				
+                sindexd toSindexd  -i PN  -p US -m 500 ( Publication number and Publication date indexes for the US )
+                sindexd toSindexd  -i BN  -p US -m 500 ( legacy BNS indexes for the US )
+                sindexd toSindexd  -i PN  -p US -m 500 -k <Key1> ( From key1 to replicate from a specific key)
+					
+           - Small countries indexes are grouped in one table named "OTHER"
+
+                sindexd toSindexd  -i OM -m 500 ( Publication number and Publication Date for the small countries)
+                sindexd toSindexd  -i OB -m 500 ( Legacy BNS index the small countries)
+					
+           - Cite NPL table 
+                sindexd toSindexd -i NP -m 1000
+     	
+        - Incremental replication		
+                
+                sindexd toSindexd -i XX-PN  -p 20200403  -m 500 ( publication number for every country of April 4,2020 )
+                sindexd toSindexd -i XX-PN  -p 20200403/US  ( publication number for for US  of April 4,2020)
+                sindexd toSindexd -i XX-PD  -p 20200403  -m 500 ( publication date for every country of April 4,2020 )
+                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 4,2020 )
+                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 4,2020 )
+
+         Note : XX-PN, includes Cite NPL publication number
+                XX-PD  includes Cite NPL publication date
+                XX-BN  There is no Cite NPL publication number or publication date
+ 				`,
 		Run: func(cmd *cobra.Command, args []string) {
 			toSindexd(cmd,args)
 		},
@@ -69,6 +107,7 @@ func initCopyFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().BoolVarP(&force,"force","f",false,"Force to allow overwriting -- Be careful --")
 	cmd.Flags().BoolVarP(&check,"check","v",false,"Check mode")
+
 }
 
 func toSindexd(cmd *cobra.Command,args []string) {

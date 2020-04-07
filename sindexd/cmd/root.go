@@ -29,7 +29,7 @@ import (
 
 
 var (
-	config,bucket,levelDBUrl	 string
+	config,bucket,levelDBUrl,cc	 string
 	verbose, Debug,autoCompletion 	 bool
 
 	loglevel,profiling, bucketNumber  int
@@ -42,7 +42,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "sindexd",
-	Short: "Scality sindexd to S3 migration",
+	Short: "Toolbox for sindexd to S3 migration and for sindexd to sindexd replication",
 	Long: ``,
 
 }
@@ -62,6 +62,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.sindexd/config.yaml")
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
+	RootCmd.PersistentFlags().StringVarP(&cc,"cc", "a","", "string to be appended to the path directory of the log")
+
 
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
@@ -114,6 +116,10 @@ func initConfig() {
 	loglevel = utils.SetLogLevel(*viper.GetViper(),loglevel)
 	bucketNumber = utils.GetNumberOfBucket(*viper.GetViper())
 	levelDBUrl = utils.GetLevelDBUrl(*viper.GetViper())
+	if logOutput != "terminal" {
+		logOutput += string(os.PathSeparator) + cc
+	}
+
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
