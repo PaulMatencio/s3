@@ -434,11 +434,11 @@ func incSindexd(index string ,index1 string, check bool) {
 					pn := strings.Split(v, "/")
 					switch (index1) {
 					case "PD":
-						if pn[4] >= "55000000"  && pn[4] < "85000000"{
+						if pn[4] >= "55000000"  && pn[4] < "80000000"{
 							index = "NP"
 						}
 					case "PN","BN":
-						if pn[1] >= "55000000"  && pn[1] < "85000000" {
+						if pn[1] >= "55000000"  && pn[1] < "80000000" {
 							index = "NP"
 						}
 
