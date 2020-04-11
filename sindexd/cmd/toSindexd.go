@@ -71,11 +71,11 @@ var (
      	
         - Incremental replication		
                 
-                sindexd toSindexd -i XX-PN  -p 20200403  -m 500 ( publication number for every country of April 4,2020 )
-                sindexd toSindexd -i XX-PN  -p 20200403/US  ( publication number for for US  of April 4,2020)
-                sindexd toSindexd -i XX-PD  -p 20200403  -m 500 ( publication date for every country of April 4,2020 )
-                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 4,2020 )
-                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 4,2020 )
+                sindexd toSindexd -i XX-PN  -p 20200403  -m 500 ( publication number for every country of April 3,2020 )
+                sindexd toSindexd -i XX-PN  -p 20200403/US  ( publication number for for US  of April 3,2020)
+                sindexd toSindexd -i XX-PD  -p 20200403  -m 500 ( publication date for every country of April 3,2020 )
+                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 3,020 )
+                sindexd toSindexd -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 3,2020 )
 
          Note : XX-PN, includes Cite NPL publication number
                 XX-PD  includes Cite NPL publication date
@@ -222,7 +222,7 @@ func bkupSindexd (index string, check bool)  {
 	default:
 		/*  continue */
 	}
-	gLog.Info.Printf("Index: %s - Prefix: %s ",index,prefix)
+	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ",index,prefix,marker)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -434,11 +434,11 @@ func incSindexd(index string ,index1 string, check bool) {
 					pn := strings.Split(v, "/")
 					switch (index1) {
 					case "PD":
-						if pn[4] >= "55000000" {
+						if pn[4] >= "55000000"  && pn[4] < "85000000"{
 							index = "NP"
 						}
 					case "PN","BN":
-						if pn[1] >= "55000000" {
+						if pn[1] >= "55000000"  && pn[4] < "85000000" {
 							index = "NP"
 						}
 
