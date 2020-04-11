@@ -438,7 +438,7 @@ func incSindexd(index string ,index1 string, check bool) {
 							index = "NP"
 						}
 					case "PN","BN":
-						if pn[1] >= "55000000"  && pn[4] < "85000000" {
+						if pn[1] >= "55000000"  && pn[1] < "85000000" {
 							index = "NP"
 						}
 
