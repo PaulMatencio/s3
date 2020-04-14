@@ -38,8 +38,54 @@ import (
 // toS3Cmd represents the toS3 command
 var toS3Cmd = &cobra.Command{
 	Use:   "toS3",
-	Short: "Migrate Scality Sindexd entries to S3 ",
-	Long: ``,
+	Short: "Migrate Scality sindexd entries to S3 ",
+	Long: `Migtate Scality sindexd entries to S3: 
+
+     See Usage for the description of the other -- flags. See Examples below for full and incremental migration below 
+     --index [PN|PD|NP|OM|XX-PN|XX-PD|XX-BN]
+     Explanation of the --index flag 
+        PN or PD => Full migration of Publication number and Publication data tables for a given country
+        BN => Full migration of the Legacy BNS id table for a given country	
+        NP => Full migration of Cite NPL table
+        OM => Full migration of publication number and publication date tables for other countries
+        OB => Full migration of legacy BNS tables for other countries
+        XX-PN => Incremental migration of publication number tables ( every or specific country, XP and Cite NPL inclusive )
+        XX-PD => Incremental migration of publication number tables ( every or specific country, XP and Cite NPL inclusive)
+        XX-BN => Incremental migrattion of legacy BNS tables ( every country ,XP inclusive)
+
+        Note : XP table contains the indexes of the Non Patent Literature documents
+               Cite NPL  contains the indexes of the Cite NPL documents 
+               
+        Examples
+
+        - Full migration
+                    
+           - There are 3 indexes tables per large country ( check the documentation for such countries)
+				
+                sindexd toS3  -i PN  -p US -m 500 ( Publication number and Publication date indexes for the US )
+                sindexd toS3  -i BN  -p US -m 500 ( legacy BNS indexes for the US )
+                sindexd toS3  -i PN  -p US -m 500 -k <Key1> ( From key1 to migrate from a specific key)
+					
+           - Small countries indexes are grouped in one table named "OTHER"
+
+                sindexd toS3  -i OM -m 500 ( Publication number and Publication Date for the small countries)
+                sindexd toS3 -i OB -m 500 ( Legacy BNS index the small countries)
+					
+           - Cite NPL table 
+                sindexd toSindexd -i NP -m 1000
+     	
+        - Incremental migration		
+                
+                sindexd toS3-i XX-PN  -p 20200403  -m 500 ( publication number for every country of April 3,2020 )
+                sindexd toS3 -i XX-PN  -p 20200403/US  ( publication number for for US  of April 3,2020)
+                sindexd toS3 -i XX-PD  -p 20200403  -m 500 ( publication date for every country of April 3,2020 )
+                sindexd toS3 -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 3,020 )
+                sindexd toS3 -i XX-BN  -p 20200403/US  ( legacy BNS id for US of April 3,2020 )
+
+         Note : XX-PN, includes Cite NPL publication number
+                XX-PD  includes Cite NPL publication date
+                XX-BN  There is no Cite NPL publication number or publication date
+ 				`,
 	Run: func(cmd *cobra.Command, args []string) {
 		migrateToS3(cmd,args)
 	},
@@ -53,7 +99,7 @@ func init() {
 func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [PN|PD|BN|NP|OM|OB]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
@@ -137,11 +183,6 @@ func migToS3 (prefix string)  {
 			} else {
 				marker = resp.Next_marker
 				num++
-				/*
-				if num == 100 {
-					Nextmarker = false
-				}
-				 */
 				gLog.Info.Printf("Next marker => %s %d", marker,num)
 			}
 
@@ -152,6 +193,8 @@ func migToS3 (prefix string)  {
 		}
 	}
 }
+
+
 
 func writeToS3(svc  *s3.S3 ,key string, bucket string, meta []byte) (*s3.PutObjectOutput,error) {
 

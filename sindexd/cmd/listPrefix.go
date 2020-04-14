@@ -147,3 +147,20 @@ func listPref (prefix string)  {
 	}
 }
 
+func GetNewKeys(prefix string, marker string, maxKey int) {
+
+	var (
+		index    = "XX"
+		keys     []string
+		indSpecs = directory.GetIndexSpec(index) // Get the index Specifiaction for XX ( new loaded document
+	)
+	if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+
+		resp := response.Response
+		for k, _ := range resp.Fetched {
+			keys = append(keys, k)
+		}
+	}
+}
+
+

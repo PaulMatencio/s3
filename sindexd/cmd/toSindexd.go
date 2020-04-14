@@ -37,8 +37,8 @@ var (
 		Long:  `Replication of Sindexd tables to remote Sindexd tables: 
 
      See Usage for the description of the other -- flags. See Examples below for full and incremental replications below 
-     
-     Explanation of the --index flag
+     --index [PN|PD|NP|OM|XX-PN|XX-PD|XX-BN]
+     Explanation of the --index flag 
         PN or PD => Full replication of Publication number and Publication data tables for a given country
         BN => Full replication of the Legacy BNS id table for a given country	
         NP => Full replication of Cite NPL table
@@ -382,7 +382,6 @@ func incSindexd(index string ,index1 string, check bool) {
 		keyObj1 = make(map[string]string)
 		num = 0
 		loaded  = new(Loaded)
-
 	)
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
@@ -412,8 +411,6 @@ func incSindexd(index string ,index1 string, check bool) {
 						} else {
 							Key1 = append(Key1,K[1]+"/"+K[2] )
 						}
-
-
 					}  else {
 						gLog.Warning.Printf("Invalid input key: %s is discarded", k)
 					}
@@ -507,5 +504,6 @@ func incSindexd(index string ,index1 string, check bool) {
 		}
 	}
 }
+
 
 
