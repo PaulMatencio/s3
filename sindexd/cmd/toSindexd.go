@@ -280,11 +280,6 @@ func bkupSindexd (index string, check bool)  {
 			} else {
 				marker = resp.Next_marker
 				num++
-                /*
-				if num == 10 {
-					Nextmarker = false
-				}
-                */
 				gLog.Info.Printf("Next marker => %s", marker)
 			}
 		} else {

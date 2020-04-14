@@ -36,7 +36,8 @@ import (
 )
 
 // toS3Cmd represents the toS3 command
-var toS3Cmd = &cobra.Command{
+var (
+	toS3Cmd = &cobra.Command{
 	Use:   "toS3",
 	Short: "Migrate Scality sindexd entries to S3 ",
 	Long: `Migtate Scality sindexd entries to S3: 
@@ -86,10 +87,11 @@ var toS3Cmd = &cobra.Command{
                 XX-PD  includes Cite NPL publication date
                 XX-BN  There is no Cite NPL publication number or publication date
  				`,
-	Run: func(cmd *cobra.Command, args []string) {
-		migrateToS3(cmd,args)
-	},
-}
+		Run: func(cmd *cobra.Command, args []string) {
+			migrateToS3(cmd,args)
+		},
+	}
+)
 
 func init() {
 	RootCmd.AddCommand(toS3Cmd)
@@ -99,11 +101,11 @@ func init() {
 func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [PN|PD|BN|NP|OM|OB]")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [PN|PD|BN|NP|OM|OB|XX-PN|XX-PD|XX-BN]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
-
+	cmd.Flags().BoolVarP(&check,"check","v",false,"Check mode")
 }
 
 func migrateToS3(cmd *cobra.Command,args []string) {
@@ -117,8 +119,10 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 	// indSpecs := directory.GetIndexSpec(iIndex)
 
 	if len(prefix) == 0 {
-		gLog.Info.Println("%s", missingPrefix);
-		os.Exit(2)
+		if iIndex == "PN" || iIndex == "PD" || iIndex == "BN" || iIndex == "XX"{
+			gLog.Info.Printf("%s", missingPrefix);
+			os.Exit(2)
+		}
 	}
 
 	if len(bucket) == 0 {
@@ -130,24 +134,61 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 	}
 
 	sindexd.Delimiter = delimiter
-	// sindexd.Host = append(sindexd.Host, sindexUrl)
 	sindexd.Host = strings.Split(sindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
 
-	migToS3(prefix)
-
+	switch (iIndex) {
+		case "PN","PD":
+			migToS3("PD")     // Used prefix for index
+		case "BN":
+		case "OM","NP":
+			migToS3(iIndex)
+		case "XX-PN":
+		case "XX-PD":
+		case "XX-BN":
+		default:
+			gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
+			os.Exit(2)
+	}
 }
 
-func migToS3 (prefix string)  {
-	buck:= ""
-	indSpecs := directory.GetIndexSpec(iIndex)
+
+
+func migToS3 (index string)  {
+
+
+	indSpecs := directory.GetIndexSpec("PD")
+	indSpecs1 := directory.GetIndexSpec("PN")
+
 	svc      := s3.New(api.CreateSession())
 	num := 0
+	switch (index) {
+	case  "OM" :
+		prefix = ""
+		i := indSpecs["OTHER"]
+		i1 := indSpecs1["OTHER"]
+		if i == nil || i1 == nil {
+			gLog.Error.Printf("No OTHER table in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
+	case "NP" :
+		prefix ="XP"
+		i := indSpecs["NP"]
+		i1 := indSpecs1["NP"]
+		if i == nil || i1 == nil {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
+	default:
+		/*  continue */
+	}
 
+	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ",index,prefix,marker)
 	for Nextmarker {
-		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
-
 			var wg sync.WaitGroup
 			wg.Add(len(resp.Fetched))
 
@@ -155,22 +196,36 @@ func migToS3 (prefix string)  {
 				if v1, err:= json.Marshal(v); err == nil {
 					/* hash the country code which should be equal to prefix */
 					cc := strings.Split(k,"/")[0]
-
-					if cc == "XP" {
-						buck=bucket+"-05"
-					} else {
-						buck = bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-					}
-					go func(svc *s3.S3,k string,buck string,value []byte) {
+					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
-
-						if r,err := writeToS3(svc, k, buck,v1); err == nil {
-							gLog.Trace.Println(*r.ETag)
+						var buck, buck1, k1 string
+						if cc == "XP" {
+							buck  = bucket+"-pd-05"
+							buck1 = bucket+"-pn-05"
 						} else {
-							gLog.Error.Printf("Error %v  - Writing %s",err,k)
+							buck = bucket + "-pd-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+							buck1 = bucket + "-pn-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 						}
-						// gLog.Info.Println(k,buck)
-					} (svc,k,buck,v1)
+						keys := strings.Split(k,"/")
+						k1 = keys[0]
+						for i := 4; i < len(keys); i++ {
+							k1 += "/"+keys[i]
+						}
+						if !check {
+							if r, err := writeToS3(svc, k, buck, value); err == nil {
+								gLog.Trace.Println(buck,*r.ETag,*r)
+								if r,err := writeToS3(svc,k1,buck1,value); err == nil {
+									gLog.Trace.Println(buck1,*r.ETag)
+								} else {
+									gLog.Error.Printf("Error %v  - Writing %s to bucket %s", err, k1,buck1)
+								}
+							} else {
+								gLog.Error.Printf("Error %v  - Writing %s to bucket %s", err, k,buck)
+							}
+						} else {
+							gLog.Trace.Printf("Check mode: Writing key %s to bucket %s and key %s to bucket %s",k,buck,k1,buck1)
+						}
+					} (svc,k,cc,v1,check)
 
 				} else {
 					gLog.Error.Printf("Error %v - Marshalling %s:%v",err, k,v)
