@@ -91,6 +91,7 @@ var (
 			migrateToS3(cmd,args)
 		},
 	}
+	bucket_pd, bucket_pn string
 )
 
 func init() {
@@ -130,8 +131,9 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 			gLog.Info.Println("%s", missingBucket);
 			os.Exit(2)
 		}
-		bucket = bucket+"-"+strings.ToLower(iIndex)
 	}
+	bucket_pd = bucket +"-pd"
+	bucket_pn = bucket +"-pn"
 
 	sindexd.Delimiter = delimiter
 	sindexd.Host = strings.Split(sindexUrl,",")
@@ -139,7 +141,7 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 
 	switch (iIndex) {
 		case "PN","PD":
-			migToS3("PD")     // Used prefix for index
+			migToS3("PD")     // Read Pub date and write to bucket-pd and bucket-pn
 		case "BN":
 		case "OM","NP":
 			migToS3(iIndex)
@@ -153,22 +155,20 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 }
 
 
-
 func migToS3 (index string)  {
-
 
 	indSpecs := directory.GetIndexSpec("PD")
 	indSpecs1 := directory.GetIndexSpec("PN")
-
 	svc      := s3.New(api.CreateSession())
 	num := 0
+
 	switch (index) {
 	case  "OM" :
 		prefix = ""
 		i := indSpecs["OTHER"]
 		i1 := indSpecs1["OTHER"]
 		if i == nil || i1 == nil {
-			gLog.Error.Printf("No OTHER table in PD or PN Index spcification tables")
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
@@ -182,7 +182,7 @@ func migToS3 (index string)  {
 		}
 		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
 	default:
-		/*  continue */
+		/*  just continue */
 	}
 
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ",index,prefix,marker)
@@ -193,37 +193,43 @@ func migToS3 (index string)  {
 			wg.Add(len(resp.Fetched))
 
 			for k, v := range resp.Fetched {
+				/*   Publication date
+				     key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
+				*/
 				if v1, err:= json.Marshal(v); err == nil {
 					/* hash the country code which should be equal to prefix */
 					cc := strings.Split(k,"/")[0]
 					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
 						var buck, buck1, k1 string
+						//XP and Cite NPL same bucket
 						if cc == "XP" {
-							buck  = bucket+"-pd-05"
-							buck1 = bucket+"-pn-05"
+							buck  = bucket_pd+"-05"
+							buck1 = bucket_pn+"-05"
 						} else {
-							buck = bucket + "-pd-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-							buck1 = bucket + "-pn-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+							buck = bucket_pd + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+							buck1 = bucket_pn + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 						}
+						// build publication number key
 						keys := strings.Split(k,"/")
 						k1 = keys[0]
 						for i := 4; i < len(keys); i++ {
 							k1 += "/"+keys[i]
 						}
 						if !check {
-							if r, err := writeToS3(svc, k, buck, value); err == nil {
+							if r, err := writeToS3(svc,  buck,k, value); err == nil {
 								gLog.Trace.Println(buck,*r.ETag,*r)
-								if r,err := writeToS3(svc,k1,buck1,value); err == nil {
+								if r,err := writeToS3(svc,buck1,k1,value); err == nil {
 									gLog.Trace.Println(buck1,*r.ETag)
 								} else {
-									gLog.Error.Printf("Error %v  - Writing %s to bucket %s", err, k1,buck1)
+									gLog.Error.Printf("Error %v - Writing key %s to bucket %s", err, k1,buck1)
 								}
 							} else {
-								gLog.Error.Printf("Error %v  - Writing %s to bucket %s", err, k,buck)
+								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k,buck)
 							}
 						} else {
-							gLog.Trace.Printf("Check mode: Writing key %s to bucket %s and key %s to bucket %s",k,buck,k1,buck1)
+							gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s",k,value,buck)
+							gLog.Trace.Printf("Check mode: Writing key/value %s/%s - to bucket %s",k1,value,buck1)
 						}
 					} (svc,k,cc,v1,check)
 
@@ -249,10 +255,7 @@ func migToS3 (index string)  {
 	}
 }
 
-
-
-func writeToS3(svc  *s3.S3 ,key string, bucket string, meta []byte) (*s3.PutObjectOutput,error) {
-
+func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObjectOutput,error) {
 	//gLog.Info.Printf("Writing key:%s - meta:%v to bucket:%s", key, meta, bucket)
     data := make([]byte,0,0)  // empty byte array
     gLog.Trace.Println(bucket,key)
@@ -264,7 +267,6 @@ func writeToS3(svc  *s3.S3 ,key string, bucket string, meta []byte) (*s3.PutObje
 		Meta : meta,
 	}
 	return api.PutObject(req)
-
 }
 
 
