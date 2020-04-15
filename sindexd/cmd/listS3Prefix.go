@@ -25,6 +25,10 @@ var (
 		Short: "List S3 prefix using S3 API ",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
+			if index != "pn" || index != "pd" || index !="bn" {
+				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
+				return
+			}
 			listS3(cmd,args)
 		},
 	}
@@ -33,10 +37,14 @@ var (
 		Short: "List S3 prefix using levelDB API",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
+			if index != "pn" || index != "pd" || index !="bn" {
+				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
+				return
+			}
 			listS3b(cmd,args)
 		},
 	}
-	prefixs,buck string
+	prefixs,buck,index string
 	prefixa []string
 	maxS3Key,total int64
 	loop int
@@ -55,7 +63,7 @@ func initListS3Flags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxS3Key,"maxKey","m",20,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
 	cmd.Flags().IntVarP(&loop,"loop","L",1,"Number of loop using the next marker if there is one")
-
+	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
 }
 
 func listS3(cmd *cobra.Command, args []string) {
@@ -92,11 +100,17 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 		N int
 		cc = strings.Split(prefix,"/")[0]
 	)
-
+	buck = bucket + "-" + index
 	if len(cc) != 2 {
-		return nextmarker,errors.New(fmt.Sprintf("Wrong contry code: %s",cc))
+		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
 	} else {
-		buck := bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+
+		if cc=="XP" {
+			buck = buck+"-05"
+		} else {
+			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+		}
+		// buck := bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 		req := datatype.ListObjRequest{
 			Service : s3.New(api.CreateSession()),
 			Bucket: buck,
@@ -165,14 +179,11 @@ func listS3b(cmd *cobra.Command, args []string) {
 	prefixa = strings.Split(prefixs,",")
 	if len(prefixa) > 0 {
 		start := time.Now()
-
 		var wg sync.WaitGroup
 		wg.Add(len(prefixa))
 
 		for _, prefix := range prefixa {
-
 			go func(prefix string, bucket string) {
-
 				defer wg.Done()
 				var (
 					s3Meta = datatype.S3Metadata{}
@@ -197,7 +208,6 @@ func listS3b(cmd *cobra.Command, args []string) {
 							if l > 0 {
 								nextMarker = s3Meta.Contents[l-1].Key
 								gLog.Info.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
-
 							}
 							N++
 						} else {
@@ -216,14 +226,10 @@ func listS3b(cmd *cobra.Command, args []string) {
 				}
 
 			}(prefix, bucket)
-
 		}
 		wg.Wait()
-
 		gLog.Info.Printf("Total Elapsed time: %v", time.Since(start))
-
 	}
-
 }
 
 func listS3bPref(prefix string,marker string,bucket string) (error,string) {
@@ -233,14 +239,15 @@ func listS3bPref(prefix string,marker string,bucket string) (error,string) {
 		result,buck string
 		contents []byte
 	)
+	buck = bucket + "-" + index
 	cc := strings.Split(prefix, "/")[0]
 	if len(cc) != 2 {
-		err =  errors.New(fmt.Sprintf("Wrong contry code: %s", cc))
+		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
 		if cc=="XP" {
-			buck = bucket+"-05"
+			buck = buck+"-05"
 		} else {
-			buck = bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 		}
 		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
 

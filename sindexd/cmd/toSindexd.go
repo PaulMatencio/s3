@@ -371,14 +371,15 @@ func incSindexd(index string ,index1 string, check bool) {
 
     var (
     	Key1 = []string{}
-		indSpecs = directory.GetIndexSpec(index)
-		indSpecs1 = directory.GetIndexSpec(index1)
+		indSpecs = directory.GetIndexSpec(index) //should be XX
+		indSpecs1 = directory.GetIndexSpec(index1) // should be [PN|PD|BN
 		keyObj = make(map[string][]byte)
 		keyObj1 = make(map[string]string)
 		num = 0
 		loaded  = new(Loaded)
 	)
 	for Nextmarker {
+		//  retrieve  keys from XX  index table
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
 			for k, v := range resp.Fetched {
@@ -444,9 +445,11 @@ func incSindexd(index string ,index1 string, check bool) {
 				specs[index] = append(specs[index], v)
 			}
 			gLog.Trace.Println(specs)
+			//  retrieve  key=value from [PN|PD|BN] of source URL
 			responses := directory.GetAsyncKeys(specs, indSpecs1)
 			var indSpec *sindexd.Index_spec
 			for _, r := range responses {
+				//  Add fetched keys into  map[string]string
 				for k, v := range r.Response.Fetched {
 					indSpec = r.Index_Spec
 					if v1, err := json.Marshal(v); err == nil {
@@ -455,12 +458,20 @@ func incSindexd(index string ,index1 string, check bool) {
 						keyObj1[k] = vs
 					}
 				}
+				/*  delete All Key not found from the target URL, one key at a time */
 				for _, v := range r.Response.Not_found {
 					gLog.Warning.Printf("Key %s is not found",v)
+					indSpec = r.Index_Spec
+					if !check {
+						directory.DeleteSerialKey1(sindexd.TargetHP, indSpec, v)
+					} else {
+						gLog.Info.Printf("Deleting %s from indSpec:%v  from host: %v ",v,indSpec, sindexd.TargetHP.Hosts())
+					}
 				}
 
 				if !check {
 					if len(keyObj1) > 0 {
+						//  Add key=value to target URL
 						if r := directory.AddSerialPrefix2(sindexd.TargetHP, indSpec, prefix, keyObj1); r.Err == nil {
 							if r.Response.Status != 200 {
 								gLog.Error.Printf("Sindexd status: %v adding key after marker %s to %s", r.Response.Status, marker, indSpec)
