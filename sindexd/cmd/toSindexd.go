@@ -462,14 +462,15 @@ func incSindexd(index string ,index1 string, check bool) {
 				for _, v := range r.Response.Not_found {
 					gLog.Warning.Printf("Key %s is not found",v)
 					indSpec = r.Index_Spec
-					directory.DeleteSerialKey1(sindexd.TargetHP, indSpec, v)
-					/*
-					if !check {
-						directory.DeleteSerialKey1(sindexd.TargetHP, indSpec, v)
-					} else {
-						gLog.Info.Printf("Deleting %s from indSpec:%v  from host: %v ",v,indSpec, sindexd.TargetHP.Hosts())
+					// there is no legacy BNS XP  tables
+					if v[0:2] != "XP" ||  index1 != "BN" {
+						if !check {
+							gLog.Warning.Printf("Deleting key %s from indSpec %v on Host %v",v,*indSpec,sindexd.TargetHP.Hosts())
+							directory.DeleteSerialKey1(sindexd.TargetHP, indSpec, v)
+						} else {
+							gLog.Info.Printf("Deleting key %s from indSpec %v on Host %v ", v, *indSpec, sindexd.TargetHP.Hosts())
+						}
 					}
-					*/
 
 				}
 
