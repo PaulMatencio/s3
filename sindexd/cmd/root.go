@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -32,7 +33,8 @@ var (
 	config,bucket,levelDBUrl,cc	 string
 	verbose, Debug,autoCompletion 	 bool
 
-	loglevel,profiling, bucketNumber  int
+	loglevel,profiling, bucketNumber, retryNumber  int
+	waitTime time.Duration
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingPrefix = "Missing prefix  - please provide the prefix of the keys"
@@ -119,6 +121,8 @@ func initConfig() {
 	if logOutput != "terminal" {
 		logOutput += string(os.PathSeparator) + cc
 	}
+	waitTime = utils.GetWaitTime(*viper.GetViper())
+	retryNumber =utils.GetRetryNumber(*viper.GetViper())
 
 	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)

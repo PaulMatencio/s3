@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"path/filepath"
 	"log"
+	"time"
 )
 
 func GenAutoCompletionScript(rootcmd *cobra.Command,pathname string) {
@@ -32,7 +33,6 @@ func SetLogLevel(viper viper.Viper,loglevel int) (int) {
 
 func GetLogOutput(viper viper.Viper) (string) {
 	return viper.GetString("logging.output" )
-
 }
 
 func GetLogCombine(viper viper.Viper) (bool) {
@@ -46,6 +46,15 @@ func GetNumberOfBucket(viper viper.Viper) (int) {
 func GetLevelDBUrl(viper viper.Viper) (string) {
 	return viper.GetString("levelDB.url")
 }
+
+func GetWaitTime(viper viper.Viper) (time.Duration) {
+	return viper.GetDuration("retry.waitime")
+}
+
+func GetRetryNumber(viper viper.Viper) (int) {
+	return viper.GetInt("retry.number")
+}
+
 
 func InitConfig(config string,viper viper.Viper,rootcmd cobra.Command) {
 

@@ -22,6 +22,7 @@ import (
 	"github.com/s3/utils"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
@@ -149,7 +150,7 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 		case "XX-PD":
 		case "XX-BN":
 		default:
-			gLog.Info.Printf("%s", "invalid index table : <PN>/<PD>/<BN>/<OM>/<OB>");
+			gLog.Info.Printf("%s", "invalid index table : [PN|PD|BN|OM|OB]");
 			os.Exit(2)
 	}
 }
@@ -257,7 +258,11 @@ func migToS3 (index string)  {
 
 func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObjectOutput,error) {
 	//gLog.Info.Printf("Writing key:%s - meta:%v to bucket:%s", key, meta, bucket)
-    data := make([]byte,0,0)  // empty byte array
+    var (
+    	data = make([]byte,0,0)  // empty byte array
+    	err error
+    	r  *s3.PutObjectOutput
+    )
     gLog.Trace.Println(bucket,key)
 	req:= datatype.PutObjRequest{
 		Service : svc,
@@ -266,7 +271,16 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 		Buffer: bytes.NewBuffer(data), // convert []byte into *bytes.Buffer
 		Meta : meta,
 	}
-	return api.PutObject(req)
+	// retry 5 times if necessary
+	for i:= 0; i <= retryNumber; i++ {
+		 if r,err = api.PutObject(req); err == nil {
+			break
+		 } else {
+		 	 gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			 time.Sleep(waitTime * time.Millisecond)
+		 }
+	}
+	return r,err
 }
 
 
