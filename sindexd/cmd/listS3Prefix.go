@@ -100,16 +100,18 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 		N int
 		cc = strings.Split(prefix,"/")[0]
 	)
-	buck = bucket + "-" + index
+	// buck = bucket + "-" + index
 	if len(cc) != 2 {
 		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
 	} else {
-
-		if cc=="XP" {
-			buck = buck+"-05"
+		buck = bucket + "-" + strings.ToLower(index)
+		if cc == "XP" {
+			buck  = buck+"-05"
 		} else {
 			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+
 		}
+
 		// buck := bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 		req := datatype.ListObjRequest{
 			Service : s3.New(api.CreateSession()),
@@ -239,13 +241,15 @@ func listS3bPref(prefix string,marker string,bucket string) (error,string) {
 		result,buck string
 		contents []byte
 	)
-	buck = bucket + "-" + index
+	// buck = bucket + "-" + index
 	cc := strings.Split(prefix, "/")[0]
 	if len(cc) != 2 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
-		if cc=="XP" {
-			buck = buck+"-05"
+
+		buck = bucket + "-" + strings.ToLower(index)
+		if cc == "XP" {
+			buck  = buck+"-05"
 		} else {
 			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 		}
