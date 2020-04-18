@@ -25,7 +25,7 @@ var (
 		Short: "List S3 prefix using S3 API ",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			if index != "pn" || index != "pd" || index !="bn" {
+			if index != "pn" && index != "pd" &&  index !="bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
 				return
 			}
@@ -37,7 +37,7 @@ var (
 		Short: "List S3 prefix using levelDB API",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			if index != "pn" || index != "pd" || index !="bn" {
+			if index != "pn" && index != "pd" && index !="bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
 				return
 			}
