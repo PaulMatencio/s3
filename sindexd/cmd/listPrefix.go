@@ -39,8 +39,8 @@ var (
 
 	listPrefixCmd = &cobra.Command{
 		Use:   "listPrefix",
-		Short: "List Scality Sindexd prefix",
-		Long: `List Scality Sindexd prefix: 
+		Short: "List Scality Sindexd entries with prefix",
+		Long: `List Scality Sindexd entries with prefix: 
             There are 5 set of tables: 
             PN => Publication number tables
             PD => Publication date tables

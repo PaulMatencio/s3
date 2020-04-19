@@ -30,18 +30,18 @@ import (
 	"github.com/spf13/viper"
 	"os"
 
-	"github.com/spf13/cobra"
+	hostpool "github.com/bitly/go-hostpool"
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
-	hostpool "github.com/bitly/go-hostpool"
+	"github.com/spf13/cobra"
 )
 
 // toS3Cmd represents the toS3 command
 var (
 	toS3Cmd = &cobra.Command{
 	Use:   "toS3",
-	Short: "Migrate Scality sindexd entries to S3 ",
-	Long: `Migtate Scality sindexd entries to S3: 
+	Short: "Migrate Scality sindexd entries to S3 metadata",
+	Long: `Migtate Scality sindexd entries to S3 metadata: 
 
      See Usage for the description of the other -- flags. See Examples below for full and incremental migration below 
      --index [PN|PD|NP|OM|XX-PN|XX-PD|XX-BN]
@@ -198,12 +198,17 @@ func migToS3 (index string)  {
 				     key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
 				*/
 				if v1, err:= json.Marshal(v); err == nil {
-					/* hash the country code which should be equal to prefix */
+
 					cc := strings.Split(k,"/")[0]
 					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
-						var buck, buck1, k1 string
-						//XP and Cite NPL same bucket
+						var (
+							buck  = setBucketName(cc,"pd")
+							buck1 = setBucketName(cc,"pn")
+							keys  = strings.Split(k,"/")
+							k1    = keys[0]
+						)
+						/*
 						if cc == "XP" {
 							buck  = bucket_pd+"-05"
 							buck1 = bucket_pn+"-05"
@@ -211,9 +216,12 @@ func migToS3 (index string)  {
 							buck = bucket_pd + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 							buck1 = bucket_pn + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
 						}
+						*/
+
 						// build publication number key
-						keys := strings.Split(k,"/")
-						k1 = keys[0]
+						// keys := strings.Split(k,"/")
+						// k1 = keys[0]
+
 						for i := 4; i < len(keys); i++ {
 							k1 += "/"+keys[i]
 						}
@@ -271,7 +279,7 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 		Buffer: bytes.NewBuffer(data), // convert []byte into *bytes.Buffer
 		Meta : meta,
 	}
-	// retry 5 times if necessary
+
 	for i:= 0; i <= retryNumber; i++ {
 		 if r,err = api.PutObject(req); err == nil {
 			break
@@ -283,6 +291,16 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 	return r,err
 }
 
+func setBucketName(cc string, index string)  (string){
+	buck := bucket + "-" + strings.ToLower(index)
+	if cc == "XP" {
+		buck  = buck+"-05"
+	} else {
+		/* hash the country code which should be equal to the prefix */
+		buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
+	}
+	return buck
+}
 
 
 

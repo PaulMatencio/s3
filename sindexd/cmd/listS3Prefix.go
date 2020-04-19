@@ -22,7 +22,7 @@ import (
 var (
 	listS3Cmd = &cobra.Command{
 		Use:   "listS3",
-		Short: "List S3 prefix using S3 API ",
+		Short: "List S3 metadata with prefix using the AMAZON S3 SDK API ",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" &&  index !="bn" {
@@ -32,9 +32,9 @@ var (
 			listS3(cmd,args)
 		},
 	}
-	listS3Cmd2 = &cobra.Command{
+	listS3Cmdb = &cobra.Command{
 		Use:   "listS3b",
-		Short: "List S3 prefix using levelDB API",
+		Short: "List S3 metadata with prefix using the Scality levelDB API",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index !="bn" {
@@ -53,8 +53,8 @@ var (
 func init() {
 	RootCmd.AddCommand(listS3Cmd)
 	initListS3Flags(listS3Cmd)
-	RootCmd.AddCommand(listS3Cmd2)
-	initListS3Flags(listS3Cmd2)
+	RootCmd.AddCommand(listS3Cmdb)
+	initListS3Flags(listS3Cmdb)
 }
 
 func initListS3Flags(cmd *cobra.Command) {
@@ -92,7 +92,7 @@ func listS3(cmd *cobra.Command, args []string) {
 
 }
 
-
+/* S3 API list  function */
 func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 
 	var (
@@ -104,16 +104,8 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 	if len(cc) != 2 {
 		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
 	} else {
-		buck = bucket + "-" + strings.ToLower(index)
-		if cc == "XP" {
-			buck  = buck+"-05"
-		} else {
-			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-
-		}
-
-		// buck := bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-		req := datatype.ListObjRequest{
+		buck = setBucketName(cc,index)
+		req := datatype.ListObjRequest {
 			Service : s3.New(api.CreateSession()),
 			Bucket: buck,
 			Prefix : prefix,
@@ -176,8 +168,8 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 	return nextmarker,nil
 }
 
+/* level DB API list function */
 func listS3b(cmd *cobra.Command, args []string) {
-
 	prefixa = strings.Split(prefixs,",")
 	if len(prefixa) > 0 {
 		start := time.Now()
@@ -235,30 +227,21 @@ func listS3b(cmd *cobra.Command, args []string) {
 }
 
 func listS3bPref(prefix string,marker string,bucket string) (error,string) {
-
 	var (
 		err error
 		result,buck string
 		contents []byte
 	)
-	// buck = bucket + "-" + index
 	cc := strings.Split(prefix, "/")[0]
 	if len(cc) != 2 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
-
-		buck = bucket + "-" + strings.ToLower(index)
-		if cc == "XP" {
-			buck  = buck+"-05"
-		} else {
-			buck = buck + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-		}
+		buck = setBucketName(cc, index)
+		/* build the request */
 		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
-
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
 		limit := "&maxKeys="+strconv.Itoa(int(maxS3Key))
 		keyMarker:= "&marker="+marker
-
 		// url := Host +":"+Port+request+prefix+limit+keyMarker
 		url := levelDBUrl+request+prefix+limit+keyMarker
 		gLog.Info.Println("URL:",url)
@@ -293,9 +276,7 @@ func getUsermd(req datatype.ListObjRequest , result *s3.ListObjectsOutput, wg sy
 			//procStatResult(&rh)
 			utils.PrintUsermd(rh.Key, rh.Result.Metadata)
 		}(head)
-
 	}
-
 }
 
 func contentToJson(contents []byte ) string {
@@ -306,3 +287,4 @@ func contentToJson(contents []byte ) string {
 	result = strings.Replace(result,"\"}\"}","\"}}",-1)
 	return result
 }
+
