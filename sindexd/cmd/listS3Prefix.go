@@ -74,7 +74,7 @@ func listS3(cmd *cobra.Command, args []string) {
 		err error
 	)
 	if len(delimiter) >0 {
-		if nextmarker,err =listS3Hiearchy(); err == nil {
+		if nextmarker,err =listS3CommonPrefix(prefix,marker,bucket); err == nil {
 			 gLog.Warning.Printf("Next marker: %s",marker)
 		} else {
 			gLog.Error.Printf("Listing Error: %v",err)
@@ -176,7 +176,7 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 	return nextmarker,nil
 }
 
-func listS3Hiearchy() (string,error)  {
+func listS3CommonPrefix(prefix string, marker string, bucket string) (string,error)  {
 
 	var (
 		nextmarker string
@@ -188,6 +188,7 @@ func listS3Hiearchy() (string,error)  {
 	} else {
 		buck = bucket
 	}
+	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,maxS3Key,marker)
 	req := datatype.ListObjRequest{
 		Service:   s3.New(api.CreateSession()),
 		Bucket:    buck,
