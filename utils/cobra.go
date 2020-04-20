@@ -39,6 +39,10 @@ func GetLogCombine(viper viper.Viper) (bool) {
 	return viper.GetBool("logging.combine" )
 }
 
+func GetBucket(viper viper.Viper) (int) {
+	return viper.GetInt("s3.bucket")
+}
+
 func GetNumberOfBucket(viper viper.Viper) (int) {
   return viper.GetInt("buckets.number")
 }

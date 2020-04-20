@@ -210,8 +210,8 @@ func migToS3 (index string)  {
 					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
 						var (
-							buck  = setBucketName(cc,"pd")
-							buck1 = setBucketName(cc,"pn")
+							buck  = setBucketName(cc,bucket,"pd")
+							buck1 = setBucketName(cc,bucket,"pn")
 							keys  = strings.Split(k,"/")
 							k1    = keys[0]
 						)
@@ -299,7 +299,7 @@ func migToS3b (index string)  {
 					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
 						var (
-							buck  = setBucketName(cc,index)
+							buck  = setBucketName(cc,bucket,index)
 						)
 						/*
 							write to S3 buckets of not run in check mode
@@ -365,7 +365,7 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 	return r,err
 }
 
-func setBucketName(cc string, index string)  (string){
+func setBucketName(cc string, bucket string, index string)  (string){
 	buck := bucket + "-" + strings.ToLower(index)
 	if cc == "XP" {
 		buck  = buck+"-05"

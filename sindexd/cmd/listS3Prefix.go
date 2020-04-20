@@ -11,8 +11,10 @@ import (
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,6 +31,13 @@ var (
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
 				return
 			}
+			if len(bucket) == 0 {
+				if bucket = viper.GetString("s3.bucket"); len(bucket) == 0 {
+					gLog.Info.Println("%s", missingBucket);
+					os.Exit(2)
+				}
+			}
+
 			listS3(cmd, args)
 		},
 	}
@@ -41,6 +50,13 @@ var (
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
 				return
 			}
+			if len(bucket) == 0 {
+				if bucket = viper.GetString("s3.bucket"); len(bucket) == 0 {
+					gLog.Info.Println("%s", missingBucket);
+					os.Exit(2)
+				}
+			}
+
 			listS3b(cmd,args)
 		},
 	}
@@ -106,11 +122,12 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 		N int
 		cc = strings.Split(prefix,"/")[0]
 	)
+	
 	// buck = bucket + "-" + index
 	if len(cc) != 2 {
 		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
 	} else {
-		buck = setBucketName(cc,index)
+		buck = setBucketName(cc,bucket,index)
 		req := datatype.ListObjRequest {
 			Service : s3.New(api.CreateSession()),
 			Bucket: buck,
@@ -183,13 +200,13 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 		buck string
 	)
 	if len(cc)   == 2 {
-		buck = setBucketName(cc,index)
+		buck = setBucketName(cc,bucket,index)
 	} else {
 		buck = bucket
 	}
 
 
-	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,delimiter,marker)
+	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,delimiter,maxS3Key)
 	req := datatype.ListObjRequest{
 		Service:   s3.New(api.CreateSession()),
 		Bucket:    buck,
@@ -307,7 +324,7 @@ func listS3bPref(prefix string,marker string) (error,string) {
 	if len(cc) != 2 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
-		buck = setBucketName(cc, index)
+		buck = setBucketName(cc, bucket,index)
 		/* build the request */
 		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
