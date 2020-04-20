@@ -61,6 +61,7 @@ func initListS3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the keys separated by a commma")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this marker (Key) for the Get Prefix")
 	cmd.Flags().Int64VarP(&maxS3Key,"maxKey","m",20,"maximum number of keys to be processed concurrently")
+	cmd.Flags().StringVarP(&delimiter, "delimiter", "d", "","delimiter character")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
 	cmd.Flags().IntVarP(&loop,"loop","L",1,"Number of loop using the next marker if there is one")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
@@ -76,7 +77,7 @@ func listS3(cmd *cobra.Command, args []string) {
 		if nextmarker,err =listS3Hiearchy(); err == nil {
 			 gLog.Warning.Printf("Next marker: %s",marker)
 		} else {
-
+			gLog.Error.Printf("Listing Error: %v",err)
 		}
 		return
 	}
@@ -176,14 +177,20 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 }
 
 func listS3Hiearchy() (string,error)  {
+
 	var (
 		nextmarker string
 		N int
+		cc = strings.Split(prefix,"/")[0]
 	)
-
+	if len(cc)   == 2 {
+		buck = setBucketName(cc,index)
+	} else {
+		buck = bucket
+	}
 	req := datatype.ListObjRequest{
 		Service:   s3.New(api.CreateSession()),
-		Bucket:    bucket,
+		Bucket:    buck,
 		Prefix:    prefix,
 		MaxKey:    maxS3Key,
 		Marker:    marker,
@@ -197,18 +204,16 @@ func listS3Hiearchy() (string,error)  {
 		)
 		N++
 		if result, err = api.ListObject(req); err == nil {
-			gLog.Info.Println(cc, bucket, len(result.Contents))
+			gLog.Info.Println(cc, buck, len(result.Contents))
 			if l := len(result.Contents); l > 0 {
 				total += int64(l)
 				for _, v := range result.Contents {
 					gLog.Trace.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size, v.LastModified)
 				}
-
 				if *result.IsTruncated {
 					nextmarker = *result.Contents[l-1].Key
 					gLog.Warning.Printf("Truncated %v - Next marker: %s ", *result.IsTruncated, nextmarker)
 				}
-
 			}
 			// list the common prefixes
 			gLog.Info.Println("List Common prefix:")
