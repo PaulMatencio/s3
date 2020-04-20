@@ -23,20 +23,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/api"
 	"github.com/s3/gLog"
 	"github.com/spf13/viper"
 	"os"
-
 	hostpool "github.com/bitly/go-hostpool"
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
 	"github.com/spf13/cobra"
 )
 
-// toS3Cmd represents the toS3 command
 var (
 	toS3Cmd = &cobra.Command{
 	Use:   "toS3",
@@ -57,7 +54,13 @@ var (
 
         Note : XP table contains the indexes of the Non Patent Literature documents
                Cite NPL  contains the indexes of the Cite NPL documents 
-               
+     
+     --prefix [CC|XP|WO|EP] 
+         CC is a country code such as US,CN,JP,GB,DE,KR,ES,FR,IT,NO,TW,SU,BG etc ...
+         XP is the code for Non Patent literature, Cite NPL  inclusive
+         WO is the code for WIPO 
+         EP is the code for European patents 
+
         Examples
 
         - Full migration
@@ -92,7 +95,7 @@ var (
 			migrateToS3(cmd,args)
 		},
 	}
-	bucket_pd, bucket_pn string
+	// bucket_pd, bucket_pn string
 )
 
 func init() {
@@ -105,7 +108,7 @@ func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","the prefix of the key")
 	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [PN|PD|BN|NP|OM|OB|XX-PN|XX-PD|XX-BN]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
-	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
 	cmd.Flags().BoolVarP(&check,"check","v",false,"Check mode")
 }
@@ -118,8 +121,8 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 	if len(iIndex) == 0 {
 		iIndex = "PN"
 	}
-	// indSpecs := directory.GetIndexSpec(iIndex)
 
+	// indSpecs := directory.GetIndexSpec(iIndex)
 	if len(prefix) == 0 {
 		if iIndex == "PN" || iIndex == "PD" || iIndex == "BN" || iIndex == "XX"{
 			gLog.Info.Printf("%s", missingPrefix);
@@ -133,22 +136,22 @@ func migrateToS3(cmd *cobra.Command,args []string) {
 			os.Exit(2)
 		}
 	}
-	bucket_pd = bucket +"-pd"
-	bucket_pn = bucket +"-pn"
 
 	sindexd.Delimiter = delimiter
 	sindexd.Host = strings.Split(sindexUrl,",")
 	sindexd.HP = hostpool.NewEpsilonGreedy(sindexd.Host, 0, &hostpool.LinearEpsilonValueCalculator{})
 
 	switch (iIndex) {
-		case "PN","PD":
-			migToS3("PD")     // Read Pub date and write to bucket-pd and bucket-pn
-		case "BN":
-		case "OM","NP":
+		case "PN","PD":  /* pubication date or publication number */
+			migToS3("PD")     // Read sindexd pub date tables and write to both  s3 bucket-pd and bucket-pn
+		case "BN":  migToS3b(index)
+		case "OM","NP":  /* all other countries or Cite NPL table */
 			migToS3(iIndex)
-		case "XX-PN":
-		case "XX-PD":
-		case "XX-BN":
+		case "OB":
+			migToS3b(iIndex)
+		case "XX-PN": /* incremental Publication nunber todo */
+		case "XX-PD": /* incremental Publication date todo */
+		case "XX-BN": /* incremental todo */
 		default:
 			gLog.Info.Printf("%s", "invalid index table : [PN|PD|BN|OM|OB]");
 			os.Exit(2)
@@ -185,8 +188,13 @@ func migToS3 (index string)  {
 	default:
 		/*  just continue */
 	}
-
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ",index,prefix,marker)
+	/*
+		Loop on  the get prefix
+	     for each key value retuned by the list prefix
+	     	write ( publication date key, value) to bucket-pd
+	     	write ( publication number key, vale ) to bucket-pn
+	 */
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
@@ -198,7 +206,6 @@ func migToS3 (index string)  {
 				     key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
 				*/
 				if v1, err:= json.Marshal(v); err == nil {
-
 					cc := strings.Split(k,"/")[0]
 					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
 						defer wg.Done()
@@ -209,22 +216,15 @@ func migToS3 (index string)  {
 							k1    = keys[0]
 						)
 						/*
-						if cc == "XP" {
-							buck  = bucket_pd+"-05"
-							buck1 = bucket_pn+"-05"
-						} else {
-							buck = bucket_pd + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-							buck1 = bucket_pn + "-" + fmt.Sprintf("%02d", utils.HashKey(cc, bucketNumber))
-						}
+						   extract  publication number key
+						   from the publication date key
 						*/
-
-						// build publication number key
-						// keys := strings.Split(k,"/")
-						// k1 = keys[0]
-
 						for i := 4; i < len(keys); i++ {
 							k1 += "/"+keys[i]
 						}
+						/*
+							write to S3 buckets of not run in check mode
+						 */
 						if !check {
 							if r, err := writeToS3(svc,  buck,k, value); err == nil {
 								gLog.Trace.Println(buck,*r.ETag,*r)
@@ -247,7 +247,9 @@ func migToS3 (index string)  {
 					wg.Done()
 				}
 			}
+			// Wait for all the go routine to be cpmpleted
 			wg.Wait()
+
 			if len(resp.Next_marker) == 0 {
 				Nextmarker = false
 			} else {
@@ -255,9 +257,80 @@ func migToS3 (index string)  {
 				num++
 				gLog.Info.Printf("Next marker => %s %d", marker,num)
 			}
-
 		} else {
-			// gLog.Error.Printf("%v",response.Err)
+			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
+			Nextmarker = false
+		}
+	}
+}
+
+func migToS3b (index string)  {
+
+	indSpecs := directory.GetIndexSpec(index)
+	svc      := s3.New(api.CreateSession())
+	num := 0
+	switch (index) {
+	case  "OB" :
+		prefix = ""
+		i := indSpecs["OTHER"]
+		if i == nil  {
+			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Indexd specification BN: %v"  ,  *i)
+
+	default:
+	}
+	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ",index,prefix,marker)
+	/*
+			Loop on  the get prefix
+		     for each key value retuned by the list prefix
+		     	write ( publication date key, value) to bucket-pd
+		     	write ( publication number key, vale ) to bucket-pn
+	*/
+	for Nextmarker {
+		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
+			resp := response.Response
+			var wg sync.WaitGroup
+			wg.Add(len(resp.Fetched))
+			for k, v := range resp.Fetched {
+				if v1, err:= json.Marshal(v); err == nil {
+					cc := strings.Split(k,"/")[0]
+					go func(svc *s3.S3,k string,cc string,value []byte,check bool) {
+						defer wg.Done()
+						var (
+							buck  = setBucketName(cc,index)
+						)
+						/*
+							write to S3 buckets of not run in check mode
+						*/
+						if !check {
+							if r, err := writeToS3(svc,  buck,k, value); err == nil {
+								gLog.Trace.Println(buck,*r.ETag,*r)
+							} else {
+								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k,buck)
+							}
+						} else {
+							gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s",k,value,buck)
+						}
+					} (svc,k,cc,v1,check)
+
+				} else {
+					gLog.Error.Printf("Error %v - Marshalling %s:%v",err, k,v)
+					wg.Done()
+				}
+			}
+			// Wait for all the go routine to be cpmpleted
+			wg.Wait()
+
+			if len(resp.Next_marker) == 0 {
+				Nextmarker = false
+			} else {
+				marker = resp.Next_marker
+				num++
+				gLog.Info.Printf("Next marker => %s %d", marker,num)
+			}
+		} else {
 			gLog.Error.Printf("Error: %v getting prefix %s",response.Err,prefix)
 			Nextmarker = false
 		}
@@ -265,13 +338,12 @@ func migToS3 (index string)  {
 }
 
 func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObjectOutput,error) {
-	//gLog.Info.Printf("Writing key:%s - meta:%v to bucket:%s", key, meta, bucket)
     var (
     	data = make([]byte,0,0)  // empty byte array
     	err error
     	r  *s3.PutObjectOutput
     )
-    gLog.Trace.Println(bucket,key)
+    gLog.Trace.Println(key,bucket)
 	req:= datatype.PutObjRequest{
 		Service : svc,
 		Bucket: bucket,
@@ -279,12 +351,14 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 		Buffer: bytes.NewBuffer(data), // convert []byte into *bytes.Buffer
 		Meta : meta,
 	}
-
+	// write to S3
+	// if error not nil retry
 	for i:= 0; i <= retryNumber; i++ {
 		 if r,err = api.PutObject(req); err == nil {
 			break
 		 } else {
 		 	 gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+		 	 /* wait time between 2 retries */
 			 time.Sleep(waitTime * time.Millisecond)
 		 }
 	}

@@ -25,11 +25,11 @@ var (
 		Short: "List S3 metadata with prefix using the AMAZON S3 SDK API ",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			if index != "pn" && index != "pd" &&  index !="bn" {
+			if index != "pn" && index != "pd" && index != "bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
 				return
 			}
-			listS3(cmd,args)
+			listS3(cmd, args)
 		},
 	}
 	listS3Cmdb = &cobra.Command{
@@ -58,9 +58,9 @@ func init() {
 }
 
 func initListS3Flags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the keys separated by commma")
-	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this marker (Key) for the Get Prefix ")
-	cmd.Flags().Int64VarP(&maxS3Key,"maxKey","m",20,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the keys separated by a commma")
+	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this marker (Key) for the Get Prefix")
+	cmd.Flags().Int64VarP(&maxS3Key,"maxKey","m",20,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the S3  bucket")
 	cmd.Flags().IntVarP(&loop,"loop","L",1,"Number of loop using the next marker if there is one")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
@@ -72,6 +72,14 @@ func listS3(cmd *cobra.Command, args []string) {
 		nextmarker string
 		err error
 	)
+	if len(delimiter) >0 {
+		if nextmarker,err =listS3Hiearchy(); err == nil {
+			 gLog.Warning.Printf("Next marker: %s",marker)
+		} else {
+
+		}
+		return
+	}
 
 	if len(prefixa) > 0 {
 		start := time.Now()
@@ -89,10 +97,9 @@ func listS3(cmd *cobra.Command, args []string) {
 		wg.Wait()
 		gLog.Info.Printf("Total Elapsed time: %v", time.Since(start))
 	}
-
 }
 
-/* S3 API list  function */
+/* S3 API list user metadata  function */
 func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 
 	var (
@@ -168,6 +175,63 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 	return nextmarker,nil
 }
 
+func listS3Hiearchy() (string,error)  {
+	var (
+		nextmarker string
+		N int
+	)
+
+	req := datatype.ListObjRequest{
+		Service:   s3.New(api.CreateSession()),
+		Bucket:    bucket,
+		Prefix:    prefix,
+		MaxKey:    maxS3Key,
+		Marker:    marker,
+		Delimiter: delimiter,
+	}
+
+	for {
+		var (
+			result *s3.ListObjectsOutput
+			err   error
+		)
+		N++
+		if result, err = api.ListObject(req); err == nil {
+			gLog.Info.Println(cc, bucket, len(result.Contents))
+			if l := len(result.Contents); l > 0 {
+				total += int64(l)
+				for _, v := range result.Contents {
+					gLog.Trace.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size, v.LastModified)
+				}
+
+				if *result.IsTruncated {
+					nextmarker = *result.Contents[l-1].Key
+					gLog.Warning.Printf("Truncated %v - Next marker: %s ", *result.IsTruncated, nextmarker)
+				}
+
+			}
+			// list the common prefixes
+			gLog.Info.Println("List Common prefix:")
+			for _,v := range result.CommonPrefixes {
+				gLog.Info.Printf("Common prefix %s",*v.Prefix)
+			}
+		} else {
+				gLog.Error.Printf("%v", err)
+				break
+		}
+		if N < loop && *result.IsTruncated {
+			req.Marker = nextmarker
+		} else {
+			gLog.Info.Printf("Total number of objects returned: %d", total)
+			break
+		}
+	}
+	return nextmarker,nil
+}
+
+
+
+
 /* level DB API list function */
 func listS3b(cmd *cobra.Command, args []string) {
 	prefixa = strings.Split(prefixs,",")
@@ -186,7 +250,7 @@ func listS3b(cmd *cobra.Command, args []string) {
 					N = 0
 				)
 				for {
-					if err, result := listS3bPref(prefix, marker,bucket); err != nil {
+					if err, result := listS3bPref(prefix, marker); err != nil {
 						gLog.Error.Println(err)
 					} else {
 						if err = json.Unmarshal([]byte(result), &s3Meta); err == nil {
@@ -226,7 +290,7 @@ func listS3b(cmd *cobra.Command, args []string) {
 	}
 }
 
-func listS3bPref(prefix string,marker string,bucket string) (error,string) {
+func listS3bPref(prefix string,marker string) (error,string) {
 	var (
 		err error
 		result,buck string

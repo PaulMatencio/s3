@@ -6,8 +6,6 @@ func HashKey(key string, modulo int) (int) {
 		v += int(key[k])
 	}
 	return v % modulo
-	//fmt.Printf("key:%s - hash:%d - modulo %d : %d \n",key, v, modulo, v1)
-
 }
 
 func KeyToAscii(key string) (int) {
@@ -16,6 +14,5 @@ func KeyToAscii(key string) (int) {
 		v += int(key[k])
 	}
 	return v
-	//fmt.Printf("key:%s - hash:%d - modulo %d : %d \n",key, v, modulo, v1)
 
 }
