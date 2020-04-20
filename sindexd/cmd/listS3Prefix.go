@@ -122,7 +122,7 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 		N int
 		cc = strings.Split(prefix,"/")[0]
 	)
-	
+
 	// buck = bucket + "-" + index
 	if len(cc) != 2 {
 		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
@@ -269,7 +269,7 @@ func listS3b(cmd *cobra.Command, args []string) {
 				defer wg.Done()
 				var (
 					s3Meta = datatype.S3Metadata{}
-					marker string
+					// marker string
 					nextMarker string
 					N = 0
 				)
@@ -329,9 +329,11 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
 		limit := "&maxKeys="+strconv.Itoa(int(maxS3Key))
+
 		keyMarker:= "&marker="+marker
 		// url := Host +":"+Port+request+prefix+limit+keyMarker
 		url := levelDBUrl+request+prefix+limit+keyMarker
+
 		gLog.Info.Println("URL:",url)
 
 		if response,err := http.Get(url); err == nil {
