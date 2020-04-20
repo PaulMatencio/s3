@@ -73,14 +73,6 @@ func listS3(cmd *cobra.Command, args []string) {
 		nextmarker string
 		err error
 	)
-	if len(delimiter) >0 {
-		if nextmarker,err =listS3CommonPrefix(prefix,marker,bucket); err == nil {
-			 gLog.Warning.Printf("Next marker: %s",marker)
-		} else {
-			gLog.Error.Printf("Listing Error: %v",err)
-		}
-		return
-	}
 
 	if len(prefixa) > 0 {
 		start := time.Now()
@@ -90,8 +82,14 @@ func listS3(cmd *cobra.Command, args []string) {
 			go func(prefix string, bucket string) {
 				defer wg.Done()
 				gLog.Info.Println(prefix, bucket)
-				if nextmarker, err = listS3Pref(prefix, marker, bucket); err != nil {
-					gLog.Error.Println(err)
+				if len(delimiter) >0 {
+					if nextmarker, err = listS3CommonPrefix(prefix, marker, bucket); err != nil {
+						gLog.Error.Println(err)
+					}
+				} else {
+					if nextmarker, err = listS3Pref(prefix, marker, bucket); err != nil {
+						gLog.Error.Println(err)
+					}
 				}
 			}(prefix, bucket)
 		}
@@ -182,13 +180,16 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 		nextmarker string
 		N int
 		cc = strings.Split(prefix,"/")[0]
+		buck string
 	)
 	if len(cc)   == 2 {
 		buck = setBucketName(cc,index)
 	} else {
 		buck = bucket
 	}
-	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,maxS3Key,marker)
+
+
+	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,delimiter,marker)
 	req := datatype.ListObjRequest{
 		Service:   s3.New(api.CreateSession()),
 		Bucket:    buck,
