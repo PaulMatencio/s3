@@ -169,7 +169,6 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 							}
 							defer wg1.Done()
 							rh.Result, rh.Err = api.StatObject(head)
-							//procStatResult(&rh)
 							utils.PrintUsermd(rh.Key, rh.Result.Metadata)
 						}(head)
 					}
@@ -238,9 +237,11 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 				}
 			}
 			// list the common prefixes
-			gLog.Info.Println("List Common prefix:")
-			for _,v := range result.CommonPrefixes {
-				gLog.Info.Printf("Common prefix %s",*v.Prefix)
+			if len(result.CommonPrefixes) > 0 {
+				gLog.Info.Println("List Common prefix:")
+				for _, v := range result.CommonPrefixes {
+					gLog.Info.Printf("%s", *v.Prefix)
+				}
 			}
 		} else {
 				gLog.Error.Printf("%v", err)
@@ -285,21 +286,15 @@ func listS3b(cmd *cobra.Command, args []string) {
 						if err = json.Unmarshal([]byte(result), &s3Meta); err == nil {
 							//gLog.Info.Println("Key:",s3Meta.Contents[0].Key,s3Meta.Contents[0].Value.XAmzMetaUsermd)
 							//num := len(s3Meta.Contentss3Meta.Contents)
-						 	l := len( s3Meta.Contents)
+							l := len(s3Meta.Contents)
 							for _, c := range s3Meta.Contents {
-								//m := &s3Meta.Contents[0].Value.XAmzMetaUsermd
+								//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
 								m := &c.Value.XAmzMetaUsermd
 								usermd, _ := base64.StdEncoding.DecodeString(*m)
-								gLog.Info.Printf("Key:%s - Metadata: %s" ,c.Key, string(usermd))
+								gLog.Info.Printf("Key: %s - Usermd: %s", c.Key, string(usermd))
 							}
 							//* print  common prefix if any
-
-							if len(s3Meta.CommonPrefixes) > 0 {
-								gLog.Info.Println("Common Prefixes")
-								for _, c := range s3Meta.CommonPrefixes {
-									gLog.Info.Printf("%s", c)
-								}
-							}
+							ListCommonPrefix(s3Meta.CommonPrefixes)
 							if l > 0 {
 								nextMarker = s3Meta.Contents[l-1].Key
 								gLog.Info.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
@@ -343,8 +338,10 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		} else {
 			buck = bucket
 		}
-		/* build the request */
-		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
+		/*
+		build the request
+	    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
+		*/
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
 		limit := "&maxKeys="+strconv.Itoa(int(maxS3Key))
 
@@ -360,7 +357,6 @@ func listS3bPref(prefix string,marker string) (error,string) {
 			if response.StatusCode == 200 {
 				defer response.Body.Close()
 				if contents, err = ioutil.ReadAll(response.Body); err == nil {
-					gLog.Trace.Println(contents)
 					return err, contentToJson(contents)
 				}
 			} else {
@@ -394,12 +390,19 @@ func getUsermd(req datatype.ListObjRequest , result *s3.ListObjectsOutput, wg sy
 	}
 }
 
+// transform content returned by the bucketd API into JSON string
 func contentToJson(contents []byte ) string {
-
 	result:= strings.Replace(string(contents),"\\","",-1)
 	result = strings.Replace(result,"\"{","{",-1)
 	// result = strings.Replace(result,"\"}]","}]",-1)
 	result = strings.Replace(result,"\"}\"}","\"}}",-1)
+	gLog.Trace.Println(result)
 	return result
 }
 
+func ListCommonPrefix( cp []interface{}) {
+	gLog.Info.Println("List Common prefix:")
+	for _, p := range cp{
+		gLog.Info.Printf("Common prefix %s", p)
+	}
+}
