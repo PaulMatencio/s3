@@ -274,9 +274,14 @@ func listS3b(cmd *cobra.Command, args []string) {
 					N = 0
 				)
 				for {
-					if err, result := listS3bPref(prefix, marker); err != nil {
-						gLog.Error.Println(err)
+					if err, result := listS3bPref(prefix, marker); err != nil || len(result) == 0{
+						if err != nil {
+							gLog.Error.Println(err)
+						} else {
+							gLog.Info.Println("Result is empty")
+						}
 					} else {
+
 						if err = json.Unmarshal([]byte(result), &s3Meta); err == nil {
 							//gLog.Info.Println("Key:",s3Meta.Contents[0].Key,s3Meta.Contents[0].Value.XAmzMetaUsermd)
 							//num := len(s3Meta.Contentss3Meta.Contents)
@@ -288,7 +293,7 @@ func listS3b(cmd *cobra.Command, args []string) {
 								gLog.Info.Printf("Key:%s - Metadata: %s" ,c.Key, string(usermd))
 							}
 							//* print  common prefix if any
-							
+
 							if len(s3Meta.CommonPrefixes) > 0 {
 								gLog.Info.Println("Common Prefixes")
 								for _, c := range s3Meta.CommonPrefixes {
@@ -333,7 +338,11 @@ func listS3bPref(prefix string,marker string) (error,string) {
 	if len(cc) != 2 && len(delimiter)==0 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
-		buck = setBucketName(cc, bucket,index)
+		if len(cc) >0 {
+			buck = setBucketName(cc, bucket, index)
+		} else {
+			buck = bucket
+		}
 		/* build the request */
 		/* curl  -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR&maxKeys=2' */
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
@@ -348,9 +357,14 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		url := levelDBUrl+request+prefix+limit+keyMarker+delim
 		gLog.Info.Println("URL:",url)
 		if response,err := http.Get(url); err == nil {
-			defer response.Body.Close()
-			if contents, err = ioutil.ReadAll(response.Body); err == nil {
-				return err,contentToJson(contents)
+			if response.StatusCode == 200 {
+				defer response.Body.Close()
+				if contents, err = ioutil.ReadAll(response.Body); err == nil {
+					gLog.Trace.Println(contents)
+					return err, contentToJson(contents)
+				}
+			} else {
+				gLog.Warning.Println("Get url &s - Http status: %d",url, response.Status)
 			}
 		}
 	}
