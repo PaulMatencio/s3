@@ -38,7 +38,7 @@ var (
 	maxKey int
 
 	listPrefixCmd = &cobra.Command{
-		Use:   "listPrefix",
+		Use:   "lsi",
 		Short: "List Scality Sindexd entries with prefix",
 		Long: `List Scality Sindexd entries with prefix: 
             There are 5 set of tables: 

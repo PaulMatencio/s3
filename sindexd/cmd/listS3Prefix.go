@@ -23,9 +23,15 @@ import (
 
 var (
 	listS3Cmd = &cobra.Command{
-		Use:   "listS3",
+		Use:   "lsS3",
 		Short: "List S3 metadata with prefix using the AMAZON S3 SDK API ",
-		Long: ``,
+		Long: `List S3 metadata with prefix using the AMAZON S3 SDK API
+               Examples:
+               sindexd lsS3 -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
+               sindexd lsS3 -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
+               sindexd lsS3 -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
+               sindexd lsS3 -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
+               sindexd lsS3 -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes)`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index != "bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
@@ -42,7 +48,7 @@ var (
 		},
 	}
 	listS3Cmdb = &cobra.Command{
-		Use:   "listS3b",
+		Use:   "lsS3b",
 		Short: "List S3 metadata with prefix using the Scality levelDB API",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -56,7 +62,6 @@ var (
 					os.Exit(2)
 				}
 			}
-
 			listS3b(cmd,args)
 		},
 	}
@@ -186,7 +191,6 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 				break
 			}
 		}
-
 	}
 	return nextmarker,nil
 }
@@ -204,7 +208,6 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 	} else {
 		buck = bucket
 	}
-
 
 	gLog.Trace.Printf("bucket %s - Prefix %s - Delimiter %s - Maxkey %d ",buck,prefix,delimiter,maxS3Key)
 	req := datatype.ListObjRequest{
@@ -253,9 +256,6 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 	return nextmarker,nil
 }
 
-
-
-
 /* level DB API list function */
 func listS3b(cmd *cobra.Command, args []string) {
 	prefixa = strings.Split(prefixs,",")
@@ -286,6 +286,14 @@ func listS3b(cmd *cobra.Command, args []string) {
 								m := &c.Value.XAmzMetaUsermd
 								usermd, _ := base64.StdEncoding.DecodeString(*m)
 								gLog.Info.Printf("Key:%s - Metadata: %s" ,c.Key, string(usermd))
+							}
+							//* print  common prefix if any
+							
+							if len(s3Meta.CommonPrefixes) > 0 {
+								gLog.Info.Println("Common Prefixes")
+								for _, c := range s3Meta.CommonPrefixes {
+									gLog.Info.Printf("%s", c)
+								}
 							}
 							if l > 0 {
 								nextMarker = s3Meta.Contents[l-1].Key
@@ -319,9 +327,10 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		err error
 		result,buck string
 		contents []byte
+		delim string
 	)
 	cc := strings.Split(prefix, "/")[0]
-	if len(cc) != 2 {
+	if len(cc) != 2 && len(delimiter)==0 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
 		buck = setBucketName(cc, bucket,index)
@@ -330,12 +339,14 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
 		limit := "&maxKeys="+strconv.Itoa(int(maxS3Key))
 
+		if len(delimiter) >0 {
+			delim = "&delimiter="+ delimiter
+		}
+
 		keyMarker:= "&marker="+marker
-		// url := Host +":"+Port+request+prefix+limit+keyMarker
-		url := levelDBUrl+request+prefix+limit+keyMarker
-
+		// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
+		url := levelDBUrl+request+prefix+limit+keyMarker+delim
 		gLog.Info.Println("URL:",url)
-
 		if response,err := http.Get(url); err == nil {
 			defer response.Body.Close()
 			if contents, err = ioutil.ReadAll(response.Body); err == nil {
