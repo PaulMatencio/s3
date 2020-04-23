@@ -57,7 +57,7 @@ func initLpFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the key separted by a comma")
 	// cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>/<BN>/<NP>/<OM>/<OB>")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [pn|pd|bn|np]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().StringVarP(&delimiter, "delimiter", "d", "","Delimiter of the list for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"Limit number of keys to be processed concurrently")
@@ -78,6 +78,8 @@ func listPrefix(cmd *cobra.Command,args []string) {
 
 	if len(iIndex) == 0 {
 		iIndex = "PN"
+	} else {
+		iIndex= strings.ToUpper(iIndex)
 	}
 
 

@@ -360,7 +360,7 @@ func listS3bPref(prefix string,marker string) (error,string) {
 					return err, contentToJson(contents)
 				}
 			} else {
-				gLog.Warning.Println("Get url &s - Http status: %d",url, response.Status)
+				gLog.Warning.Printf("Get url %s - Http status: %d",url, response.Status)
 			}
 		}
 	}

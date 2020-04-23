@@ -5,8 +5,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/rs/dnscache"
 	"github.com/spf13/viper"
-
+	"net"
+	"net/http"
+	"context"
 )
 
 func CreateSession() *session.Session {
@@ -52,8 +55,9 @@ func CreateSession() *session.Session {
 		/*
 			Hard coded credential taken from application configuration file )
 		*/
-		/*
+		 /*
 		client := http.Client{}
+
 		Transport    := &http.Transport{
 			Dial: (&net.Dialer{
 				Timeout:   500 * time.Millisecond, // connection timeout
@@ -62,9 +66,33 @@ func CreateSession() *session.Session {
 			}).Dial,
 			TLSHandshakeTimeout: 10 * time.Second,
 		}
-
 		client.Transport = Transport
-		*/
+		 */
+		client := http.Client{}
+		r := &dnscache.Resolver{}
+		t := &http.Transport{
+			DialContext: func(ctx context.Context, network string, addr string) (conn net.Conn, err error) {
+				host, port, err := net.SplitHostPort(addr)
+				if err != nil {
+					return nil, err
+				}
+				ips, err := r.LookupHost(ctx, host)
+				if err != nil {
+					return nil, err
+				}
+				for _, ip := range ips {
+					var dialer net.Dialer
+					conn, err = dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
+					if err == nil {
+						break
+					}
+				}
+				return
+			},
+		}
+		client.Transport = t
+
+
 		sess, _ = session.NewSession(&aws.Config{
 
 			Region:           aws.String(viper.GetString("s3.region")),
@@ -72,7 +100,7 @@ func CreateSession() *session.Session {
 			Credentials:      credentials.NewStaticCredentials(viper.GetString("credential.access_key_id"), viper.GetString("credential.secret_access_key"), ""),
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
-			// HTTPClient:  &client,
+			HTTPClient:    &client,
 		})
 
 	}
