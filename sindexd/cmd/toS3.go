@@ -99,7 +99,7 @@ var (
 )
 
 func init() {
-	RootCmd.AddCommand(toS3Cmd)
+	rootCmd.AddCommand(toS3Cmd)
 	initToS3Flags(toS3Cmd)
 }
 

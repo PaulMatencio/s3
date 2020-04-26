@@ -5,11 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/rs/dnscache"
 	"github.com/spf13/viper"
-	"net"
-	"net/http"
-	"context"
 )
 
 func CreateSession() *session.Session {
@@ -68,6 +64,11 @@ func CreateSession() *session.Session {
 		}
 		client.Transport = Transport
 		 */
+
+		/*
+		cache DNS works fine  but not necessary for the moment
+		*/
+		/*
 		client := http.Client{}
 		r := &dnscache.Resolver{}
 		t := &http.Transport{
@@ -76,10 +77,12 @@ func CreateSession() *session.Session {
 				if err != nil {
 					return nil, err
 				}
+				gLog.Info.Printf("host:%v port:%v",host,port )
 				ips, err := r.LookupHost(ctx, host)
 				if err != nil {
 					return nil, err
 				}
+
 				for _, ip := range ips {
 					var dialer net.Dialer
 					conn, err = dialer.DialContext(ctx, network, net.JoinHostPort(ip, port))
@@ -91,7 +94,7 @@ func CreateSession() *session.Session {
 			},
 		}
 		client.Transport = t
-
+        */
 
 		sess, _ = session.NewSession(&aws.Config{
 
@@ -100,7 +103,7 @@ func CreateSession() *session.Session {
 			Credentials:      credentials.NewStaticCredentials(viper.GetString("credential.access_key_id"), viper.GetString("credential.secret_access_key"), ""),
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
-			HTTPClient:    &client,
+			// HTTPClient:    &client,
 		})
 
 	}

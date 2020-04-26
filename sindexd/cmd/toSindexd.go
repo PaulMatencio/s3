@@ -94,7 +94,7 @@ type Loaded struct {
 }
 
 func init() {
-	RootCmd.AddCommand(toSindexdCmd)
+	rootCmd.AddCommand(toSindexdCmd)
 	initCopyFlags(toSindexdCmd)
 }
 

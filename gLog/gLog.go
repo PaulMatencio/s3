@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 
@@ -33,7 +34,7 @@ func InitLog( cmd string, loglevel int, logOutput string) (*os.File,  *os.File, 
 
 	)
 
-	if logOutput == "terminal" {
+	if strings.ToLower(logOutput) == "terminal" {
 
 		switch loglevel {
 
@@ -112,7 +113,7 @@ func InitLog1( cmd string, loglevel int, logOutput string) (*os.File,  *os.File,
 
 	)
 
-	if logOutput == "terminal" {
+	if strings.ToLower(logOutput) == "terminal" {
 
 		switch loglevel {
 

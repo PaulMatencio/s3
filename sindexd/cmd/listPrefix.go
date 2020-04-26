@@ -65,7 +65,7 @@ func initLpFlags(cmd *cobra.Command) {
 }
 
 func init() {
-	RootCmd.AddCommand(listPrefixCmd)
+	rootCmd.AddCommand(listPrefixCmd)
 	initLpFlags(listPrefixCmd)
 }
 

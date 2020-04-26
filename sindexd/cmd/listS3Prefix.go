@@ -72,9 +72,9 @@ var (
 )
 
 func init() {
-	RootCmd.AddCommand(listS3Cmd)
+	rootCmd.AddCommand(listS3Cmd)
 	initListS3Flags(listS3Cmd)
-	RootCmd.AddCommand(listS3Cmdb)
+	rootCmd.AddCommand(listS3Cmdb)
 	initListS3Flags(listS3Cmdb)
 }
 

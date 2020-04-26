@@ -42,7 +42,7 @@ var (
 )
 
 // rootCmd represents the base command when called without any subcommands
-var RootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "sindexd",
 	Short: "Toolbox for sindexd to S3 migration and for sindexd to sindexd replication",
 	Long: ``,
@@ -52,7 +52,7 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -60,19 +60,19 @@ func Execute() {
 
 func init() {
 
-	RootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 0,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
-	RootCmd.PersistentFlags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.sindexd/config.yaml")
-	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
-	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
-	RootCmd.PersistentFlags().StringVarP(&cc,"cc", "a","", "string to be appended to the path directory of the log")
+	rootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 0,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
+	rootCmd.PersistentFlags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.sindexd/config.yaml")
+	rootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
+	rootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
+	rootCmd.PersistentFlags().StringVarP(&cc,"cc", "a","", "string to be appended to the path directory of the log")
 
 
 	// bind application flags to viper key for future viper.Get()
 	// viper also to set default value to any key
 
-	viper.BindPFlag("loglevel",RootCmd.PersistentFlags().Lookup("loglevel"))
-	viper.BindPFlag("autoCompletion",RootCmd.PersistentFlags().Lookup("autoCompletion"))
-	viper.BindPFlag("profiling",RootCmd.PersistentFlags().Lookup("profiling"))
+	viper.BindPFlag("loglevel",rootCmd.PersistentFlags().Lookup("loglevel"))
+	viper.BindPFlag("autoCompletion",rootCmd.PersistentFlags().Lookup("autoCompletion"))
+	viper.BindPFlag("profiling",rootCmd.PersistentFlags().Lookup("profiling"))
 
 	cobra.OnInitialize(initConfig)
 
@@ -124,11 +124,11 @@ func initConfig() {
 	waitTime = utils.GetWaitTime(*viper.GetViper())
 	retryNumber =utils.GetRetryNumber(*viper.GetViper())
 
-	gLog.InitLog(RootCmd.Name(),loglevel,logOutput)
+	gLog.InitLog(rootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
 
 	if  autoCompletion {
-		utils.GenAutoCompletionScript(RootCmd,configPath)
+		utils.GenAutoCompletionScript(rootCmd,configPath)
 	}
 
 }

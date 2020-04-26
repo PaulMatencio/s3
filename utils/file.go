@@ -8,6 +8,7 @@ import (
 	"github.com/s3/gLog"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -232,4 +233,19 @@ func AsyncWriteFiles(entries []string, buf [][]byte, mode os.FileMode) []*Rf {
 	return resp
 }
 
+func ListFile(root string) {
+	if err := filepath.Walk(root,visit); err != nil {
 
+	}
+}
+
+func visit(path string, fi os.FileInfo, err error) error {
+	var (
+		err1 error
+		matched bool
+	)
+	if matched,err1 = filepath.Match("*.conf",fi.Name()); err == nil {
+		gLog.Info.Println(path,matched)
+	}
+	return err1
+}
