@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,16 +31,44 @@ import (
 // leaveCmd represents the leave command
 var (
 	fromIP, toIP , fn, ft , root string
-	find bool
+	FT []string
+	Pattern []string
+	find , check bool
 	leaveCmd = &cobra.Command{
-	Use:   "leave",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "remove",
+	Short: "Remove a storage node from Scality Ring",
+	Long: ` 
+    Remove find -i <string> or find -i <string> and replace by -t <string> in
+    files from a given directory tree ( --root directory)
+    
+    Every file that matches the --fileName and --fileType arguments will be processed
+    Both generic (*) FileName and FileType are accepted  
+	
+            
+    Examples 
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+      (1) Find  IP addresses in every file of type conf,xml or yaml in the 
+      /etc directory tree
+      reloc remove -R /etc -F -t 10.12.202.10 -f 10.14.204.10 -N "*"  -T "conf|xml|yaml" 
+                                                                                         
+      (2) Find  and Replace IP addresses in every file of type conf,xml or yaml in the 
+      /etc directory tree
+      reloc remove -R /etc -t 10.12.202.10 -f 10.14.204.10 -N "*"  -T "conf|xml|yaml"
+
+      (3) Configuration file yaml(default location $HOME/.reloc.yaml )
+	  
+      The rguments in the configuration file are overridden by input arguments	
+      
+      $HOME/.reloc.yaml
+      move:
+        fromIP: 10.12.202.10
+        toIP: 10.15.203.10
+      files:
+        root: "/etc"
+        fn: "*"
+        ft: "conf|yaml|yml|xml|py"
+ 
+      `,
 	Run: func(cmd *cobra.Command, args []string) {
 		Reloc(cmd)
 	},
@@ -49,16 +78,6 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(leaveCmd)
 	initReloc(leaveCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// leaveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// leaveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func initReloc(cmd *cobra.Command){
@@ -66,8 +85,9 @@ func initReloc(cmd *cobra.Command){
 	cmd.Flags().StringVarP(&toIP, "toIP", "t", "","from ip address")
 	cmd.Flags().StringVarP(&root, "root", "R", "","root directory")
 	cmd.Flags().StringVarP(&fn, "fileName", "N", "","file name")
-	cmd.Flags().StringVarP(&ft, "fileType", "T", "","file type")
+	cmd.Flags().StringVarP(&ft, "fileType", "T", "","file types separed by | ")
 	cmd.Flags().BoolVarP(&find, "find", "F", false,"find string fromIP")
+	cmd.Flags().BoolVarP(&find, "check", "C", true,"check valid IP address")
 }
 
 func Reloc(cmd *cobra.Command) {
@@ -78,12 +98,18 @@ func Reloc(cmd *cobra.Command) {
 			os.Exit(100)
 		}
 	}
+	if net.ParseIP(fromIP).To4()== nil  {
+		gLog.Warning.Printf("%s is not a valid IPv4 address",fromIP)
+	}
 
 	if len(toIP) == 0 {
 		if toIP = viper.GetString("move.toIP");len(toIP) == 0 {
 			gLog.Info.Println("To IP address is missing")
 			os.Exit(100)
 		}
+	}
+	if net.ParseIP(toIP).To4()== nil  {
+		gLog.Warning.Printf("%s is not a valid IPv4 address",toIP)
 	}
 
 	if len(root) == 0 {
@@ -101,19 +127,20 @@ func Reloc(cmd *cobra.Command) {
 	}
 
 	if len(ft) == 0 {
-		if ft = viper.GetString("files.ft");len(fn) == 0 {
-			gLog.Info.Printf("File type is missing, %s  will be used as file type\n","conf")
+		if ft = viper.GetString("files.ft"); len(fn) == 0 {
+			gLog.Info.Printf("File type is missing, %s  will be used as file type\n", "conf")
 			ft = "conf"
 		}
 	}
-
-	if err := filepath.Walk(root, replace); err != nil {
+	FT = strings.Split(ft, "|")
+	if err := filepath.Walk(root, findReplace); err != nil {
 		gLog.Error.Printf("Replace file with error %v\n",err)
 	}
 
 }
 
-func replace(path string, fi os.FileInfo, err error) error {
+
+func findReplace(path string, fi os.FileInfo, err error) error {
 	var (
 		matched bool
 		re = regexp.MustCompile(fromIP)
@@ -124,28 +151,50 @@ func replace(path string, fi os.FileInfo, err error) error {
 	if !!fi.IsDir() {
 		return nil //
 	}
-	pattern:= fn + "." + ft
-	gLog.Trace.Println(pattern)
+	pattern:= fn
+	for _,t :=range FT {
+		if len(t) >0 {
+			pattern += "."+t
+			Pattern = append(Pattern,t)
+		}
+	}
+
+	//gLog.Trace.Println(pattern)
 	now := time.Now()
-    backup := fmt.Sprintf("%4d-%02d-%02d:%02d:%02d:%02d",now.Year(),now.Month(),now.Day(),now.Hour(),now.Minute(),now.Second())
-	if matched, err = filepath.Match(pattern, fi.Name()); err != nil {
-		return err
+
+    matched = false
+    Matched := make([]bool,len(Pattern))
+	for i,p:= range Pattern {
+		p = fn + "." + p
+		if Matched[i], err = filepath.Match(p, fi.Name()); err != nil {
+			return err
+		} else {
+			matched = Matched[i]
+			if matched {
+				break
+			}
+		}
 	}
 
 	if matched {
-		backup = path + "-" + backup
+		backup := path + "-" + fmt.Sprintf("%4d-%02d-%02d:%02d:%02d:%02d",now.Year(),now.Month(),now.Day(),now.Hour(),now.Minute(),now.Second())
 		if read, err := ioutil.ReadFile(path); err == nil {
-			if !find {
-				if err = ioutil.WriteFile(backup, []byte(read), 0644); err == nil {
-					gLog.Trace.Printf("Replacing string %s by string %s in file %s\n", fromIP, toIP, path)
-					newContents := strings.Replace(string(read), fromIP, toIP, -1)
-					return ioutil.WriteFile(path, []byte(newContents), 0)
-				} else {
-					return err
-				}
-			} else {
-				gLog.Trace.Printf("Searching string %s in file %s ", fromIP, path)
-				gLog.Info.Printf("Find %q in %s\n",re.Find([]byte(read)),path)
+			// Find string fromIP
+			if r:= re.Find([]byte(read));len(r) > 0 {
+			 	if !find {
+			 		// Replace string fromIP by string toIP
+			 		//  backup old file before replace
+					 if err = ioutil.WriteFile(backup, []byte(read), 0644); err == nil {
+						 gLog.Info.Printf("Replacing string %s by string %s in file %s\n", fromIP, toIP, path)
+						 newContents := strings.Replace(string(read), fromIP, toIP, -1)
+						 return ioutil.WriteFile(path, []byte(newContents), 0)
+					 } else {
+						 return err
+					 }
+				 } else {
+					 gLog.Trace.Printf("Searching string %s in file %s ", fromIP, path)
+					 gLog.Info.Printf("Find %q in %s\n", r, path)
+				 }
 			}
 		} else {
 			return err
