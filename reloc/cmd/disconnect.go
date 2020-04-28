@@ -211,7 +211,8 @@ func findReplace(path string, fi os.FileInfo, err error) error {
 				 }
 			}
 		} else {
-			return err
+			gLog.Error.Printf("Error %v while reading path %s", err,path)
+			return nil
 		}
 	}
 	return nil
