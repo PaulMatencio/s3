@@ -160,7 +160,8 @@ func findReplace(path string, fi os.FileInfo, err error) error {
 		Pattern []string
 	)
 	if err != nil {
-		return err
+		gLog.Error.Println(err)
+		return nil
 	}
 	if !!fi.IsDir() {
 		return nil //
