@@ -56,7 +56,7 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVarP(&config, "config", "c", "","config file (default is $HOME/.reloc.yaml)")
 	rootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 3,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
-	rootCmd.PersistentFlags().StringVarP(&logOutput, "logOutput", "", "terminal","Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
+	rootCmd.PersistentFlags().StringVarP(&logOutput, "logOutput", "", "terminal","output location log")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

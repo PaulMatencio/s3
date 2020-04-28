@@ -32,32 +32,29 @@ import (
 var (
 	fromIP, toIP , fn, ft , root string
 	FT []string
-	Pattern []string
-	find , check bool
-	leaveCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "Remove a storage node from Scality Ring",
-	Long: ` 
-    Remove find -i <string> or find -i <string> and replace by -t <string> in
-    files from a given directory tree ( --root directory)
-    
-    Every file that matches the --fileName and --fileType arguments will be processed
-    Both generic (*) FileName and FileType are accepted  
-	
+	Ulong =  ` 
+    find the string (ip addr)  --fromIP <ip addr> 
+    or find the string(ip addr) --fromIP <ip addr> and replace by the tring --toIP <ip addr> in
+    every file from a root directory tree ( --root directory) that matches the 
+    --fileName and --fileType argument
+
+    --fileName and --fileType can be generic
+    Default --fileName is "*""
+    Default --fileTxpe is "conf"
             
     Examples 
 
-      (1) Find  IP addresses in every file of type conf,xml or yaml in the 
+      (1) Find  IP addresses in every file of type conf,xml or yaml from the 
       /etc directory tree
-      reloc remove -R /etc -F -t 10.12.202.10 -f 10.14.204.10 -N "*"  -T "conf|xml|yaml" 
+      reloc disconnect -r /etc -t 10.12.202.10 -f 10.14.204.10  -T "conf|xml|yaml" 
                                                                                          
-      (2) Find  and Replace IP addresses in every file of type conf,xml or yaml in the 
-      /etc directory tree
-      reloc remove -R /etc -t 10.12.202.10 -f 10.14.204.10 -N "*"  -T "conf|xml|yaml"
+      (2) Find  and Replace IP addresses in every filename scality-* and file type equals 
+      to conf,xml or yaml from the /etc directory  tree
+      reloc disc -R -r /etc -t 10.12.202.10 -f 10.14.204.10 -N scality-* -T "conf|xml|yaml"
 
-      (3) Configuration file yaml(default location $HOME/.reloc.yaml )
+      (3) The default configuration file is $HOME/.reloc.yaml )
 	  
-      The rguments in the configuration file are overridden by input arguments	
+      Arguments in the configuration file are overridden by its corresponding input arguments	
       
       $HOME/.reloc.yaml
       move:
@@ -67,27 +64,39 @@ var (
         root: "/etc"
         fn: "*"
         ft: "conf|yaml|yml|xml|py"
- 
-      `,
-	Run: func(cmd *cobra.Command, args []string) {
-		Reloc(cmd)
-	},
-}
+      `
+	replace , check bool
+	discCmd = &cobra.Command {
+		Use:   "disc",
+		Short: "Disconnect a storage node from Scality Ring",
+		Long: Ulong,
+		Run: func(cmd *cobra.Command, args []string) {
+			Reloc(cmd)
+	},}
+	discCmd1 = &cobra.Command {
+		Use:   "disconnect",
+		Short: "Disconnect a storage node from Scality Ring",
+		Long:  Ulong,
+		Run: func(cmd *cobra.Command, args []string) {
+			Reloc(cmd)
+	},}
 )
 
 func init() {
-	rootCmd.AddCommand(leaveCmd)
-	initReloc(leaveCmd)
+	rootCmd.AddCommand(discCmd)
+	initReloc(discCmd)
+	rootCmd.AddCommand(discCmd1)
+	initReloc(discCmd1)
 }
 
 func initReloc(cmd *cobra.Command){
 	cmd.Flags().StringVarP(&fromIP, "fromIP", "f", "","from ip address")
 	cmd.Flags().StringVarP(&toIP, "toIP", "t", "","from ip address")
-	cmd.Flags().StringVarP(&root, "root", "R", "","root directory")
+	cmd.Flags().StringVarP(&root, "root", "r", "","root directory")
 	cmd.Flags().StringVarP(&fn, "fileName", "N", "","file name")
 	cmd.Flags().StringVarP(&ft, "fileType", "T", "","file types separed by | ")
-	cmd.Flags().BoolVarP(&find, "find", "F", false,"find string fromIP")
-	cmd.Flags().BoolVarP(&find, "check", "C", true,"check valid IP address")
+	cmd.Flags().BoolVarP(&replace, "replace", "R", false,"Replace strings( default Find)")
+	cmd.Flags().BoolVarP(&check, "check", "C", true,"check valid IP address")
 }
 
 func Reloc(cmd *cobra.Command) {
@@ -98,7 +107,7 @@ func Reloc(cmd *cobra.Command) {
 			os.Exit(100)
 		}
 	}
-	if net.ParseIP(fromIP).To4()== nil  {
+	if check && net.ParseIP(fromIP).To4() == nil  {
 		gLog.Warning.Printf("%s is not a valid IPv4 address",fromIP)
 	}
 
@@ -108,8 +117,9 @@ func Reloc(cmd *cobra.Command) {
 			os.Exit(100)
 		}
 	}
-	if net.ParseIP(toIP).To4()== nil  {
-		gLog.Warning.Printf("%s is not a valid IPv4 address",toIP)
+	if check && net.ParseIP(toIP).To4()== nil  {
+		gLog.Error.Printf("%s is not a valid IPv4 address",toIP)
+		os.Exit(100)
 	}
 
 	if len(root) == 0 {
@@ -134,16 +144,20 @@ func Reloc(cmd *cobra.Command) {
 	}
 	FT = strings.Split(ft, "|")
 	if err := filepath.Walk(root, findReplace); err != nil {
-		gLog.Error.Printf("Replace file with error %v\n",err)
+		gLog.Error.Printf("error %v replacing file\n",err)
+	} else {
+		gLog.Info.Println("End")
 	}
 
 }
 
 
 func findReplace(path string, fi os.FileInfo, err error) error {
+
 	var (
 		matched bool
 		re = regexp.MustCompile(fromIP)
+		Pattern []string
 	)
 	if err != nil {
 		return err
@@ -159,7 +173,7 @@ func findReplace(path string, fi os.FileInfo, err error) error {
 		}
 	}
 
-	//gLog.Trace.Println(pattern)
+	// gLog.Trace.Println(Pattern)
 	now := time.Now()
 
     matched = false
@@ -181,7 +195,7 @@ func findReplace(path string, fi os.FileInfo, err error) error {
 		if read, err := ioutil.ReadFile(path); err == nil {
 			// Find string fromIP
 			if r:= re.Find([]byte(read));len(r) > 0 {
-			 	if !find {
+			 	if replace {
 			 		// Replace string fromIP by string toIP
 			 		//  backup old file before replace
 					 if err = ioutil.WriteFile(backup, []byte(read), 0644); err == nil {
