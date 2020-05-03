@@ -838,7 +838,6 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 	)
 	gLog.Trace.Printf("current page: %d current step: %d",cp,step)
 	for p := cp; p < cp+step; p++ {
-
 		image, nrec, err, err1 := GetPage(r, v, p )// Get the next page
 		if err1 != nil {                            // Broken page, should exit
 			inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
