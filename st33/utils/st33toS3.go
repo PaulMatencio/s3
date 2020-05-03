@@ -418,6 +418,7 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 						}
 						cp = cp+ step
 					}
+
 					Req.CP = cp
 					Req.Step = Rest
 					numpages,numrecs,iError = GetPages(Req)
@@ -831,7 +832,7 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 		svc = Req.Svc
 		inputError []S3Error
 	)
-
+	gLog.Trace.Printf("cp %d step %d",cp,step)
 	for p := cp; p <= cp+step; p++ {
 
 		image, nrec, err, err1 := GetPage(r, v, p )// Get the next page
@@ -858,8 +859,8 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 							req.Usermd = utils.AddMoreUserMeta(usermd, infile)
 						}
 					}
-					if p+1 != pagenum {
-						error := errors.New(fmt.Sprintf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ", v.PxiId, pagenum, p+1))
+					if p != pagenum {
+						error := errors.New(fmt.Sprintf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ", v.PxiId, pagenum, p))
 						gLog.Warning.Printf("%v", error)
 					}
 					req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
