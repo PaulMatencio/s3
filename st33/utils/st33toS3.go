@@ -405,10 +405,12 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 				)
 
 				if KEY[lp-2:lp-1] == "P" {
+
 					P := int(v.Pages)
 					Quot := P / step
 					Rest := P % step
 					cp := 1	  /*current page */
+					gLog.Info.Printf("Uploading docment: %s - number of pages: %d - number of records : %d",KEY,P,v.Records)
 					for q:=1; q<= Quot; q++ {
 						Req.CP =cp
 						numpages,numrecs,iError = GetPages(Req)
