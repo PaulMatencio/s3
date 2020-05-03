@@ -424,7 +424,11 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					Req.CP = cp
 					Req.Step = Rest
 					numpages,numrecs,iError = GetPages(Req)
-
+					pages += numpages; recs  += numrecs
+					for _,e :=  range iError{
+						inputError = append(inputError, e)
+					}
+					
 					numdocs++ // increment the number of processed documents
 
 					if v.Records != recs {
