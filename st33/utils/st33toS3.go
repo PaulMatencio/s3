@@ -1,10 +1,12 @@
 package st33
 
 import (
+	//"github.com/aws/aws-sdk-go/aws/session"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"errors"
 	"fmt"
@@ -33,13 +35,17 @@ type PutS3Response struct {
 //
 //
 //
-//   St33 to S3    version 2
+//   St33 to S3    version 1
 //   Input : ToS3Request [ Infile, bucket, log bucket, .....]
 //   Action :  Load control file and  get data file record  sequentially ( st33Reader)
 //             For every entry of the control file, upload corresponding data to S3
 //   Result > Number of documents and pages  uploaded, number of errors and a list of errors
 //
 
+/*
+	Process 1 document at a time
+    every page of the document is upload serially
+ */
 func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 
 	var (
@@ -175,7 +181,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 								}
 							}
 
-							// complete the request to write to S3
+							// complete the request of writing to S3
 
 							// putReq.Key = putReq.Key + "." + strconv.Itoa(pagenum)
 							if p+1 != pagenum {
@@ -186,13 +192,6 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							putReq.Buffer = image.Img
 							gLog.Trace.Printf("Put Key:%s - Bucket: %s ",putReq.Key,putReq.Bucket)
 
-							/*
-								if _, err := writeToS3(putReq); err != nil {
-									error := errors.New(fmt.Sprintf("PutObject Key: %s  Error: %v", putReq.Key, err))
-									gLog.Error.Printf("%v", error)
-									ErrKey = append(ErrKey, S3Error{Key: v.PxiId, Err: error})
-								}
-							*/
 
 							err = nil
 							if !check {
@@ -286,7 +285,7 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 		}
 		duration := time.Since(start0)
 		status := PartiallyUploaded
-		numerrupl := len(ErrKey)    // number of upload with errors
+		numerrupl := len(ErrKey)      // number of upload with errors
 		numerrinp := len(inputError)  // input data error
 		if numerrupl == 0   {
 			if numerrinp == 0 {
@@ -295,7 +294,9 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 				status =  FullyUploaded2
 			}
 		}
+
 		//  For loging purpose
+
 		resp := ToS3Response {
 			Time: time.Now(),
 			Duration: fmt.Sprintf("%s",duration),
@@ -318,9 +319,136 @@ func ToS3V1(req *ToS3Request)  (int, int, int,int, []S3Error) {
 		gLog.Info.Printf("Infile:%s - Number of uploaded documents/objects: %d/%d - Uploaded size: %.2f GB- Uploading time: %s  - MB/sec: %.2f ",infile,numdocs,numpages,float64(S)/float64(1024*1024*1024),duration,1000*float64(S)/float64(duration))
 		return numpages,numrecs,numdocs,S,ErrKey
 	}
-
 	gLog.Info.Printf("Number of uploaded documents %d - Number of uploaded pages %d",numdocs,numpages)
 	return numpages,numrecs, numdocs,S,ErrKey
+}
+
+
+/*
+	Process one document at a time
+	N pages of the document  will be uploaded concurrently
+ */
+func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
+
+	var (
+		infile                               = req.File
+		bucket                               = req.Bucket
+		// bucketNumber                         = req.Number
+		sbucket                              = req.LogBucket
+		reload                               = req.Reload
+		check                                = req.Check
+		confile                              string
+		conval                               *[]Conval
+		err                                  error
+		ErrKey, inputError                   []S3Error
+		numdocs int = 0
+	)
+	svc := s3.New(api.CreateSession())
+	conval = &[]Conval{}
+	confile = strings.Replace(infile, req.DatafilePrefix, req.CrlfilePrefix, 1)
+	if !utils.Exist(confile) {
+		ErrKey = append(ErrKey, S3Error{
+			"",
+			errors.New(fmt.Sprintf("Corrresponding datval file %s does not exist for input file %s ", confile, infile)),
+		})
+		return 0, 0, 0, 0, ErrKey
+	} else {
+		if conval, err = BuildConvalArray(confile); err != nil {
+			ErrKey = append(ErrKey, S3Error{
+				"",
+				errors.New(fmt.Sprintf("Error %v  reading %s ", confile, infile)),
+			})
+			return 0, 0, 0, 0, ErrKey
+		}
+	}
+	conVal := *conval
+	// check the existence of the migration log  Bucket
+	// and if  data file was already uploaded
+	d, key := filepath.Split(infile)
+	p1 := strings.Split(d, "/")
+	p := p1[len(p1)-2]
+	key = p + "." + key
+	if sbucket != "" {
+		getReq := datatype.GetObjRequest{
+			Service: svc,
+			Bucket:  sbucket,
+			Key:     key,
+		}
+		if !check && !reload && !checkDoLoad(getReq, infile) {
+			return 0, 0, 0, 0, ErrKey
+		}
+	}
+
+	// read ST33  input file
+	gLog.Info.Printf("Reading file ... %s", infile)
+	r, err := NewSt33Reader(infile)
+
+	if err == nil {
+		var (
+			Numdocs = len(conVal)
+			step    = req.Async
+		)
+		gLog.Info.Printf("Uploading %d documents to bucket %s ...", Numdocs, bucket)
+		// loop until all the requests are completed
+		for {
+			for e, v := range conVal { // loop tru teh control file
+				var (
+					KEY = v.PxiId
+					lp = len(KEY)
+					recs = 0                  // init the number of records for the current document
+					pages = 0
+					Req  = ToS3GetPages{
+						KEY :KEY, Step: step,Req: req, R: r, V:v, Svc: svc,
+					}
+					numpages, numrecs int
+					iError  []S3Error
+				)
+
+				if KEY[lp-2:lp-1] == "P" {
+					P := int(v.Pages)
+					Quot := P / step
+					Rest := P % step
+					cp := 1	  /*current page */
+					for q:=1; q<= Quot; q++ {
+						Req.CP =cp
+						numpages,numrecs,iError = GetPages(Req)
+						pages += numpages; recs  += numrecs
+						for _,e :=  range iError{
+							inputError = append(inputError, e)
+						}
+						cp = cp+ step
+					}
+					Req.CP = cp
+					Req.Step = Rest
+					numpages,numrecs,iError = GetPages(Req)
+
+					numdocs++ // increment the number of processed documents
+
+					if v.Records != recs {
+						gLog.Warning.Printf("PXIID %s - Records number [%d] of the control file != Records number [%d] of the data file %s", v.PxiId, v.Records, recs, req.File)
+						diff := v.Records - recs
+						if diff < 0 {
+							RewindST33(v, r, diff)
+							recs -= diff
+
+						} else {
+							SkipST33(v, r, diff)
+							recs += diff
+
+						}
+					}
+				} else {
+					error := errors.New(fmt.Sprintf("Control file entry: %d contains invalid input key: %s", e, v.PxiId))
+					gLog.Error.Printf("%v", error)
+					ErrKey = append(ErrKey, S3Error{Key: v.PxiId, Err: error})
+				}
+			}
+
+			return 0, 0, 0, 0, ErrKey
+
+		}
+	}
+	return 0, 0, 0, 0, ErrKey
 }
 
 
@@ -444,15 +572,11 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 			// for all documents listed in the control file
 			for e, v := range conVal[p:q] {   // loop tru teh control file
 				KEY := v.PxiId;
-
 				//	if KEY != "E1_______0011444808P1" && KEY != "E1_______001156770LP1"  && v.PxiId != "E1_______0031079902P1" { // lot p00001.00155, p00001.00164 p00002.00171
-
 				lp := len(KEY);
 				recs := 0  // init the number of records for the current document
 				pages := 0 // init the number of pages for current document
-
 				if KEY[lp-2:lp-1] == "P" {  // Is -it a ST33 document ?
-
 					P := int(v.Pages)   // number of pages of the current  document
 					N += P              // total number of pages that are going to be processed
 					// Upload all the pages of the current document
@@ -469,8 +593,6 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 							//  increment the number of records for this lot
 
 							if image.Img != nil {
-
-
 								numpages++ //  increment the number of pages for this lot
 								numrecs += nrec
 								v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
@@ -692,3 +814,80 @@ func ToS3V1Async(req *ToS3Request)  (int, int, int,int, []S3Error)  {
 
 }
 
+
+func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
+	var (
+		wg sync.WaitGroup
+		recs,pages int
+		bucket = Req.Req.Bucket
+		bucketNumber = Req.Req.Number
+		infile = Req.Req.File
+		check = Req.Req.Check
+		KEY = Req.KEY
+		cp   = Req.CP
+		step = Req.Step
+		r = Req.R
+		v = Req.V
+		svc = Req.Svc
+		inputError []S3Error
+	)
+
+	for p := cp; p <= cp+step; p++ {
+
+		image, nrec, err, err1 := GetPage(r, v, p )// Get the next page
+		if err1 != nil {                            // Broken page, should exit
+			inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
+		}
+		if err == nil && err1 == nil {
+			recs += nrec // increment the number of records for this page
+			pages++      //  increment the number of pages without error.
+			if image.Img != nil {
+				wg.Add(1)
+				pages++ //  increment the number of pages for this lot
+				recs += nrec
+				v.DocSize = uint32(image.Img.Len()) // update the document size (replace the oroginal value)
+				go func(key string, p int, image *PxiImg, v Conval) {
+					defer wg.Done()
+					req := datatype.PutObjRequest{ // build a PUT OBject request
+						Service: svc,
+						Bucket:  bucket + "-" + fmt.Sprintf("%02d", utils.HashKey(v.PxiId, bucketNumber)),
+					}
+					pagenum, _ := strconv.Atoi(string(image.PageNum)) // Build user metadata for page 1
+					if pagenum == 1 {
+						if usermd, err := BuildUsermd(v); err == nil {
+							req.Usermd = utils.AddMoreUserMeta(usermd, infile)
+						}
+					}
+					if p+1 != pagenum {
+						error := errors.New(fmt.Sprintf("PxiId:%s - Inconsistent page number in st33 header: %d/%d ", v.PxiId, pagenum, p+1))
+						gLog.Warning.Printf("%v", error)
+					}
+					req.Key = utils.Reverse(key) + "." + strconv.Itoa(pagenum) // add key to request
+					req.Buffer = image.Img //   add the image
+					err = nil
+					if !check {
+						/*
+						if _, err = writeToS3(req); err != nil {
+							gLog.Error.Printf("Error %v - Writing req.Key  %s to bucket %s",err,req.Key,req.Bucket)
+						}
+						 */
+					}
+					image.Img.Reset() // reset the image buffer
+				}(KEY, p, image, v)
+			} else {
+				err:= errors.New(fmt.Sprintf("No image of PxiId: %s",v.PxiId))
+				inputError = append(inputError, S3Error{Key: v.PxiId, Err: err})
+			}
+		} else {
+			// critical error => just exit
+			if err != io.EOF || err1 != nil {
+				gLog.Error.Printf("Err: %v Err1: %v  building image for Key:%s - Prev/Curr buffer address: X'%x'/ X'%x' ", err, err1, v.PxiId, r.Previous, r.Current)
+				gLog.Error.Printf("Exit while processing key: %s - input file: %s", v.PxiId,  infile)
+				os.Exit(100)
+			}
+		}
+	}
+	//  Wait for all go routine to be completed
+	wg.Wait()
+	return pages,recs,inputError
+}

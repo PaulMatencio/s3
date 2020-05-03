@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"time"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 type Tiff struct {
@@ -71,4 +72,14 @@ type ToS3Response struct {
 	Erroru int		  `json:"number-of-uploaded-errors"` // number of uploaded errors
 	Errori int        `json:"number-of-other-errors"` // number of uploaded errors
 	// Error  []S3Error  `json:"array-of-errors,omitempty"` // key value
+}
+
+type ToS3GetPages struct {
+	KEY string
+	Req *ToS3Request
+	CP int
+	Step int
+	R *St33Reader
+	V Conval
+	Svc *s3.S3
 }

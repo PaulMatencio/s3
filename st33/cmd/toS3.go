@@ -30,7 +30,7 @@ import (
 // st33ToS3Cmd represents the st33ToS3 command
 
 var (
-	async int
+	async, parallel int
 	file,sBucket,partition  string
 	files,ranges []string
 	reload  bool   // force reload when true
@@ -51,7 +51,6 @@ func initT3Flags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&idir,"idir","d","","input directory containing  st33  files to be uploaded")
 	cmd.Flags().StringVarP(&ifile,"ifile","i","","input fullname data file, list of fullname data files separated by a commma or a range of data file suffix ex: 020...025")
-
 	cmd.Flags().StringVarP(&datval,"data-prefix", "","", "data file prefix  ex: datval.lot")
 	cmd.Flags().StringVarP(&conval,"ctrl-prefix", "","", "control file prefix ex: conval.lot")
 	cmd.Flags().StringVarP(&partition,"partition", "p","", "subdirectory of data/control file prefix ex: p00001")
@@ -59,7 +58,8 @@ func initT3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sBucket,"state-bucket","s","","name of the migration state bucket")
 	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")
 	cmd.Flags().BoolVarP(&check,"test-mode","t",false,"test mode")
-	cmd.Flags().IntVarP(&async,"async","a",0,"concurrency level (recommended 40)")
+	cmd.Flags().IntVarP(&async,"async","a",0,"number of document to be uploaded concurrently")
+	cmd.Flags().IntVarP(&parallel,"parallel","P",0,"number of pages of a document to be uploaded  concurrently")
 }
 
 func init() {
@@ -178,7 +178,15 @@ func toS3Func(cmd *cobra.Command, args []string) {
 
 
 		if async <= 1  {
-			numpages, numrecs,numdocs, size, Err = st33.ToS3V1(&toS3)
+			// async 0 or 1
+			// upload 1 document at a time
+			// however parallel number of pages  are uploaded concurrently
+			if parallel == 0 {
+				numpages, numrecs,numdocs, size, Err = st33.ToS3V1(&toS3)
+			} else {
+				toS3.Async = parallel
+				numpages, numrecs, numdocs, size, Err = st33.ToS3V1Parallel(&toS3)
+			}
 			// gLog.Info.Printf("%d documents/ %d pages were processed - error ", numdocs, numpages, err)
 		} else {
 			numpages, numrecs,numdocs, size, Err = st33.ToS3V1Async(&toS3)

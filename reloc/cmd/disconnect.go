@@ -111,35 +111,39 @@ func Reloc(cmd *cobra.Command) {
 		gLog.Warning.Printf("%s is not a valid IPv4 address",fromIP)
 	}
 
-	if len(toIP) == 0 {
-		if toIP = viper.GetString("move.toIP");len(toIP) == 0 {
-			gLog.Info.Println("To IP address is missing")
+    if replace {
+		if len(toIP) == 0 {
+			if toIP = viper.GetString("move.toIP"); len(toIP) == 0 {
+				gLog.Info.Println("To IP address is missing for a replacement")
+				os.Exit(100)
+			}
+		}
+		if check && net.ParseIP(toIP).To4() == nil {
+			gLog.Error.Printf("%q is not a valid IPv4 address", toIP)
 			os.Exit(100)
 		}
-	}
-	if check && net.ParseIP(toIP).To4()== nil  {
-		gLog.Error.Printf("%s is not a valid IPv4 address",toIP)
-		os.Exit(100)
 	}
 
 	if len(root) == 0 {
 		if root = viper.GetString("files.root");len(root) == 0 {
-			gLog.Info.Printf("Current directory, %s will be used as root\n",".")
 			root= "."
+			gLog.Warning.Printf("Current directory, %q will be used as root\n",root)
+
 		}
 	}
 
 	if len(fn) == 0 {
 		if fn = viper.GetString("files.fn");len(fn) == 0 {
-			gLog.Info.Printf("File name is missing, %s  will be used as file name\n","*")
 			fn="*"
+			gLog.Warning.Printf("File name is missing, %q  will be used as file name\n",fn)
 		}
 	}
 
 	if len(ft) == 0 {
-		if ft = viper.GetString("files.ft"); len(fn) == 0 {
-			gLog.Info.Printf("File type is missing, %s  will be used as file type\n", "conf")
-			ft = "conf"
+		if ft = viper.GetString("files.ft"); len(ft) == 0 {
+			ft = "conf|yaml|xml"
+			gLog.Warning.Printf("File types are missing, %q  will be used as file types\n", ft)
+
 		}
 	}
 	FT = strings.Split(ft, "|")
