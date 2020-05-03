@@ -59,7 +59,7 @@ func initT3Flags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&reload,"reload","r",false,"reload the bucket")
 	cmd.Flags().BoolVarP(&check,"test-mode","t",false,"test mode")
 	cmd.Flags().IntVarP(&async,"async","a",0,"number of document to be uploaded concurrently")
-	cmd.Flags().IntVarP(&parallel,"parallel","P",0,"number of pages of a document to be uploaded  concurrently")
+	cmd.Flags().IntVarP(&parallel,"parallel","",0,"number of pages of a document to be concurrently uploaded")
 }
 
 func init() {
