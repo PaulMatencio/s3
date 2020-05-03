@@ -409,7 +409,6 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					Quot := P / step
 					Rest := P % step
 					cp := 1	  /*current page */
-					gLog.Info.Printf("Step %d - cp %d",step,cp)
 					for q:=1; q<= Quot; q++ {
 						Req.CP =cp
 						numpages,numrecs,iError = GetPages(Req)
@@ -418,7 +417,6 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 							inputError = append(inputError, e)
 						}
 						cp += step
-						gLog.Info.Printf("Step %d - cp %d",step,cp)
 					}
 
 					Req.CP = cp
@@ -838,7 +836,7 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 		svc = Req.Svc
 		inputError []S3Error
 	)
-	gLog.Info.Printf("cp %d --  step %d",cp,step)
+	gLog.Trace.Printf("current page: %d current step: %d",cp,step)
 	for p := cp; p < cp+step; p++ {
 
 		image, nrec, err, err1 := GetPage(r, v, p )// Get the next page
