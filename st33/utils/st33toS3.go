@@ -428,7 +428,7 @@ func ToS3V1Parallel(req *ToS3Request)  (int, int, int,int, []S3Error) {
 					for _,e :=  range iError{
 						inputError = append(inputError, e)
 					}
-					
+
 					numdocs++ // increment the number of processed documents
 
 					if v.Records != recs {
@@ -846,8 +846,6 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 			inputError = append(inputError, S3Error{Key: v.PxiId, Err: err1})
 		}
 		if err == nil && err1 == nil {
-			recs += nrec // increment the number of records for this page
-			pages++      //  increment the number of pages without error.
 			if image.Img != nil {
 				wg.Add(1)
 				pages++ //  increment the number of pages for this lot
