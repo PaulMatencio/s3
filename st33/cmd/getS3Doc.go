@@ -56,7 +56,7 @@ var (
 
 	)
 
-func init() {
+func initS3Flags(cmd *cobra.Command) {
 
 	RootCmd.AddCommand(getS3DocCmd)
 	RootCmd.AddCommand(statS3DocCmd)
@@ -66,7 +66,22 @@ func init() {
 	getS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input  file containing a list of pix ids to be downloaded")
 	getS3DocCmd.Flags().BoolVarP(&reverse,"reverse","r",false,"reverse the input key - Default false ")
 	getS3DocCmd.Flags().BoolVarP(&con,"async","a",false,"concurrent read")
+
+
+
 }
+
+func init() {
+	RootCmd.AddCommand(getS3DocCmd)
+	RootCmd.AddCommand(statS3DocCmd)
+	initS3Flags(getS3DocCmd)
+	initS3Flags(statS3DocCmd)
+
+}
+
+
+
+
 
 
 func getS3Doc(cmd *cobra.Command,args []string)  {
