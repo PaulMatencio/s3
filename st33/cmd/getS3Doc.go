@@ -293,14 +293,13 @@ func getDocP(key string ) (int) {
 func statDocP(key string ) (int) {
 	var (
 		n = 0
+		key = strings.Replace(key," ","_",-1)
 		buck = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
 	)
 	if reverse {
 		key= utils.Reverse(key)
 	}
-    key = strings.Replace(key," ","_",-1)
 	KEYx := key+".1"
-	gLog.Trace.Println(KEYx)
 	svc := s3.New(api.CreateSession())
 	req := datatype.StatObjRequest{
 		Service : svc,
