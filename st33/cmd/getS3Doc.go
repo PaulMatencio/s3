@@ -310,7 +310,7 @@ func statDocP(key string ) (int) {
 	if resp,err  := api.StatObject(req); err == nil {
 		gLog.Trace.Println(resp.ETag)
 	} else {
-		gLog.Error.Printf("Key: %s  %v",KEYx,err)
+		gLog.Error.Printf("Key: %s - %v",key, err)
 	}
 	return n
 }
