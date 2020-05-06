@@ -311,7 +311,7 @@ func statDocP(key string ) (int) {
 	}
 
 	if resp,err  := api.StatObject(req); err == nil {
-		gLog.Info.Println(resp.ETag)
+		gLog.Trace.Println(resp.ETag)
 	} else {
 		gLog.Error.Printf("%v",err)
 	}
