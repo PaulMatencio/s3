@@ -302,6 +302,8 @@ func statDocP(key string ) (int) {
 	if reverse {
 		key= utils.Reverse(key)
 	}
+    key = utils.Reverse(key)
+    key = strings.Replace(key," ","_",-1)
 	KEYx := key+".1"
 	svc := s3.New(api.CreateSession())
 	req := datatype.StatObjRequest{
