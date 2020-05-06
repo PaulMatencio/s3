@@ -300,6 +300,7 @@ func statDocP(key string ) (int) {
 	}
     key = strings.Replace(key," ","_",-1)
 	KEYx := key+".1"
+	gLog.Trace.Println(KEYx)
 	svc := s3.New(api.CreateSession())
 	req := datatype.StatObjRequest{
 		Service : svc,
