@@ -43,11 +43,23 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			getS3Doc(cmd,args)
 		},
-	})
+	}
+	statS3DocCmd = &cobra.Command{
+		Use:   "statS3Doc",
+		Short: "Command to check PXI S3 document(s)",
+		Long: ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			statS3Doc(cmd,args)
+		},
+	}
+
+
+	)
 
 func init() {
 
 	RootCmd.AddCommand(getS3DocCmd)
+	RootCmd.AddCommand(statS3DocCmd)
 	getS3DocCmd.Flags().StringVarP(&key,"key","k","","the PXI ID of the document you would like to retrieve")
 	getS3DocCmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the  bucket")
 	getS3DocCmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory (relative to the home directory)")
@@ -130,6 +142,80 @@ func getS3Doc(cmd *cobra.Command,args []string)  {
 	utils.Return(start)
 }
 
+
+func statS3Doc(cmd *cobra.Command,args []string)  {
+
+	var (
+		start = utils.LumberPrefix(cmd)
+		Keys   []string
+		p  = 0
+		b = 0
+	)
+
+	if len(bucket) == 0 {
+		gLog.Warning.Printf("%s",missingBucket)
+		utils.Return(start)
+		return
+	}
+
+	if len(key) == 0  && len(ifile)== 0 {
+		gLog.Warning.Printf("%s","missing PXI id and input file containing list of pxi ids")
+		utils.Return(start)
+		return
+	}
+
+	if len(key) > 0 {
+		Keys=append(Keys, key)
+	}
+
+	if len(ifile) >  0 {
+		/*
+			if b,err := ioutil.ReadFile(ifile); err == nil  {
+				Keys = strings.Split(string(b)," ")
+			} else {
+				gLog.Error.Printf("%v",err)
+				utils.Return(start)
+				return
+			}
+
+		*/
+		if sc,err := utils.Scanner(ifile); err == nil {
+			if Keys,err = utils.ScanAllLines(sc); err == nil {
+				gLog.Error.Printf("Error %v reading file %s",err,ifile)
+			}
+		}
+	}
+	gLog.Info.Printf("Nunber of documents to retieve: %d ",len(Keys))
+
+	if len(odir) > 0 {
+		pdir = filepath.Join(utils.GetHomeDir(),odir)
+		if _,err:=os.Stat(pdir); os.IsNotExist(err) {
+			utils.MakeDir(pdir)
+		}
+		for  _,key := range Keys {
+			//key = strings.TrimSpace(key)
+			if checkDoc(key) == "P" {
+				p += saveDocP(key,pdir)
+			} else  if checkDoc(key) == "B"  {
+				getDocB(key, pdir)
+				b++
+			}
+		}
+	} else {
+		for  _,key := range Keys {
+			key = strings.TrimSpace(key)
+			if checkDoc(key) == "P" {
+				p += statDocP(key)
+			} else  if checkDoc(key) == "B"  {
+				statDocP(key)
+				b++
+			}
+		}
+	}
+	gLog.Info.Printf("Total number of pages retrieved: %d - Total number of blob retrieved: %d",p,b)
+	utils.Return(start)
+}
+
 func checkDoc(key string) (string) {
 	typex := "P"
 	if !reverse {
@@ -197,6 +283,30 @@ func getDocP(key string ) (int) {
 	return n
 }
 
+
+func statDocP(key string ) (int) {
+	var (
+		n = 0
+		buck = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(key,bucketNumber))
+	)
+	if reverse {
+		key= utils.Reverse(key)
+	}
+	KEYx := key+".1"
+	svc := s3.New(api.CreateSession())
+	req := datatype.StatObjRequest{
+		Service : svc,
+		Bucket: buck,
+		Key : KEYx,  // Get the first Object
+	}
+
+	if resp,err  := api.StatObject(req); err == nil {
+		gLog.Info.Println(resp.ETag)
+	} else {
+		gLog.Error.Printf("%v",err)
+	}
+	return n
+}
 //
 //  Save  S3 ST33 Object into
 //
@@ -313,6 +423,7 @@ func getDocB(key string,pdir string) {
 		gLog.Error.Printf("%v",err)
 	}
 }
+
 
 
 //  save S3 object in streaming mode
