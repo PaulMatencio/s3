@@ -56,26 +56,21 @@ var (
 
 	)
 
-func initS3Flags(cmd *cobra.Command) {
-
-	RootCmd.AddCommand(getS3DocCmd)
-	RootCmd.AddCommand(statS3DocCmd)
-	getS3DocCmd.Flags().StringVarP(&key,"key","k","","the PXI ID of the document you would like to retrieve")
-	getS3DocCmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the  bucket")
-	getS3DocCmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory (relative to the home directory)")
-	getS3DocCmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input  file containing a list of pix ids to be downloaded")
-	getS3DocCmd.Flags().BoolVarP(&reverse,"reverse","r",false,"reverse the input key - Default false ")
-	getS3DocCmd.Flags().BoolVarP(&con,"async","a",false,"concurrent read")
-
-
+func initS3DFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&key,"key","k","","the PXI ID of the document you would like to retrieve")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the  bucket")
+	cmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory (relative to the home directory)")
+	cmd.Flags().StringVarP(&ifile,"ifile","i","","full pathname of an input  file containing a list of pix ids to be downloaded")
+	cmd.Flags().BoolVarP(&reverse,"reverse","r",false,"reverse the input key - Default false ")
+	cmd.Flags().BoolVarP(&con,"async","a",false,"concurrent read")
 
 }
 
 func init() {
 	RootCmd.AddCommand(getS3DocCmd)
 	RootCmd.AddCommand(statS3DocCmd)
-	initS3Flags(getS3DocCmd)
-	initS3Flags(statS3DocCmd)
+	initS3DFlags(getS3DocCmd)
+	initS3DFlags(statS3DocCmd)
 
 }
 
