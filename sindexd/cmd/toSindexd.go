@@ -427,11 +427,11 @@ func incSindexd(index string ,index1 string, check bool) {
 					pn := strings.Split(v, "/")
 					switch (index1) {
 					case "PD":
-						if pn[4] >= "55000000"  && pn[4] < "60000000"{
+						if pn[4] >= "55000000"  && pn[4] < "56000000"{
 							index = "NP"
 						}
 					case "PN","BN":
-						if pn[1] >= "55000000"  && pn[1] < "60000000" {
+						if pn[1] >= "55000000"  && pn[1] < "56000000" {
 							index = "NP"
 						}
 
@@ -460,12 +460,12 @@ func incSindexd(index string ,index1 string, check bool) {
 				}
 				/*  delete All Key not found from the target URL, one key at a time */
 				for _, v := range r.Response.Not_found {
-					gLog.Warning.Printf("Key %s is not found",v)
+					gLog.Warning.Printf("Key %s is not found in indSpect %v in Host %v",v,*indSpec,sindexd.HP.Hosts())
 					indSpec = r.Index_Spec
 					// there is no legacy BNS XP  tables
 					if v[0:2] != "XP" ||  index1 != "BN" {
 						if !check {
-							gLog.Warning.Printf("Deleting key %s from indSpec %v on Host %v",v,*indSpec,sindexd.TargetHP.Hosts())
+							gLog.Warning.Printf("Deleting key %s from indSpec %v in Host %v",v,*indSpec,sindexd.TargetHP.Hosts())
 							directory.DeleteSerialKey1(sindexd.TargetHP, indSpec, v)
 						} else {
 							gLog.Info.Printf("Deleting key %s from indSpec %v on Host %v ", v, *indSpec, sindexd.TargetHP.Hosts())

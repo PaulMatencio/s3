@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	utils.SetCPU("50%")
+	utils.SetCPU("100%")
 	cmd.Execute()
 }
 
