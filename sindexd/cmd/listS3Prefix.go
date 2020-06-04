@@ -23,15 +23,15 @@ import (
 
 var (
 	listS3Cmd = &cobra.Command{
-		Use:   "lsS3",
+		Use:   "ls3",
 		Short: "List S3 metadata with prefix using the AMAZON S3 SDK API ",
 		Long: `List S3 metadata with prefix using the AMAZON S3 SDK API
                Examples:
-               sindexd lsS3 -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
-               sindexd lsS3 -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
-               sindexd lsS3 -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
-               sindexd lsS3 -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
-               sindexd lsS3 -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes)`,
+               sindexd ls3 -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
+               sindexd ls3 -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
+               sindexd ls3 -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
+               sindexd ls3 -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
+               sindexd ls3 -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes)`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index != "bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
@@ -48,9 +48,15 @@ var (
 		},
 	}
 	listS3Cmdb = &cobra.Command{
-		Use:   "lsS3b",
+		Use:   "ls3l",
 		Short: "List S3 metadata with prefix using the Scality levelDB API",
-		Long: ``,
+		Long: `List S3 metadata with prefix using the Scality levelDB API
+               Examples:
+               sindexd ls3 -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
+               sindexd ls3 -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
+               sindexd ls3 -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
+               sindexd ls3 -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
+               sindexd ls3 -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index !="bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
@@ -229,6 +235,7 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 			if l := len(result.Contents); l > 0 {
 				total += int64(l)
 				for _, v := range result.Contents {
+
 					gLog.Trace.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size, v.LastModified)
 				}
 				if *result.IsTruncated {
