@@ -16,3 +16,4 @@ func KeyToAscii(key string) (int) {
 	return v
 
 }
+
