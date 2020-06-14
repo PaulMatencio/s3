@@ -48,15 +48,15 @@ var (
 		},
 	}
 	listS3Cmdb = &cobra.Command{
-		Use:   "ls3l",
+		Use:   "ls3b",
 		Short: "List S3 metadata with prefix using the Scality levelDB API",
 		Long: `List S3 metadata with prefix using the Scality levelDB API
                Examples:
-               sindexd ls3 -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
-               sindexd ls3 -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
-               sindexd ls3 -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
-               sindexd ls3 -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
-               sindexd ls3 -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes`,
+               sindexd ls3b -i pd -p US/2020/ -m 50  (List the first 50 objects in the S3 virtual folder US/2020/) 
+               sindexd ls3b -i pd -p US/2020/ -d /  -m 20 (List the first 20  S3 virtual folders below US/2020)
+               sindexd ls3b -i pd -p US -k US/2020/01 -m 20 (List the US virtual folder starting at virtual folder US/2020/01)
+               sindexd ls3b -i pd -p US/2020/,CN/2019/01/,JP/2019/12/ -d / ( list virtual folders of the given virtual folders
+               sindexd ls3b -i pn -p US/63,FR/5000,GB/725 -m 50  ( list all objects with the given prefixes`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index !="bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
