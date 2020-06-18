@@ -16,6 +16,11 @@ import (
 	"sync"
 	"time"
 )
+type Response struct {
+	Content []byte
+	Status int
+	Err  error
+}
 
 var (
 	statObjCmdb = &cobra.Command{
@@ -57,6 +62,7 @@ var (
 	}
 	keys string
 	keya []string
+	resp Response
 
 )
 
@@ -87,7 +93,11 @@ func statObjs(cmd *cobra.Command, b string) {
 			go func(key string, bucket string) {
 				defer wg.Done()
 				gLog.Info.Println(key, bucket)
-			 	err,result = statObjb(key,true)
+			 	if err,result = statObjb(key,true); err == nil {
+			 		gLog.Info.Println(result)
+				} else {
+					gLog.Error.Println(err)
+				}
 			}(key, bucket)
 		}
 		wg.Wait()
@@ -98,8 +108,10 @@ func statObjs(cmd *cobra.Command, b string) {
 func statObjb (key string, b bool) (error,string) {
 	var (
 		err error
-		result,buck string
+		buck string
+		result =""
 		lvDBMeta = datatype.LevelDBMetadata{}
+		resp Response
 	)
 	cc := strings.Split(key, "/")[0]
 	if len(cc) != 2  {
@@ -111,31 +123,39 @@ func statObjb (key string, b bool) (error,string) {
 			buck = bucket
 		}
 		if b {
-			err,result =statb(buck,key)
+			resp = statb(buck,key)
+			err = resp.Err
 		} else {
-			err,result = statb(buck,key)
+			resp = statb(buck, key)
+			err = resp.Err
 		}
 
 		if err == nil  {
-			gLog.Info.Println(result)
-			if err = json.Unmarshal([]byte(result), &lvDBMeta); err == nil {
-				m := &lvDBMeta.Object.XAmzMetaUsermd
-				usermd, _ := base64.StdEncoding.DecodeString(*m)
-				gLog.Info.Printf("Key: %s - Usermd: %s", key, string(usermd))
-
+			if resp.Status == 200 {
+				gLog.Trace.Println(resp.Content)
+				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
+					m := &lvDBMeta.Object.XAmzMetaUsermd
+					usermd, _ := base64.StdEncoding.DecodeString(*m)
+					result = string(usermd)
+					// gLog.Info.Printf("Key: %s - Usermd: %s", key, result)
+				}
 			} else {
-				gLog.Info.Println(err)
+				result = fmt.Sprintf("Key: %s - status code\n",key,resp.Status)
+				// gLog.Warning.Printf(result)
 			}
 		}
 	}
 	return err,result
 }
 
-func statb( buck string,key string) (error,string){
+func statb( buck string,key string) (Response){
 
     var (
     	request = "/default/parallel/"+buck+"/"+key+"?versionId="
-    	err error
+    	resp = Response  {
+    		Err : nil,
+    		Content: nil,
+		}
     )
 	/*
 			build the request
@@ -147,11 +167,15 @@ func statb( buck string,key string) (error,string){
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
-				return err, string(contents)
+				resp.Content = contents
+				resp.Status = response.StatusCode
 			}
 		} else {
-			return err,fmt.Sprintf("Get url %s - Http status: %d",url, response.Status)
+			resp.Status = response.StatusCode
 		}
+	}  else {
+		resp.Err= err
 	}
-	return err,""
+	return resp
+
 }
