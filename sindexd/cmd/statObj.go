@@ -117,6 +117,7 @@ func statObjb (key string, b bool) (error,string) {
 		}
 
 		if err == nil  {
+			gLog.Info.Println(result)
 			if err = json.Unmarshal([]byte(result), &lvDBMeta); err == nil {
 				m := &lvDBMeta.Object.XAmzMetaUsermd
 				usermd, _ := base64.StdEncoding.DecodeString(*m)
