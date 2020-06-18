@@ -12,12 +12,15 @@ import (
 )
 
 func procStatResult(rd *datatype.Rh) {
-
+    var versionId string
 	if rd.Err != nil {
 		procS3Error(rd.Err)
 	} else {
 		if len(odir) == 0 {
-			gLog.Trace.Printf("Key: %s - ContentLength: %v - LastModified: %v - Version Id: %v" ,rd.Key ,*rd.Result.ContentLength,*rd.Result.LastModified,*rd.Result.VersionId)
+			if rd.Result.VersionId != nil {
+				versionId = *rd.Result.VersionId
+			}
+			gLog.Trace.Printf("Key: %s - ContentLength: %v - LastModified: %v - Version Id: %v" ,rd.Key ,*rd.Result.ContentLength,*rd.Result.LastModified,versionId)
 		}
 		procS3Meta(rd.Key,rd.Result.Metadata)
 	}
