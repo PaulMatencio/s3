@@ -375,37 +375,6 @@ func listS3bPref(prefix string,marker string) (error,string) {
 }
 
 
-func getUsermd(req datatype.ListObjRequest , result *s3.ListObjectsOutput, wg sync.WaitGroup){
-
-	for _, v := range result.Contents {
-		gLog.Info.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size,v.LastModified)
-		svc := req.Service
-		head := datatype.StatObjRequest{
-			Service: svc,
-			Bucket:  req.Bucket,
-			Key:     *v.Key,
-		}
-		go func(request datatype.StatObjRequest) {
-			rh := datatype.Rh{
-				Key : head.Key,
-			}
-			defer wg.Done()
-			rh.Result, rh.Err = api.StatObject(head)
-			//procStatResult(&rh)
-			utils.PrintUsermd(rh.Key, rh.Result.Metadata)
-		}(head)
-	}
-}
-
-// transform content returned by the bucketd API into JSON string
-func ContentToJson(contents []byte ) string {
-	result:= strings.Replace(string(contents),"\\","",-1)
-	result = strings.Replace(result,"\"{","{",-1)
-	// result = strings.Replace(result,"\"}]","}]",-1)
-	result = strings.Replace(result,"\"}\"}","\"}}",-1)
-	gLog.Trace.Println(result)
-	return result
-}
 
 func ListCommonPrefix( cp []interface{}) {
 	gLog.Info.Println("List Common prefix:")

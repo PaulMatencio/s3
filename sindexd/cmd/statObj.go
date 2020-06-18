@@ -17,7 +17,7 @@ import (
 	"time"
 )
 type Response struct {
-	Content []byte
+	Content string
 	Status int
 	Err  error
 }
@@ -132,8 +132,8 @@ func statObjb (key string, b bool) (error,string) {
 
 		if err == nil  {
 			if resp.Status == 200 {
-				gLog.Trace.Println(string(resp.Content))
-				if err = json.Unmarshal(resp.Content, &lvDBMeta); err == nil {
+				gLog.Trace.Println(resp.Content)
+				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
 					m := &lvDBMeta.Object.XAmzMetaUsermd
 					usermd, _ := base64.StdEncoding.DecodeString(*m)
 					result = string(usermd)
@@ -154,20 +154,22 @@ func statb( buck string,key string) (Response){
     	request = "/default/parallel/"+buck+"/"+key+"?versionId="
     	resp = Response  {
     		Err : nil,
-    		Content: nil,
+    		Content: "",
 		}
     )
+
 	/*
 			build the request
 		    curl -s '10.12.201.11:9000/default/parallel/<bucket>/<key>?verionId='
 	*/
+
 	url := levelDBUrl+request
 	gLog.Trace.Println("URL:",url)
 	if response,err := http.Get(url); err == nil {
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
-				resp.Content = contents
+				resp.Content = ContentToJson(contents)
 				resp.Status = response.StatusCode
 			}
 		} else {
