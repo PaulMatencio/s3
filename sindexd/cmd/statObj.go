@@ -82,7 +82,7 @@ func statObjs(cmd *cobra.Command, b string) {
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
-		wg.Add(len(prefixa))
+		wg.Add(len(keya))
 		for _, key := range keya {
 			go func(key string, bucket string) {
 				defer wg.Done()
