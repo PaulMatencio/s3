@@ -414,41 +414,4 @@ func ListCommonPrefix( cp []interface{}) {
 	}
 }
 
-func getObjb (key string) (error,string) {
-	var (
-		err error
-		result,buck string
-		contents []byte
 
-	)
-	cc := strings.Split(key, "/")[0]
-	if len(cc) != 2  {
-		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
-	} else {
-		if len(cc) >0 {
-			buck = setBucketName(cc, bucket, index)
-		} else {
-			buck = bucket
-		}
-		/*
-				build the request
-			    curl -s '10.12.201.11:9000/default/parallel/<bucket>/<key>?verionId='
-		*/
-		request:= "/default/parallel/"+buck+"/"+key+"?versionId="
-
-		// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
-		url := levelDBUrl+request
-		gLog.Info.Println("URL:",url)
-		if response,err := http.Get(url); err == nil {
-			if response.StatusCode == 200 {
-				defer response.Body.Close()
-				if contents, err = ioutil.ReadAll(response.Body); err == nil {
-					return err, ContentToJson(contents)
-				}
-			} else {
-				gLog.Warning.Printf("Get url %s - Http status: %d",url, response.Status)
-			}
-		}
-	}
-	return err,result
-}

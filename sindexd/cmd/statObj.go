@@ -61,11 +61,12 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(listS3Cmd)
-	initStatbFlags(listS3Cmd)
+	rootCmd.AddCommand(statObjCmd)
+	initStatbFlags(statObjCmd)
 }
 
 func initStatbFlags(cmd *cobra.Command) {
+
 	cmd.Flags().StringVarP(&keys,"key","k","","list of keys separated by a commma")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the prefix name of the S3  bucket")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
