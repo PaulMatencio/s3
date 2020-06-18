@@ -8,6 +8,26 @@ type S3Metadata struct {
 	IsTruncated    bool          `json:"IsTruncated"`
 }
 
+type LevelDBMetadata struct {
+	Bucket BucketInfo `json:"bucket"`
+	Object Value      `json:"obj"`
+}
+
+type BucketInfo struct {
+	Name                 string `json:"name"`
+	Owner                string `json:"owner"`
+	OwnerDisplayName     string `json:"owner-display-name"`
+	CreationDate         string `json:"creation-date"`
+	MdBucketModelVersion int `json:"md-bucket-model-version"`
+	Deleted              bool `json:"deleted"`
+	SeverSideEncryption interface{} `json:"serverSideEncryption"` /* null */
+	VersionConfiguration interface{}  `json:"versionConfiguration"` /* null */
+	LocationConstraint   string `json:"locationConstraint"`
+	Cors                 interface{} `json:"cors"`
+	ReplicationConfiguration interface{} `json:"replicationConfiguration"`
+	LifeCycleConfiguration interface{}  `json:"lifeCycleConfiguration"`
+}
+
 type ACL struct {
 	Canned      string        `json:"Canned"`
 	FULLCONTROL []interface{} `json:"FULL_CONTROL"`
@@ -58,3 +78,4 @@ type Contents struct {
 	Key   string `json:"key"`
 	Value Value  `json:"value"`
 }
+

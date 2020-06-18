@@ -17,7 +17,7 @@ func procStatResult(rd *datatype.Rh) {
 		procS3Error(rd.Err)
 	} else {
 		if len(odir) == 0 {
-			gLog.Trace.Printf("Key: %s - ContentLength: %v - LastModified: %v" ,rd.Key ,*rd.Result.ContentLength,*rd.Result.LastModified)
+			gLog.Trace.Printf("Key: %s - ContentLength: %v - LastModified: %v - Version Id: %v" ,rd.Key ,*rd.Result.ContentLength,*rd.Result.LastModified,*rd.Result.VersionId)
 		}
 		procS3Meta(rd.Key,rd.Result.Metadata)
 	}
