@@ -132,15 +132,15 @@ func statObjb (key string, b bool) (error,string) {
 
 		if err == nil  {
 			if resp.Status == 200 {
-				gLog.Trace.Println(resp.Content)
-				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
+				gLog.Trace.Println(string(resp.Content))
+				if err = json.Unmarshal(resp.Content, &lvDBMeta); err == nil {
 					m := &lvDBMeta.Object.XAmzMetaUsermd
 					usermd, _ := base64.StdEncoding.DecodeString(*m)
 					result = string(usermd)
 					// gLog.Info.Printf("Key: %s - Usermd: %s", key, result)
 				}
 			} else {
-				result = fmt.Sprintf("Key: %s - status code\n",key,resp.Status)
+				result = fmt.Sprintf("Key: %s - status code: %d\n",key,resp.Status)
 				// gLog.Warning.Printf(result)
 			}
 		}
