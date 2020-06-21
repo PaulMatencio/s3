@@ -104,7 +104,7 @@ func stat3b(cmd *cobra.Command) {
 			 		if status == 200 {
 						gLog.Info.Printf("Key %s - Usermd: %s", key, result)
 					} else {
-						gLog.Info.Printf("Key %s - status code %d - Result: %s", key, status, result)
+						gLog.Info.Printf("Key %s - status code %d", key, status)
 					}
 				} else {
 					gLog.Error.Printf("key %s - Error: %v ",key,err)
@@ -180,9 +180,7 @@ func stat_3b (key string) (error,int,string) {
 		if err == nil  {
 			if resp.Status == 200 {
 				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
-					// gLog.Trace.Println("Bucket ...",&lvDBMeta.Bucket)
-					gLog.Trace.Println("Object ...",&lvDBMeta.Object)
-					if &lvDBMeta.Object != nil {
+					if lvDBMeta.Object.ContentLength != 0 {
 						m := &lvDBMeta.Object.XAmzMetaUsermd
 						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
 							result = string(usermd)
@@ -191,7 +189,7 @@ func stat_3b (key string) (error,int,string) {
 						}
 					} else {
 						resp.Status = 404
-						result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
+						// result = fmt.Sprintf("%s","Object not found")
 
 					}
 				}
