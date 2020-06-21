@@ -78,7 +78,7 @@ func init() {
 
 func initStatbFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&keys,"key","k","","list of keys separated by a commma")
+	cmd.Flags().StringVarP(&keys,"keys","k","","list of input keys separated by commma")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","if set, this will override the bucket name prefix  in the config file")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
 }
@@ -127,10 +127,9 @@ func stat3(cmd *cobra.Command) {
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
-
 		svc =  s3.New(api.CreateSession())
 		for _, key := range keya {
-
+			cc := strings.Split(key, "/")[0]
 			if len(cc) != 2 {
 				err = errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 				gLog.Error.Printf("key: %s - Error : %v",key,err)
@@ -180,8 +179,16 @@ func stat_3b (key string) (error,int,string) {
 		if err == nil  {
 			if resp.Status == 200 {
 				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
-					/* lvDBMeta structure is defined is datatype.metadata.go */
-					/* IsEmpty == true if the returned object is empty = 404  */
+					/* lvDBMeta structure is defined is datatype.metadata.go
+
+					 type LevelDBMetadata struct {
+						Bucket BucketInfo `json:"bucket"`
+						Object Value      `json:"obj,omitempty"`
+					}
+  				     IsEmpty is true if  LevelDBMetadata.Object: {} is empty -> return 404
+
+					*/
+
 					if !lvDBMeta.Object.IsEmpty() {
 						m := &lvDBMeta.Object.XAmzMetaUsermd
 						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
@@ -192,7 +199,6 @@ func stat_3b (key string) (error,int,string) {
 					} else {
 						resp.Status = 404
 						// result = fmt.Sprintf("%s","Object not found")
-
 					}
 				}
 			} else {
@@ -254,9 +260,12 @@ func StatObjectLevelDB( buck string,key string) (Response){
 	if response,err := http.Get(url); err == nil {
 		gLog.Trace.Printf("Key %s - status code:  %d",key,response.StatusCode)
 
-		//  should  return 200 or 500
-		//  if an object does not exist , status code is 200
-		//   the client must check the content the existence of the object
+		/*  should  return 200 or 500
+		   if an object does not exist , status code is 200
+             the resp.Content  returns  { bucket= { } , object ={} }
+		     the client must check is the returned object= {} is not empty
+		*/
+
 
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
