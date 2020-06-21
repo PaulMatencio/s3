@@ -180,6 +180,8 @@ func stat_3b (key string) (error,int,string) {
 		if err == nil  {
 			if resp.Status == 200 {
 				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
+					// gLog.Trace.Println("Bucket ...",&lvDBMeta.Bucket)
+					gLog.Trace.Println("Object ...",&lvDBMeta.Object)
 					if &lvDBMeta.Object != nil {
 						m := &lvDBMeta.Object.XAmzMetaUsermd
 						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
