@@ -128,6 +128,7 @@ func stat3(cmd *cobra.Command) {
 
 			if len(cc) != 2 {
 				err = errors.New(fmt.Sprintf("Wrong country code: %s", cc))
+				gLog.Error.Printf("key: %s - Error : %v",key,err)
 			} else {
 				if len(index) > 0 {
 					buck = setBucketName(cc, bucket, index)
@@ -141,7 +142,7 @@ func stat3(cmd *cobra.Command) {
 					if resp = stat_3(bucket, key, svc); resp.Err == nil {
 						gLog.Info.Printf("Key: %s - Usermd: %s\n", key, resp.Content)
 					} else {
-						gLog.Error.Printf("key: %s - Error : %v",key,resp.Err)
+
 					}
 				}(key, buck)
 			}
