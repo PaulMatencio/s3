@@ -19,6 +19,10 @@ func StatObject(req datatype.StatObjRequest) (*s3.HeadObjectOutput,error){
 	return req.Service.HeadObject(input)
 }
 
+/*
+    authentication v2
+    just for testing V2 authentication
+*/
 
 func StatObjectV2(request datatype.StatObjRequestV2) (*http.Response, error) {
 	var (
@@ -47,3 +51,4 @@ func StatObjectV2(request datatype.StatObjRequestV2) (*http.Response, error) {
 
 
 }
+

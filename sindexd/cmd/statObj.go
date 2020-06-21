@@ -79,7 +79,7 @@ func init() {
 func initStatbFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&keys,"key","k","","list of keys separated by a commma")
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","the prefix name of the S3  bucket")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","if set, this will override the bucket name prefix  in the config file")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
 }
 
@@ -100,9 +100,9 @@ func stat3b(cmd *cobra.Command) {
 				defer wg.Done()
 				gLog.Info.Println(key, bucket)
 			 	if err,result = stat_3b(key); err == nil {
-			 		gLog.Info.Println(result)
+			 		gLog.Info.Printf("Key %s - Usermd: %s",key,result)
 				} else {
-					gLog.Error.Println(err)
+					gLog.Error.Printf("key %s - Error: %v ",key,err)
 				}
 			}(key, bucket)
 		}
@@ -129,11 +129,7 @@ func stat3(cmd *cobra.Command) {
 				defer wg.Done()
 				gLog.Info.Println(key, bucket)
 				if resp = stat_3(bucket,key,svc); resp.Err == nil {
-					if resp.Status == 200 {
-						gLog.Info.Printf("User meata: %s\n",resp.Content)
-					} else {
-						gLog.Info.Printf("Stat status %s\n",resp.Status)
-					}
+					gLog.Info.Printf("Key: %s - Usermd: %s\n",key,resp.Content)
 				} else {
 					gLog.Error.Println(err)
 				}
@@ -173,7 +169,7 @@ func stat_3b (key string) (error,string) {
 					// gLog.Info.Printf("Key: %s - Usermd: %s", key, result)
 				}
 			} else {
-				result = fmt.Sprintf("Key: %s - status code: %d\n",key,resp.Status)
+				result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
 				// gLog.Warning.Printf(result)
 			}
 		}
@@ -196,9 +192,10 @@ func stat_3 (buck string,key string,svc *s3.S3) ( Response) {
 	 if result,err := api.StatObject(head) ; err == nil {
 		 if v, ok := result.Metadata["Usermd"]; ok {
 			 usermd, _ := base64.StdEncoding.DecodeString(*v)
-			 gLog.Trace.Printf("key:%s - User metadata: %s", key, usermd)
+			 gLog.Trace.Printf("key:%s - Usermd: %s", key, usermd)
 			 resp.Content = string(usermd)
-
+		 } else {
+			 resp.Content = fmt.Sprintf("Missing user metadata")
 		 }
 	 }
 
