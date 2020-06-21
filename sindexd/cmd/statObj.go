@@ -180,7 +180,9 @@ func stat_3b (key string) (error,int,string) {
 		if err == nil  {
 			if resp.Status == 200 {
 				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
-					if lvDBMeta.Object.ContentLength != 0 {
+					/* lvDBMeta structure is defined is datatype.metadata.go */
+					/* IsEmpty == true if the returned object is empty = 404  */
+					if !lvDBMeta.Object.IsEmpty() {
 						m := &lvDBMeta.Object.XAmzMetaUsermd
 						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
 							result = string(usermd)
@@ -201,6 +203,8 @@ func stat_3b (key string) (error,int,string) {
 	}
 	return err,resp.Status, result
 }
+
+
 
 func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {
 	var (

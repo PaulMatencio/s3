@@ -1,6 +1,9 @@
 package datatype
 
-import "time"
+import (
+	"reflect"
+	"time"
+)
 
 type S3Metadata struct {
 	CommonPrefixes []interface{} `json:"CommonPrefixes"`
@@ -12,6 +15,7 @@ type LevelDBMetadata struct {
 	Bucket BucketInfo `json:"bucket"`
 	Object Value      `json:"obj,omitempty"`
 }
+
 
 
 type	BucketInfo struct {
@@ -136,6 +140,11 @@ type Value struct {
 	LastModified                              time.Time       `json:"last-modified"`
 	MdModelVersion                            int             `json:"md-model-version"`
 	XAmzMetaUsermd                            string          `json:"x-amz-meta-usermd"`
+}
+
+/* check  is  value ovject is empty */
+func (v Value ) IsEmpty() bool {
+	return reflect.DeepEqual(Value{}, v)
 }
 
 type Contents struct {
