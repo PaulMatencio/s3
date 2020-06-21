@@ -125,6 +125,15 @@ func stat3(cmd *cobra.Command) {
 		wg.Add(len(keya))
 		svc =  s3.New(api.CreateSession())
 		for _, key := range keya {
+			if len(cc) != 2  {
+				err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
+			} else {
+				if len(index) > 0 {
+					buck = setBucketName(cc, bucket, index)
+				} else {
+					buck = bucket
+				}
+			}
 			go func(key string, bucket string) {
 				defer wg.Done()
 				gLog.Info.Println(key, bucket)
@@ -133,7 +142,7 @@ func stat3(cmd *cobra.Command) {
 				} else {
 					gLog.Error.Println(err)
 				}
-			}(key, bucket)
+			}(key, buck)
 		}
 		wg.Wait()
 		gLog.Info.Printf("Total Elapsed time: %v", time.Since(start))
@@ -177,7 +186,7 @@ func stat_3b (key string) (error,string) {
 	return err,result
 }
 
-func stat_3 (buck string,key string,svc *s3.S3) ( Response) {
+func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {
 	var (
 		resp = Response {
 			Err: nil,
@@ -185,7 +194,7 @@ func stat_3 (buck string,key string,svc *s3.S3) ( Response) {
 		}
 		head = datatype.StatObjRequest{
 			Service: svc,
-			Bucket:  buck,
+			Bucket:  bucket,
 			Key:  key,
 		}
 	)
