@@ -98,7 +98,7 @@ func stat3b(cmd *cobra.Command) {
 		for _, key := range keya {
 			go func(key string, bucket string) {
 				defer wg.Done()
-				gLog.Info.Println(key, bucket)
+				gLog.Trace.Printf("key: %s - bucket: %s",key, bucket)
 			 	if err,result = stat_3b(key); err == nil {
 			 		gLog.Info.Printf("Key %s - Usermd: %s",key,result)
 				} else {
@@ -178,11 +178,10 @@ func stat_3b (key string) (error,string) {
 					m := &lvDBMeta.Object.XAmzMetaUsermd
 					usermd, _ := base64.StdEncoding.DecodeString(*m)
 					result = string(usermd)
-					// gLog.Info.Printf("Key: %s - Usermd: %s", key, result)
 				}
 			} else {
 				result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
-				// gLog.Warning.Printf(result)
+				gLog.Warning.Printf("%s",result)
 			}
 		}
 	}
@@ -233,8 +232,9 @@ func StatObjectLevelDB( buck string,key string) (Response){
 		    curl -s '10.12.201.11:9000/default/parallel/<bucket>/<key>?verionId='
 	*/
 	url := levelDBUrl+request
-	gLog.Trace.Println("URL:",url)
+	// gLog.Trace.Println("URL:",url)
 	if response,err := http.Get(url); err == nil {
+		gLog.Trace.Printf("Key %s - status code:  %d",key,response.StatusCode)
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
