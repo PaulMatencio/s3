@@ -18,11 +18,20 @@ import (
 	"sync"
 	"time"
 )
+
+type Request struct {
+	Svc *s3.S3
+	Bucket string
+	Key string
+}
+
 type Response struct {
-	Content string
 	Status int
+	Content string
+	Usermd  string
 	Err  error
 }
+
 
 var (
 	statObjbCmd = &cobra.Command{
@@ -84,30 +93,24 @@ func initStatbFlags(cmd *cobra.Command) {
 }
 
 func stat3b(cmd *cobra.Command) {
-	var (
-		keya = strings.Split(keys,",")
-		result string
-		err error
-		status int
-	   // svc   *s3.S3
-	)
+	var  keya = strings.Split(keys,",")
 
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
-		wg.Add(len(keya))
 		for _, key := range keya {
+			wg.Add(1)
 			go func(key string, bucket string) {
 				defer wg.Done()
 				gLog.Trace.Printf("key: %s - bucket: %s",key, bucket)
-			 	if err,status,result = stat_3b(key); err == nil {
-			 		if status == 200 {
-						gLog.Info.Printf("Key %s - Usermd: %s", key, result)
+			 	if resp := stat_3b(key); resp.Err == nil {
+			 		if resp.Status == 200 {
+						gLog.Info.Printf("Key %s - Usermd: %s", key, resp.Usermd)
 					} else {
-						gLog.Info.Printf("Key %s - status code %d", key, status)
+						gLog.Info.Printf("Key %s - status code %d", key, resp.Status)
 					}
 				} else {
-					gLog.Error.Printf("key %s - Error: %v ",key,err)
+					gLog.Error.Printf("key %s - Error: %v ",key,resp.Err)
 				}
 			}(key, bucket)
 		}
@@ -139,12 +142,19 @@ func stat3(cmd *cobra.Command) {
 				} else {
 					buck = bucket
 				}
-				wg.Add(len(keya))
+				wg.Add(1)
 				go func(key string, bucket string) {
 					defer wg.Done()
 					gLog.Trace.Printf("key: %s - bucket: %s ", key, bucket)
-					if resp = stat_3(bucket, key, svc); resp.Err == nil {
-						gLog.Info.Printf("Key: %s - Usermd: %s\n", key, resp.Content)
+					
+					request := Request {
+						Svc : svc,
+						Bucket : bucket,
+						Key :key,
+
+					}
+					if resp = stat_3(request); resp.Err == nil {
+						gLog.Info.Printf("Key: %s - Usermd: %s\n", key, resp.Usermd)
 					} else {
 						gLog.Info.Printf("Key: %s - err: %v\n", key, resp.Err)
 					}
@@ -157,28 +167,34 @@ func stat3(cmd *cobra.Command) {
 }
 
 
-func stat_3b (key string) (error,int,string) {
+func stat_3b (key string) (Response) {
 	var (
 		err error
-		buck string
-		result =""
+		buck,result string
+		usermd []byte
 		lvDBMeta = datatype.LevelDBMetadata{}
 		resp Response
 	)
 	cc := strings.Split(key, "/")[0]
 	if len(cc) != 2  {
-		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
+		resp.Err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
 		if len(index) >0 {
 			buck = setBucketName(cc, bucket, index)
 		} else {
 			buck = bucket
 		}
-		resp = StatObjectLevelDB(buck,key)
-		err = resp.Err
-		if err == nil  {
+		req := Request {
+			Svc :nil,
+			Bucket : buck,
+			Key : key,
+		}
+
+		resp = StatObjectLevelDB(req)
+
+		if resp.Err == nil  {
 			if resp.Status == 200 {
-				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
+				if resp.Err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); resp.Err == nil {
 					/* lvDBMeta structure is defined is datatype.metadata.go
 
 					 type LevelDBMetadata struct {
@@ -191,10 +207,10 @@ func stat_3b (key string) (error,int,string) {
 
 					if !lvDBMeta.Object.IsEmpty() {
 						m := &lvDBMeta.Object.XAmzMetaUsermd
-						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
-							result = string(usermd)
+						if usermd, resp.Err = base64.StdEncoding.DecodeString(*m); resp.Err == nil {
+							resp.Usermd = string(usermd)
 						} else {
-							result = fmt.Sprintf("Key: %s - error: %v\n",key,err)
+							resp.Usermd = fmt.Sprintf("Key: %s - error: %v\n",key,err)
 						}
 					} else {
 						resp.Status = 404
@@ -202,35 +218,38 @@ func stat_3b (key string) (error,int,string) {
 					}
 				}
 			} else {
-				result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
+				resp.Usermd= fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
 				gLog.Warning.Printf("%s",result)
 			}
 		}
 	}
-	return err,resp.Status, result
+	return resp
 }
 
 
-
-func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {
+/* head request using AWS SDK  */
+/* called by stat3  */
+func stat_3 (req Request) ( Response) {
 	var (
 		resp = Response {
 			Err: nil,
-			Content: "",
+			Usermd: "",
 		}
+		usermd []byte
 		head = datatype.StatObjRequest{
-			Service: svc,
-			Bucket:  bucket,
-			Key:  key,
+			Service: req.Svc,
+			Bucket:  req.Bucket,
+			Key:  req.Key,
 		}
 	)
 	 if result,err := api.StatObject(head) ; err == nil {
 		 if v, ok := result.Metadata["Usermd"]; ok {
-			 usermd, _ := base64.StdEncoding.DecodeString(*v)
-			 gLog.Trace.Printf("key:%s - Usermd: %s", key, usermd)
-			 resp.Content = string(usermd)
+			 if usermd, resp.Err = base64.StdEncoding.DecodeString(*v); resp.Err == nil {
+				 gLog.Trace.Printf("key:%s - Usermd: %s", req.Key, string(usermd))
+				 resp.Usermd = string(usermd)
+			 }
 		 } else {
-			 resp.Content = fmt.Sprintf("Missing user metadata")
+			 resp.Usermd = fmt.Sprintf("Missing user metadata")
 		 }
 	 } else {
 	 	resp.Err = err
@@ -238,46 +257,43 @@ func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {
 	return resp
 }
 
-/*  to be moved to api later
+/*
+    to be moved to api later
      api.StatObjectLevelDB
 
 */
-func StatObjectLevelDB( buck string,key string) (Response){
-
-    var (
-    	request = "/default/parallel/"+buck+"/"+key+"?versionId="
-    	resp = Response  {
-    		Err : nil,
-    		Content: "",
-		}
-    )
+func StatObjectLevelDB( req Request) (Response){
 	/*
 			build the request
 		    curl -s '10.12.201.11:9000/default/parallel/<bucket>/<key>?verionId='
 	*/
+    var (
+    	request = "/default/parallel/"+req.Bucket+"/"+req.Key+"?versionId="
+    	resp = Response  {}
+    )
 	url := levelDBUrl+request
-	// gLog.Trace.Println("URL:",url)
 	if response,err := http.Get(url); err == nil {
-		gLog.Trace.Printf("Key %s - status code:  %d",key,response.StatusCode)
-
+		gLog.Trace.Printf("Request url : %s - Key %s - status code:  %d",url, req.Key,response.StatusCode)
 		/*  should  return 200 or 500
 		   if an object does not exist , status code is 200
              the resp.Content  returns  { bucket= { } , object ={} }
 		     the client must check is the returned object= {} is not empty
 		*/
 
-
+		resp.Err = err
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
 				resp.Content = ContentToJson(contents)
 				resp.Status = response.StatusCode
+			} else {
+				resp.Err = err /* Read fail */
 			}
 		} else {
 			resp.Status = response.StatusCode
 		}
 	}  else {
-		resp.Err= err
+		resp.Err = err
 	}
 	return resp
 }
