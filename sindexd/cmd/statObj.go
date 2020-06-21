@@ -88,6 +88,7 @@ func stat3b(cmd *cobra.Command) {
 		keya = strings.Split(keys,",")
 		result string
 		err error
+		status int
 	   // svc   *s3.S3
 	)
 
@@ -99,8 +100,12 @@ func stat3b(cmd *cobra.Command) {
 			go func(key string, bucket string) {
 				defer wg.Done()
 				gLog.Trace.Printf("key: %s - bucket: %s",key, bucket)
-			 	if err,result = stat_3b(key); err == nil {
-			 		gLog.Info.Printf("Key %s - Usermd: %s",key,result)
+			 	if err,status,result = stat_3b(key); err == nil {
+			 		if status == 200 {
+						gLog.Info.Printf("Key %s - Usermd: %s", key, result)
+					} else {
+						gLog.Info.Printf("Key %s - status code %d - Result: %s", key, status, result)
+					}
 				} else {
 					gLog.Error.Printf("key %s - Error: %v ",key,err)
 				}
@@ -153,7 +158,7 @@ func stat3(cmd *cobra.Command) {
 }
 
 
-func stat_3b (key string) (error,string) {
+func stat_3b (key string) (error,int,string) {
 	var (
 		err error
 		buck string
@@ -183,7 +188,9 @@ func stat_3b (key string) (error,string) {
 							result = fmt.Sprintf("Key: %s - error: %v\n",key,err)
 						}
 					} else {
-						result = fmt.Sprintf("Key: %s - Status code: %d\n",key,404)
+						resp.Status = 404
+						result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
+
 					}
 				}
 			} else {
@@ -192,7 +199,7 @@ func stat_3b (key string) (error,string) {
 			}
 		}
 	}
-	return err,result
+	return err,resp.Status, result
 }
 
 func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {

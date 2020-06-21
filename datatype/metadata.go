@@ -10,7 +10,7 @@ type S3Metadata struct {
 
 type LevelDBMetadata struct {
 	Bucket BucketInfo `json:"bucket"`
-	Object Value      `json:"obj"`
+	Object Value      `json:"obj,omitempty"`
 }
 
 
