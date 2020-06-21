@@ -146,7 +146,7 @@ func stat3(cmd *cobra.Command) {
 					if resp = stat_3(bucket, key, svc); resp.Err == nil {
 						gLog.Info.Printf("Key: %s - Usermd: %s\n", key, resp.Content)
 					} else {
-
+						gLog.Info.Printf("Key: %s - err: %v\n", key, resp.Err)
 					}
 				}(key, buck)
 			}
