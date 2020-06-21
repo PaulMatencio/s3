@@ -20,14 +20,6 @@ func ContentToJson(contents []byte ) string {
 	gLog.Trace.Println(result)
 	return result
 }
-func ContentToJson1(contents []byte ) string {
-	result:= strings.Replace(string(contents),"\\","",-1)
-	result = strings.Replace(result,"\"{","{",-1)
-	result = strings.Replace(result,"}\"","}",-1)
-	// result = strings.Replace(result,"\"}\"}","\"}}",-1)
-	gLog.Trace.Println(result)
-	return result
-}
 
 
 func GetUsermd(req datatype.ListObjRequest , result *s3.ListObjectsOutput, wg sync.WaitGroup){

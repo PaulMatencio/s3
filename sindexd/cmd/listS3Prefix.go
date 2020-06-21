@@ -138,7 +138,12 @@ func listS3Pref(prefix string,marker string,bucket string) (string,error)  {
 	if len(cc) != 2 {
 		return nextmarker,errors.New(fmt.Sprintf("Wrong country code: %s",cc))
 	} else {
-		buck = setBucketName(cc,bucket,index)
+
+		if len(index)>0 {
+			buck = setBucketName(cc, bucket, index)
+		} else {
+			buck= bucket
+		}
 		req := datatype.ListObjRequest {
 			Service : s3.New(api.CreateSession()),
 			Bucket: buck,
@@ -340,7 +345,7 @@ func listS3bPref(prefix string,marker string) (error,string) {
 	if len(cc) != 2 && len(delimiter)==0 {
 		err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 	} else {
-		if len(cc) >0 {
+		if len(index) >0 {
 			buck = setBucketName(cc, bucket, index)
 		} else {
 			buck = bucket
