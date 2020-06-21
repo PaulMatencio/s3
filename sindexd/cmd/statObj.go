@@ -122,27 +122,29 @@ func stat3(cmd *cobra.Command) {
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
-		wg.Add(len(keya))
+
 		svc =  s3.New(api.CreateSession())
 		for _, key := range keya {
-			if len(cc) != 2  {
-				err =  errors.New(fmt.Sprintf("Wrong country code: %s", cc))
+
+			if len(cc) != 2 {
+				err = errors.New(fmt.Sprintf("Wrong country code: %s", cc))
 			} else {
 				if len(index) > 0 {
 					buck = setBucketName(cc, bucket, index)
 				} else {
 					buck = bucket
 				}
+				wg.Add(len(keya))
+				go func(key string, bucket string) {
+					defer wg.Done()
+					gLog.Trace.Printf("key: %s - bucket: %s ", key, bucket)
+					if resp = stat_3(bucket, key, svc); resp.Err == nil {
+						gLog.Info.Printf("Key: %s - Usermd: %s\n", key, resp.Content)
+					} else {
+						gLog.Error.Printf("key: %s - Error : %v",key,resp.Err)
+					}
+				}(key, buck)
 			}
-			go func(key string, buck string) {
-				defer wg.Done()
-				gLog.Info.Println(key, buck)
-				if resp = stat_3(buck,key,svc); resp.Err == nil {
-					gLog.Info.Printf("Key: %s - Usermd: %s\n",key,resp.Content)
-				} else {
-					gLog.Error.Println(err)
-				}
-			}(key, buck)
 		}
 		wg.Wait()
 		gLog.Info.Printf("Total Elapsed time: %v", time.Since(start))
@@ -206,8 +208,9 @@ func stat_3 (bucket string,key string,svc *s3.S3) ( Response) {
 		 } else {
 			 resp.Content = fmt.Sprintf("Missing user metadata")
 		 }
+	 } else {
+	 	resp.Err = err
 	 }
-
 	return resp
 }
 
