@@ -134,10 +134,10 @@ func stat3(cmd *cobra.Command) {
 					buck = bucket
 				}
 			}
-			go func(key string, bucket string) {
+			go func(key string, buck string) {
 				defer wg.Done()
-				gLog.Info.Println(key, bucket)
-				if resp = stat_3(bucket,key,svc); resp.Err == nil {
+				gLog.Info.Println(key, buck)
+				if resp = stat_3(buck,key,svc); resp.Err == nil {
 					gLog.Info.Printf("Key: %s - Usermd: %s\n",key,resp.Content)
 				} else {
 					gLog.Error.Println(err)
