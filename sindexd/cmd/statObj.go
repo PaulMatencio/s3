@@ -175,9 +175,16 @@ func stat_3b (key string) (error,string) {
 		if err == nil  {
 			if resp.Status == 200 {
 				if err = json.Unmarshal([]byte(resp.Content), &lvDBMeta); err == nil {
-					m := &lvDBMeta.Object.XAmzMetaUsermd
-					usermd, _ := base64.StdEncoding.DecodeString(*m)
-					result = string(usermd)
+					if &lvDBMeta.Object != nil {
+						m := &lvDBMeta.Object.XAmzMetaUsermd
+						if usermd, err := base64.StdEncoding.DecodeString(*m); err == nil {
+							result = string(usermd)
+						} else {
+							result = fmt.Sprintf("Key: %s - error: %v\n",key,err)
+						}
+					} else {
+						result = fmt.Sprintf("Key: %s - Status code: %d\n",key,404)
+					}
 				}
 			} else {
 				result = fmt.Sprintf("Key: %s - Status code: %d\n",key,resp.Status)
@@ -235,6 +242,11 @@ func StatObjectLevelDB( buck string,key string) (Response){
 	// gLog.Trace.Println("URL:",url)
 	if response,err := http.Get(url); err == nil {
 		gLog.Trace.Printf("Key %s - status code:  %d",key,response.StatusCode)
+
+		//  should  return 200 or 500
+		//  if an object does not exist , status code is 200
+		//   the client must check the content the existence of the object
+
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
