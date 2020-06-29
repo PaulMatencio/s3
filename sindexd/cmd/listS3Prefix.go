@@ -101,6 +101,11 @@ func listS3(cmd *cobra.Command, args []string) {
 		err error
 	)
 
+	if len(prefixs) == 0{
+		usage(cmd.Name())
+		return
+	}
+
 	if len(prefixa) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
@@ -271,6 +276,11 @@ func listS3CommonPrefix(prefix string, marker string, bucket string) (string,err
 
 /* level DB API list function */
 func listS3b(cmd *cobra.Command, args []string) {
+
+	if len(prefixs) == 0{
+		usage(cmd.Name())
+		return
+	}
 	prefixa = strings.Split(prefixs,",")
 	if len(prefixa) > 0 {
 		start := time.Now()

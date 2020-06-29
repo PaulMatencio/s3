@@ -10,7 +10,6 @@ func GetBucketPolicy(req datatype.GetBucketPolicyRequest) (*s3.GetBucketPolicyOu
 
 	input := &s3.GetBucketPolicyInput{
 		Bucket: aws.String(req.Bucket),
-
 	}
 	return req.Service.GetBucketPolicy(input)
 }

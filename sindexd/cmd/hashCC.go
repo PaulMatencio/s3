@@ -36,6 +36,7 @@ var (
 )
 
 func init() {
+
 	rootCmd.AddCommand(hashCC)
 	hashCC.Flags().StringVarP(&ccode,"cp","p","US","country code separated by c")
 	hashCC.Flags().IntVarP(&modulo, "modulo", "m", 5,"modulo")

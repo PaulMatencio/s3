@@ -42,9 +42,7 @@ func init() {
 }
 
 func listBucket(cmd *cobra.Command,args []string) {
-
 	start:= utils.LumberPrefix(cmd)
-
 	req := datatype.ListBucketRequest{
 		Service:  s3.New(api.CreateSession()),
 	}

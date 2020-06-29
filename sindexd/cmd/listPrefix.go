@@ -69,8 +69,12 @@ func init() {
 	initLpFlags(listPrefixCmd)
 }
 
-
 func listPrefix(cmd *cobra.Command,args []string) {
+
+	if len(prefixs) == 0{
+		usage(cmd.Name())
+		return
+	}
 
 	if len(sindexUrl) == 0 {
 		sindexUrl = viper.GetString("sindexd.url")

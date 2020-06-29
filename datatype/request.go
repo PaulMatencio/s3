@@ -110,6 +110,11 @@ type GetBucketPolicyRequest struct {
 	Bucket      string
 }
 
+type GetBucketReplicationRequest struct {
+	Service 	*s3.S3
+	Bucket      string
+}
+
 type GetBucketAclRequest struct {
 	Service 	*s3.S3
 	Bucket      string

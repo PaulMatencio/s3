@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// listObjectCmd represents the listObject command
+
 var (
 	gbpshort = "Command to get policies of a bucket"
 	getBPCmd = &cobra.Command{
@@ -27,19 +27,14 @@ var (
 
 )
 
-
 func initGBPFlags(cmd *cobra.Command) {
-
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
-
 }
 
 func init() {
-
 	RootCmd.AddCommand(getBPCmd)
 	RootCmd.MarkFlagRequired("bucket")
 	initGBPFlags(getBPCmd)
-
 }
 
 func GetBucketPolicy(cmd *cobra.Command,args []string) {
@@ -64,7 +59,7 @@ func GetBucketPolicy(cmd *cobra.Command,args []string) {
 			err error
 		)
 		if result, err = api.GetBucketPolicy(req); err == nil {
-			gLog.Info.Printf("%",*result.Policy)
+			gLog.Info.Printf("%v",*result.Policy)
 		} else {
 			gLog.Error.Printf("%v",err)
 		}

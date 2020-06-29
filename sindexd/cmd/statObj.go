@@ -20,25 +20,25 @@ import (
 )
 
 type Request struct {
-	Svc *s3.S3
-	Bucket string
-	Key string
+	Svc 	*s3.S3
+	Bucket 	string
+	Key 	string
 }
 
 type Response struct {
-	Status int
+	Status	int
 	Content string
 	Usermd  string
-	Err  error
+	Err 	error
 }
 
 
 var (
 	statObjbCmd = &cobra.Command{
-		Use:   "stat3b",
-		Short: "Retrieve S3 user metadata using levelDB API",
-		Long: `Retrieve S3 user metadata using levelDB API
-Example: sindexd stat3b -i pn -k AT/000648/U1,AT/000647/U3,AT/,FR/500004/A,FR/567812/A`,
+		Use:   "headb",
+		Short: "Retrieve S3 user metadata using Scality levelDB API",
+		Long: `Retrieve S3 user metadata using Scality levelDB API
+Example: sindexd headb -i pn -k AT/000648/U1,AT/000647/U3,AT/,FR/500004/A,FR/567812/A`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index != "bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
@@ -54,10 +54,10 @@ Example: sindexd stat3b -i pn -k AT/000648/U1,AT/000647/U3,AT/,FR/500004/A,FR/56
 		},
 	}
 	statObjCmd = &cobra.Command{
-		Use:   "stat3",
+		Use:   "head",
 		Short: "Retrieve S3 user metadata using Amazon S3 SDK",
 		Long: `Retrieve S3 user metadata using Amazon S3 SDK
-Example: sindexd stat3 -i pn -k AT/000648/U1,AT/000647/U3,AT/,FR/500004/A,FR/567812/A`,
+Example: sindexd  head -i pn -k AT/000648/U1,AT/000647/U3,AT/,FR/500004/A,FR/567812/A`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if index != "pn" && index != "pd" && index != "bn" {
 				gLog.Warning.Printf("Index argument must be in [pn,pd,bn]")
@@ -85,16 +85,21 @@ func init() {
 	initStatbFlags(statObjbCmd)
 }
 
+
 func initStatbFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&keys,"keys","k","","list of input keys separated by commma")
-	cmd.Flags().StringVarP(&bucket,"bucket","b","","if set, this will override the bucket name prefix  in the config file")
+	cmd.Flags().StringVarP(&bucket,"bucket","b","","override the config file bucket prefix")
 	cmd.Flags().StringVarP(&index,"index","i","pn","bucket group [pn|pd|bn]")
 }
 
 func stat3b(cmd *cobra.Command) {
-	var  keya = strings.Split(keys,",")
 
+	if len(keys) == 0 {
+		usage(cmd.Name())
+		return
+	}
+	keya := strings.Split(keys,",")
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
@@ -127,6 +132,11 @@ func stat3(cmd *cobra.Command) {
 		svc   *s3.S3
 	)
 
+	if len(keys) == 0 {
+		usage(cmd.Name())
+		return
+	}
+
 	if len(keya) > 0 {
 		start := time.Now()
 		var wg sync.WaitGroup
@@ -146,7 +156,7 @@ func stat3(cmd *cobra.Command) {
 				go func(key string, bucket string) {
 					defer wg.Done()
 					gLog.Trace.Printf("key: %s - bucket: %s ", key, bucket)
-					
+
 					request := Request {
 						Svc : svc,
 						Bucket : bucket,
@@ -274,7 +284,9 @@ func StatObjectLevelDB( req Request) (Response){
 	url := levelDBUrl+request
 	if response,err := http.Get(url); err == nil {
 		gLog.Trace.Printf("Request url : %s - Key %s - status code:  %d",url, req.Key,response.StatusCode)
-		/*  should  return 200 or 500
+
+		/*
+		   should  return 200 or 50x
 		   if an object does not exist , status code is 200
              the resp.Content  returns  { bucket= { } , object ={} }
 		     the client must check is the returned object= {} is not empty

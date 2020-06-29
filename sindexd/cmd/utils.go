@@ -43,3 +43,8 @@ func GetUsermd(req datatype.ListObjRequest , result *s3.ListObjectsOutput, wg sy
 		}(head)
 	}
 }
+
+func usage(cmdname string) {
+	gLog.Info.Printf("sindexd %s -h for more options",cmdname)
+
+}
