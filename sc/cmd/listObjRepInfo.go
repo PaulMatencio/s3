@@ -13,8 +13,8 @@ import (
 var (
 	lrishort = "Command to list object replication info for given bucket"
 	lriCmd = &cobra.Command{
-		Use:   "lsObjs-repInfo",
-		Short: loshort,
+		Use:   "lsObjsRepInfo",
+		Short: lrishort,
 		Long: ``,
 		// Hidden: true,
 		Run: ListObjRepInfo,

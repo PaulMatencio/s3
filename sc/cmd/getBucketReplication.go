@@ -34,7 +34,7 @@ func initGBRFlags(cmd *cobra.Command) {
 func init() {
 	RootCmd.AddCommand(getBRCmd)
 	RootCmd.MarkFlagRequired("bucket")
-	initGBRFlags(getBPCmd)
+	initGBRFlags(getBRCmd)
 }
 
 func GetBucketRep(cmd *cobra.Command,args []string) {
