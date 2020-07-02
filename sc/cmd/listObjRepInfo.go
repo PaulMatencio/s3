@@ -28,7 +28,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
-	cmd.Flags().IntVarP(&maxLoop,"maxLoop","l",1000,"maximum number of loop")
+	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1000,"maximum number of loop")
 
 }
 
