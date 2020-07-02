@@ -41,6 +41,12 @@ type  Rc struct {
 
 }
 
+type Rlb struct {
+
+	StatusCode   int
+	Contents     string
+	Err          error
+}
 
 /*
 type PutS3Response struct {

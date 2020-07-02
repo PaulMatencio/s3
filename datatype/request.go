@@ -66,6 +66,15 @@ type ListBucketRequest struct {
 	Service 	*s3.S3
 }
 
+type ListObjLdbRequest struct {
+	Url          string
+	Bucket       string
+	Prefix       string
+	MaxKey	      int64
+	Marker        string
+	Delimiter     string
+}
+
 type MakeBucketRequest struct {
 	Service 	*s3.S3
 	Bucket string
