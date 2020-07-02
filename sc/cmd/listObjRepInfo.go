@@ -84,11 +84,11 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					switch *repStatus {
 						case "PENDING" :{
 							p++
-							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication info status  %v ", c.Key, *repStatus,lastModified)
+							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication status  %v ", c.Key, lastModified, *repStatus)
 						}
 						case "FAILED" : {
 							f++
-							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication info status  %v ", c.Key, *repStatus,lastModified)
+							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication status  %v ", c.Key,lastModified,*repStatus)
 						}
 						case "REPLICA": r++
 						default: o++
