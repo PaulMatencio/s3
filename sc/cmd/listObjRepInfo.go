@@ -100,7 +100,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 						case "COMPLETED":{
 							r++
 							if done {
-								gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+								gLog.Error.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 							}
 						}
 						default: o++
