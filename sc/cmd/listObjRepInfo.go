@@ -7,6 +7,7 @@ import (
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"strings"
 	"time"
 )
 
@@ -111,8 +112,8 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			if !s3Meta.IsTruncated {
 				return
 			} else {
-				// marker = nextMarker
-				req.Marker = nextMarker
+				// marker = nextMarker, nextMarker will contain Key.version 
+				req.Marker = strings.Split(nextMarker,".")[0]
 				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
 			if N > maxLoop {
