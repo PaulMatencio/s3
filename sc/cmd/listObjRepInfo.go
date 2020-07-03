@@ -42,6 +42,7 @@ func init() {
 
 
 func ListObjRepInfo(cmd *cobra.Command,args []string) {
+
 	var url string
 	if len(bucket) == 0 {
 		gLog.Warning.Printf("%s", missingBucket)
@@ -110,8 +111,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			if !s3Meta.IsTruncated {
 				return
 			} else {
-				marker = nextMarker
-				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,marker)
+				// marker = nextMarker
+				req.Marker = nextMarker
+				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
 			if N > maxLoop {
 				return
