@@ -7,6 +7,7 @@ import (
 	"github.com/s3/datatype"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 
@@ -52,7 +53,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 	}
 	var (
 		nextMarker string
-		p,r,f,o int64
+		p,r,f,o,t int64
 		req        = datatype.ListObjLdbRequest{
 			Url:       url,
 			Bucket:    bucket,
@@ -65,6 +66,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 		N = 0
 	)
 	for {
+		start := time.Now()
 		if result, err := api.ListObjectLdb(req); err != nil {
 			if err != nil {
 				gLog.Error.Println(err)
@@ -81,19 +83,20 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
 					repStatus := &c.Value.ReplicationInfo.Status
 					lastModified := &c.Value.LastModified
+					t++
 					switch *repStatus {
 						case "PENDING" :{
 							p++
-							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication status  %v ", c.Key, lastModified, *repStatus)
+							gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key, lastModified, *repStatus)
 						}
 						case "FAILED" : {
 							f++
-							gLog.Warning.Printf("Key: %s - Last Modified %v  - replication status  %v ", c.Key,lastModified,*repStatus)
+							gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 						}
-						case "REPLICA": r++
+						case "COMPLETED": r++
 						default: o++
 					}
-					gLog.Trace.Printf("Key: %s - Last Modified %v  - replication info status  %v ", c.Key, *repStatus,lastModified)
+					gLog.Trace.Printf("Key: %s - Last Modified:%v  - replication status: %v ", c.Key,lastModified, *repStatus)
 				}
 				N++
 			} else {
@@ -104,9 +107,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				return
 			} else {
 				marker = nextMarker
-				gLog.Info.Printf("pending %d - failed %d - replica %d - other %d - nextMarker %s", p,f,r,o,marker)
+				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,marker)
 			}
-			if N >= maxLoop {
+			if N > maxLoop {
 				return
 			}
 		}
