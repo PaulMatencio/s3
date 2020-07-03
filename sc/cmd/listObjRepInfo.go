@@ -112,8 +112,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			if !s3Meta.IsTruncated {
 				return
 			} else {
-				// marker = nextMarker, nextMarker will contain Key.version 
-				req.Marker = strings.Split(nextMarker,".")[0]
+				// marker = nextMarker, nextMarker will contain Key.version
+				Marker := strings.Split(nextMarker,"u00")
+				req.Marker = Marker[0]
 				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
 			if N > maxLoop {
