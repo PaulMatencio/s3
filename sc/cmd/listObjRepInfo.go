@@ -78,7 +78,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			if err = json.Unmarshal([]byte(result.Contents), &s3Meta); err == nil {
 				//gLog.Info.Println("Key:",s3Meta.Contents[0].Key,s3Meta.Contents[0].Value.XAmzMetaUsermd)
 				//num := len(s3Meta.Contentss3Meta.Contents)
-				// l := len(s3Meta.Contents)
+				l := len(s3Meta.Contents)
 				for _, c := range s3Meta.Contents {
 					//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
 					repStatus := &c.Value.ReplicationInfo.Status
@@ -99,6 +99,10 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					gLog.Trace.Printf("Key: %s - Last Modified:%v  - replication status: %v ", c.Key,lastModified, *repStatus)
 				}
 				N++
+				if l > 0 {
+					nextMarker = s3Meta.Contents[l-1].Key
+					gLog.Info.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
+				}
 			} else {
 				gLog.Info.Println(err)
 			}
