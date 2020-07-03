@@ -31,7 +31,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
-	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1000,"maximum number of loop")
+	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",100,"maximum number of loop, 0 no limit")
 	cmd.Flags().BoolVarP(&done,"done","",false,"maximum number of loop")
 
 }
@@ -69,6 +69,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 		s3Meta = datatype.S3Metadata{}
 		N = 0
 	)
+	begin := time.Now()
 	for {
 		start := time.Now()
 		if result, err := api.ListObjectLdb(req); err != nil {
@@ -100,7 +101,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 						case "COMPLETED":{
 							r++
 							if done {
-								gLog.Error.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 							}
 						}
 						default: o++
@@ -119,14 +120,15 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			if !s3Meta.IsTruncated {
 				return
 			} else {
-				// marker = nextMarker, nextMarker will contain Key.version
+				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on 
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
 				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
-			if N > maxLoop {
+			if maxLoop != 0 && N > maxLoop {
 				return
 			}
 		}
 	}
+	gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
 }
