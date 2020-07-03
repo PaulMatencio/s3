@@ -21,6 +21,7 @@ var (
 		// Hidden: true,
 		Run: ListObjRepInfo,
 	}
+	done bool
 
 )
 
@@ -31,6 +32,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1000,"maximum number of loop")
+	cmd.Flags().BoolVarP(&done,"done","",false,"maximum number of loop")
 
 }
 
@@ -95,7 +97,12 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 							f++
 							gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 						}
-						case "COMPLETED": r++
+						case "COMPLETED":{
+							r++
+							if done {
+								gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+							}
+						}
 						default: o++
 					}
 					gLog.Trace.Printf("Key: %s - Last Modified:%v  - replication status: %v ", c.Key,lastModified, *repStatus)
