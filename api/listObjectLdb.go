@@ -3,42 +3,48 @@ package api
 import (
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
+	"github.com/s3/utils"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 
 	var (
-		keyMarker, req  string
-		contents []byte
-		resp datatype.Rlb
-		delim,prefix string
-		err error
+		keyMarker, req string
+		contents       []byte
+		resp           datatype.Rlb
+		delim, prefix  string
+		err            error
+		waitTime       = utils.GetWaitTime(*viper.GetViper())
+		retryNumber    = utils.GetRetryNumber(*viper.GetViper())
 	)
 
-		/*
-				build the request
-			    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
-		*/
-		req = "/default/bucket/"+request.Bucket+"?listType=DelimiterMaster&prefix="
-		limit := "&maxKeys="+strconv.Itoa(int(request.MaxKey))
+	/*
+			build the request
+		    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
+	*/
+	req = "/default/bucket/" + request.Bucket + "?listType=DelimiterMaster&prefix="
+	limit := "&maxKeys=" + strconv.Itoa(int(request.MaxKey))
 
-		if len(request.Delimiter) >0 {
-			delim = "&delimiter="+ request.Delimiter
-		}
-		if len(request.Marker) > 0 {
-			keyMarker = "&marker=" + request.Marker
-		}
-		if len(request.Prefix) > 0 {
-			prefix = request.Prefix
-		}
-		// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
-		url := request.Url+req+prefix+limit+keyMarker+delim
-		gLog.Trace.Println("URL:",url)
-		if response,err := http.Get(url); err == nil {
+	if len(request.Delimiter) > 0 {
+		delim = "&delimiter=" + request.Delimiter
+	}
+	if len(request.Marker) > 0 {
+		keyMarker = "&marker=" + request.Marker
+	}
+	if len(request.Prefix) > 0 {
+		prefix = request.Prefix
+	}
+	// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
+	url := request.Url + req + prefix + limit + keyMarker + delim
+	gLog.Trace.Println("URL:", url)
+	for i := 1; i <= retryNumber; i++ {
+		if response, err := http.Get(url); err == nil {
 			resp.StatusCode = response.StatusCode
 			if response.StatusCode == 200 {
 				defer response.Body.Close()
@@ -46,8 +52,14 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 					resp.Contents = ContentToJson(contents)
 				}
 			}
+			break
+		} else {
+			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			time.Sleep(waitTime * time.Millisecond)
 		}
-		return resp,err
+	}
+	return resp, err
+
 }
 
 

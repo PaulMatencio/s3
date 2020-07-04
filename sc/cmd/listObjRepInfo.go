@@ -73,7 +73,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 	for {
 		start := time.Now()
 		if result, err := api.ListObjectLdb(req); err != nil {
-			if err != nil {
+			if err == nil {
 				gLog.Error.Println(err)
 			} else {
 				gLog.Info.Println("Result is empty")
