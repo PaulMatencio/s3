@@ -140,7 +140,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
-				gLog.Warning.Printf("elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d -cc%d - cp:%d -cf:% - other:%d ", time.Since(start),t, p,f,r,cp,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,cp,cp,cf,o)
 			}
 			if maxLoop != 0 && N > maxLoop {
 				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cp,cp,cf,o)
