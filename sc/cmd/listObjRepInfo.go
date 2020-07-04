@@ -57,7 +57,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 	}
 	var (
 		nextMarker string
+		repStatus, backendStatus *string
 		p,r,f,o,t int64
+		cp,cf,cc int64
 		req        = datatype.ListObjLdbRequest{
 			Url:       url,
 			Bucket:    bucket,
@@ -86,7 +88,8 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				l := len(s3Meta.Contents)
 				for _, c := range s3Meta.Contents {
 					//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
-					repStatus := &c.Value.ReplicationInfo.Status
+					repStatus = &c.Value.ReplicationInfo.Status
+
 					lastModified := &c.Value.LastModified
 					t++
 					switch *repStatus {
@@ -100,6 +103,19 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 						}
 						case "COMPLETED":{
 							r++
+							backendStatus = &c.Value.ReplicationInfo.Backends[0].Status
+							switch *backendStatus {
+								case "PENDING" :{
+									cp++
+								}
+								case "COMPLETED": {
+									cc++
+								}
+								case "FAILED" : {
+									cf++
+								}
+							}
+
 							if done {
 								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 							}
@@ -118,16 +134,16 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			}
 
 			if !s3Meta.IsTruncated {
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d ", time.Since(begin),t, p,f,r,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d -cc%d - cp:%d -cf:% - other:%d ", time.Since(begin),t, p,f,r,cp,cp,cf,o)
 				return
 			} else {
 				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
-				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
+				gLog.Warning.Printf("elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d -cc%d - cp:%d -cf:% - other:%d ", time.Since(start),t, p,f,r,cp,cp,cf,o)
 			}
 			if maxLoop != 0 && N > maxLoop {
-				gLog.Warning.Printf("Total elapsed time: %v - Total:%d - Pending:%d - Failed:%d - Completed:%d - Other:%d ", time.Since(begin),t, p,f,r,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d -cc%d - cp:%d -cf:% - other:%d ", time.Since(begin),t, p,f,r,cp,cp,cf,o)
 				return
 			}
 		}
