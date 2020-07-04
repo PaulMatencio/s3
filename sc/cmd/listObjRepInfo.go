@@ -104,7 +104,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 						case "COMPLETED":{
 							r++
 							backendStatus = &c.Value.ReplicationInfo.Backends[0].Status
-							 
+
 							switch *backendStatus {
 								case "PENDING" :{
 

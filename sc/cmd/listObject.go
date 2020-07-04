@@ -51,7 +51,7 @@ func initLoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
-	cmd.Flags().BoolVarP(&loop,"maxLoop","l",false,"maximum number of loop")
+	// cmd.Flags().BoolVarP(&,"maxLoop","",false,"maximum number of loop")
 	cmd.Flags().BoolVarP(&full,"fullKey","F",false,"given prefix is a full documemt key")
 
 	cmd.Flags().BoolVarP(&R,"reverse","R",false,"Reverse the prefix")
