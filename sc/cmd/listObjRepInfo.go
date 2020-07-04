@@ -118,17 +118,19 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			}
 
 			if !s3Meta.IsTruncated {
+				gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
 				return
 			} else {
-				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on 
+				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
 				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
 			if maxLoop != 0 && N > maxLoop {
+				gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
 				return
 			}
 		}
 	}
-	gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
+
 }
