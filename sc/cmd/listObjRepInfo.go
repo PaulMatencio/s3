@@ -118,7 +118,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			}
 
 			if !s3Meta.IsTruncated {
-				gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d ", time.Since(begin),t, p,f,r,o)
 				return
 			} else {
 				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
@@ -127,7 +127,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				gLog.Warning.Printf("Elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - other:%d - nextMarker:%s", time.Since(start),t, p,f,r,o,req.Marker)
 			}
 			if maxLoop != 0 && N > maxLoop {
-				gLog.Info.Printf("Total elapsed time:%v",time.Since(begin))
+				gLog.Warning.Printf("Total elapsed time: %v - Total:%d - Pending:%d - Failed:%d - Completed:%d - Other:%d ", time.Since(begin),t, p,f,r,o)
 				return
 			}
 		}
