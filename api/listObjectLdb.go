@@ -42,9 +42,10 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 	}
 	// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
 	url := request.Url + req + prefix + limit + keyMarker + delim
-	gLog.Trace.Println("URL:", url)
+	// gLog.Trace.Println("URL:", url)
 	for i := 1; i <= retryNumber; i++ {
 		if response, err := http.Get(url); err == nil {
+			gLog.Trace.Printf("Response: %v",response)
 			resp.StatusCode = response.StatusCode
 			if response.StatusCode == 200 {
 				defer response.Body.Close()
