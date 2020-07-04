@@ -134,7 +134,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			}
 
 			if !s3Meta.IsTruncated {
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d -cc%d - cp:%d -cf:% - other:%d ", time.Since(begin),t, p,f,r,cp,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cp,cp,cf,o)
 				return
 			} else {
 				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
