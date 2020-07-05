@@ -34,7 +34,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",100,"maximum number of loop, 0 means no upper limit")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
-	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED status, by default only PENDING or FAILED are printed out ")
+	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED/REPLICA status,by default only PENDING or FAILED are printed out ")
 
 }
 
@@ -124,6 +124,13 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
 							}
 						}
+						case "REPLICA" : {
+							r++
+							if done {
+								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+							}
+
+						}
 						default: o++
 					}
 					gLog.Trace.Printf("Key: %s - Last Modified:%v  - replication status: %v ", c.Key,lastModified, *repStatus)
@@ -141,7 +148,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
 				return
 			} else {
-				// marker = nextMarker, nextMarker could contain Keyu00 ifbucket versioning is on
+				// marker = nextMarker, nextMarker could contain Keyu00 if  bucket versioning is on
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
 				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,cc,cp,cf,o)
