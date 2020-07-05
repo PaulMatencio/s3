@@ -47,7 +47,7 @@ func initLoFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
-	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")

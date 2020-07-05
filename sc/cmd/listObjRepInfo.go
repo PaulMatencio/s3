@@ -28,11 +28,13 @@ var (
 func initLriFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of the bucket")
-	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maxmimum number of keys to be processed concurrently")
+	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
+	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
-	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",100,"maximum number of loop, 0 no limit")
-	cmd.Flags().BoolVarP(&done,"done","",false,"maximum number of loop")
+	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",100,"maximum number of loop, 0 means no upper limit")
+	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
+	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED status, by default only PENDING or FAILED are printed out ")
 
 }
 
