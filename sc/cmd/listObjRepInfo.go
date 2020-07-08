@@ -22,6 +22,7 @@ var (
 		Run: ListObjRepInfo,
 	}
 	done bool
+	listMaster bool
 
 )
 
@@ -31,8 +32,9 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
-	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
-	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",100,"maximum number of loop, 0 means no upper limit")
+	// cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
+	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
+	cmd.Flags().BoolVarP(&listMaster,"listMaster","",true,"List last version only")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED/REPLICA status,by default only PENDING or FAILED are printed out ")
 
@@ -68,6 +70,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			Prefix:    prefix,
 			MaxKey:    maxKey,
 			Marker:    marker,
+			ListMaster: listMaster,
 			Delimiter: delimiter,
 		}
 		s3Meta = datatype.S3Metadata{}

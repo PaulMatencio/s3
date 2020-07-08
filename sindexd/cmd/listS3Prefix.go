@@ -362,9 +362,10 @@ func listS3bPref(prefix string,marker string) (error,string) {
 		}
 		/*
 		build the request
-	    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
+	    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listingType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
+		 curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listingType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
 		*/
-		request:= "/default/bucket/"+buck+"?listType=DelimiterMaster&prefix="
+		request:= "/default/bucket/"+buck+"?listingType=DelimiterMaster&prefix="
 		limit := "&maxKeys="+strconv.Itoa(int(maxS3Key))
 
 		if len(delimiter) >0 {

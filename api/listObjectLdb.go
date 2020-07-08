@@ -26,9 +26,14 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 
 	/*
 			build the request
-		    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listType=DelimiterMaster&prefix=FR/&maxKeys=2&delimiter=/'
+		    curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listingType=DelimiterMaster&prefix=FR&maxKeys=2&delimiter=/'
+            curl -s '10.12.201.11:9000/default/bucket/moses-meta-02?listingType=Delimiter&prefix=FR&maxKeys=2&delimiter=/'
 	*/
-	req = "/default/bucket/" + request.Bucket + "?listType=DelimiterMaster&prefix="
+	if request.ListMaster {
+		req = "/default/bucket/" + request.Bucket + "?listingType=DelimiterMaster&prefix="
+	} else {
+		req = "/default/bucket/" + request.Bucket + "?listingType=Delimiter&prefix="
+	}
 	limit := "&maxKeys=" + strconv.Itoa(int(request.MaxKey))
 
 	if len(request.Delimiter) > 0 {
@@ -40,7 +45,9 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 	if len(request.Prefix) > 0 {
 		prefix = request.Prefix
 	}
+
 	// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
+
 	url := request.Url + req + prefix + limit + keyMarker + delim
 	// gLog.Trace.Println("URL:", url)
 	for i := 1; i <= retryNumber; i++ {
@@ -66,6 +73,7 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 
 
 // transform content returned by the bucketd API into JSON string
+
 func ContentToJson(contents []byte ) string {
 	result:= strings.Replace(string(contents),"\\","",-1)
 	result = strings.Replace(result,"\"{","{",-1)

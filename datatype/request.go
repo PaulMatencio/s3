@@ -72,6 +72,7 @@ type ListObjLdbRequest struct {
 	Prefix       string
 	MaxKey	      int64
 	Marker        string
+	ListMaster    bool
 	Delimiter     string
 }
 
