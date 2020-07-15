@@ -62,8 +62,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 	var (
 		nextMarker string
 		repStatus, backendStatus *string
-		p,r,f,o,t int64
+		p,r,f,o,t,cl int64
 		cp,cf,cc int64
+		size float64
 		req        = datatype.ListObjLdbRequest{
 			Url:       url,
 			Bucket:    bucket,
@@ -74,7 +75,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			Delimiter: delimiter,
 		}
 		s3Meta = datatype.S3Metadata{}
-		N = 0
+		N = 1
 	)
 	begin := time.Now()
 	for {
@@ -100,43 +101,41 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					switch *repStatus {
 						case "PENDING" :{
 							p++
-							gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key, lastModified, *repStatus)
+							gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key, lastModified, c.Value.ContentLength,*repStatus)
 						}
 						case "FAILED" : {
 							f++
-							gLog.Warning.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+							gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 						}
 						case "COMPLETED":{
 							r++
 							backendStatus = &c.Value.ReplicationInfo.Backends[0].Status
-
 							switch *backendStatus {
 								case "PENDING" :{
-
 									cp++
 								}
 								case "COMPLETED": {
 									cc++
+									cl += int64(c.Value.ContentLength)
 								}
 								case "FAILED" : {
 									cf++
 								}
 							}
-
 							if done {
-								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+								gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 							}
 						}
 						case "REPLICA" : {
 							r++
+							cl += int64(c.Value.ContentLength)
 							if done {
-								gLog.Info.Printf("Key: %s - Last Modified: %v  - replication status: %v ", c.Key,lastModified,*repStatus)
+								gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 							}
-
 						}
 						default: o++
 					}
-					gLog.Trace.Printf("Key: %s - Last Modified:%v  - replication status: %v ", c.Key,lastModified, *repStatus)
+					gLog.Trace.Printf("Key: %s - Last Modified:%v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength, *repStatus)
 				}
 				N++
 				if l > 0 {
@@ -146,18 +145,21 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			} else {
 				gLog.Info.Println(err)
 			}
-
+			size = float64(cl)/(1024.0*1024.0*1024.0)
 			if !s3Meta.IsTruncated {
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
+
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(MB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
 				return
 			} else {
 				// marker = nextMarker, nextMarker could contain Keyu00 if  bucket versioning is on
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,cc,cp,cf,o)
+				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,cc,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,size,cc,cp,cf,o)
 			}
 			if maxLoop != 0 && N > maxLoop {
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
+				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(MB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
 				return
 			}
 		}
