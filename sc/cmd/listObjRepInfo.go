@@ -148,7 +148,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			size = float64(cl)/(1024.0*1024.0*1024.0)
 			if !s3Meta.IsTruncated {
 
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(MB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
 				return
 			} else {
 				// marker = nextMarker, nextMarker could contain Keyu00 if  bucket versioning is on
@@ -159,7 +159,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			}
 			if maxLoop != 0 && N > maxLoop {
 				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(MB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
+				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
 				return
 			}
 		}
