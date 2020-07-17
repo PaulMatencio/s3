@@ -42,7 +42,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&listMaster,"listMaster","",true,"List current version only")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED/REPLICA status,by default only PENDING or FAILED are printed out ")
-	cmd.Flags().BoolVarP(&rBackend,"completed","",false,"print Report of of both S3 metadata and backend replication info (sproxyd)")
+	cmd.Flags().BoolVarP(&rBackend,"rback","",false,"print report of both S3 metadata and backend replication info (sproxyd)")
 }
 
 func init() {
