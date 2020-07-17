@@ -171,6 +171,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 
 			report  = Report {
 				Total: t,
+				Size: size,
 				ReportMeta: ReportNumber {
 					Completed: r,
 					Pending: p,
@@ -195,12 +196,14 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				req.Marker = Marker[0]
 				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,cc,cp,cf,o)
 				report.Elapsed= time.Since(start)
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,size,cc,cp,cf,o)
+				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(start),t, p,f,r,size,cc,cp,cf,o)
+				report.printReport(gLog.Warning,rBackend)
 			}
 			if maxLoop != 0 && N > maxLoop {
 				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,cc,cp,cf,o)
-				gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
+				// gLog.Warning.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d", time.Since(begin),t, p,f,r,size,cc,cp,cf,o)
 				report.Elapsed= time.Since(begin)
+				report.printReport(gLog.Warning,rBackend)
 				return
 			}
 		}
@@ -211,7 +214,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 type Report struct {
 	Elapsed time.Duration
 	Total    int64
-	Size      int64
+	Size      float64
 	ReportMeta	 ReportNumber
 	ReportBackend  ReportNumber
 }
@@ -227,12 +230,12 @@ func (r Report) printReport (log *log.Logger,back bool) {
 	if back {
 		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
-			r.ReportMeta.Failed, r.ReportMeta.Completed,
-			r.Size,r.ReportBackend.Completed,r.ReportBackend.Failed,r.ReportMeta.Other)
+			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
+			r.ReportBackend.Completed,r.ReportBackend.Failed,r.ReportMeta.Other)
 	} else {
 		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - other:%d",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
-			r.ReportMeta.Failed, r.ReportMeta.Completed,
+			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
 			r.ReportMeta.Other)
 	}
 
