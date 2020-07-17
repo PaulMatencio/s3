@@ -1,6 +1,7 @@
 package datatype
 
 import (
+	"log"
 	"reflect"
 	"time"
 )
@@ -175,3 +176,7 @@ type Contents struct {
 	Value Value  `json:"value"`
 }
 
+
+func (v Value) PrintRepInfo(log *log.Logger) {
+		log.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", v.Key, v.LastModified, v.ContentLength,&v.ReplicationInfo.Status)
+}

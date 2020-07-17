@@ -56,7 +56,7 @@ func init() {
 
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose","v", false, "verbose output")
 	RootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 0,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
-	RootCmd.Flags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.sc/config.yaml")
+	RootCmd.Flags().StringVarP(&config,"config", "c","", "Full path of the config file; default $HOME/.sc/config.yaml")
 	RootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	RootCmd.PersistentFlags().IntVarP(&profiling,"profiling", "P",0, "display memory usage every P seconds")
 

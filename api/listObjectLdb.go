@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/s3/datatype"
+	datatype "github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/viper"
@@ -49,7 +49,7 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 	// url := Host +":"+Port+request+prefix+limit+keyMarker+delim
 
 	url := request.Url + req + prefix + limit + keyMarker + delim
-	// gLog.Trace.Println("URL:", url)
+	gLog.Trace.Println("URL:", url)
 	for i := 1; i <= retryNumber; i++ {
 		if response, err := http.Get(url); err == nil {
 			gLog.Trace.Printf("Response: %v",response)
@@ -90,3 +90,6 @@ func ListCommonPrefix( cp []interface{}) {
 		gLog.Info.Printf("Common prefix %s", p)
 	}
 }
+
+
+
