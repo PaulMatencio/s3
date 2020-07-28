@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-
+const (
+	ISOLayout = "2006-01-02"
+	dayToAdd = 7
+)
 var (
 	lrishort = "Command to list object replication info for given bucket"
 	lriCmd = &cobra.Command{
@@ -27,8 +30,9 @@ var (
 		Run: ListObjRepInfo,
 	}
 	done , listMaster, rBackend bool
-
-
+	toDate string
+	lastDate time.Time
+	err error
 )
 
 func initLriFlags(cmd *cobra.Command) {
@@ -39,10 +43,11 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker,"marker","M","","start key processing from marker")
 	// cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
-	cmd.Flags().BoolVarP(&listMaster,"listMaster","",true,"List current version only")
+	cmd.Flags().BoolVarP(&listMaster,"listMaster","",true,"list the current version only")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED/REPLICA status,by default only PENDING or FAILED are printed out ")
 	cmd.Flags().BoolVarP(&rBackend,"rback","",false,"print report of both S3 metadata and backend replication info (sproxyd)")
+	cmd.Flags().StringVarP(&toDate,"toDate","","","List replication info up to this given date <yyyy-mm-dd>")
 }
 
 func init() {
@@ -50,8 +55,6 @@ func init() {
 	RootCmd.MarkFlagRequired("bucket")
 	initLriFlags(lriCmd)
 }
-
-
 
 func ListObjRepInfo(cmd *cobra.Command,args []string) {
 
@@ -64,11 +67,22 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 		gLog.Warning.Printf("levelDB url is missing")
 		return
 	}
+
+    if len(toDate) > 0 {
+		if lastDate, err = time.Parse(ISOLayout, toDate); err != nil {
+			gLog.Error.Printf("Wrong date format %s", toDate)
+			return
+		}
+	} else {
+		lastDate = time.Now().AddDate(0,0,dayToAdd)
+	}
+	gLog.Info.Printf("Counting objects from last modified date %v",lastDate)
+
 	var (
 		nextMarker string
 		repStatus, backendStatus *string
 		p,r,f,o,t,cl int64
-		cp,cf,cc int64
+		cp,cf,cc, skip int64
 		size float64
 		req        = datatype.ListObjLdbRequest{
 			Url:       url,
@@ -82,7 +96,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 		report Report
 
 		s3Meta = datatype.S3Metadata{}
-		N = 1
+		N = 1 /* number of loop */
 	)
 	gLog.Info.Printf("%v",req)
 
@@ -96,7 +110,6 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				gLog.Info.Println("Result is empty")
 			}
 		} else {
-
 			if err = json.Unmarshal([]byte(result.Contents), &s3Meta); err == nil {
 				//gLog.Info.Println("Key:",s3Meta.Contents[0].Key,s3Meta.Contents[0].Value.XAmzMetaUsermd)
 				//num := len(s3Meta.Contentss3Meta.Contents)
@@ -105,48 +118,61 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
 					value := c.Value
 					repStatus = &value.ReplicationInfo.Status
-					// lastModified := &value.LastModified
-					t++
-					switch *repStatus {
-						case "PENDING" :{
-							p++
-							//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key, lastModified, c.Value.ContentLength,*repStatus)
-							value.PrintRepInfo(gLog.Warning)
-						}
-						case "FAILED" : {
-							f++
-							//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
-							value.PrintRepInfo(gLog.Warning)
-						}
-						case "COMPLETED":{
-							r++
-							backendStatus = &c.Value.ReplicationInfo.Backends[0].Status
-							switch *backendStatus {
-								case "PENDING" :{
-									cp++
+					if  value.LastModified.Before(lastDate) {
+
+						// lastModified := &value.LastModified
+						t++
+						switch *repStatus {
+						case "PENDING":
+							{
+								p++
+								//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key, lastModified, c.Value.ContentLength,*repStatus)
+								value.PrintRepInfo(gLog.Warning)
+							}
+						case "FAILED":
+							{
+								f++
+								//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
+								value.PrintRepInfo(gLog.Warning)
+							}
+						case "COMPLETED":
+							{
+								r++
+								backendStatus = &c.Value.ReplicationInfo.Backends[0].Status
+								switch *backendStatus {
+								case "PENDING":
+									{
+										cp++
+									}
+								case "COMPLETED":
+									{
+										cc++
+										cl += int64(c.Value.ContentLength)
+									}
+								case "FAILED":
+									{
+										cf++
+									}
 								}
-								case "COMPLETED": {
-									cc++
-									cl += int64(c.Value.ContentLength)
-								}
-								case "FAILED" : {
-									cf++
+								if done {
+									value.PrintRepInfo(gLog.Info)
+									// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 								}
 							}
-							if done {
-								value.PrintRepInfo(gLog.Info)
-								// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
+						case "REPLICA":
+							{
+								r++
+								cl += int64(c.Value.ContentLength)
+								if done {
+									value.PrintRepInfo(gLog.Info)
+									// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
+								}
 							}
+						default:
+							o++
 						}
-						case "REPLICA" : {
-							r++
-							cl += int64(c.Value.ContentLength)
-							if done {
-								value.PrintRepInfo(gLog.Info)
-								// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
-							}
-						}
-						default: o++
+					} else {
+						skip++  /* number of objecys skipped after last modified date > toDate */
 					}
 					value.PrintRepInfo(gLog.Trace)
 					// gLog.Trace.Printf("Key: %s - Last Modified:%v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength, *repStatus)
@@ -183,6 +209,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					Pending: cp,
 					Failed: cf,
 				},
+				Skipped : skip,
 			}
 
 			if !s3Meta.IsTruncated {
@@ -217,6 +244,7 @@ type Report struct {
 	Size      float64
 	ReportMeta	 ReportNumber
 	ReportBackend  ReportNumber
+	Skipped  int64
 }
 
 type ReportNumber struct {
@@ -228,15 +256,15 @@ type ReportNumber struct {
 
 func (r Report) printReport (log *log.Logger,back bool) {
 	if back {
-		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d",
+		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d - skipped:%d",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
 			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
 			r.ReportBackend.Completed,r.ReportBackend.Failed,r.ReportMeta.Other)
 	} else {
-		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - other:%d",
+		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - other:%d - skipped:%d",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
 			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
-			r.ReportMeta.Other)
+			r.ReportMeta.Other,r.Skipped)
 	}
 
 }
