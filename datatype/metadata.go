@@ -177,6 +177,7 @@ type Contents struct {
 }
 
 
-func (v Value) PrintRepInfo(log *log.Logger) {
-		log.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", v.Key, v.LastModified, v.ContentLength,&v.ReplicationInfo.Status)
+func (v Value) PrintRepInfo(key string, log *log.Logger) {
+	    repStatus := &v.ReplicationInfo.Status
+		log.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", key, v.LastModified, v.ContentLength,*repStatus)
 }

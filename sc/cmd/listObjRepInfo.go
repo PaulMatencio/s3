@@ -127,13 +127,13 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 							{
 								p++
 								//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key, lastModified, c.Value.ContentLength,*repStatus)
-								value.PrintRepInfo(gLog.Warning)
+								value.PrintRepInfo(c.Key,gLog.Warning)
 							}
 						case "FAILED":
 							{
 								f++
 								//gLog.Warning.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
-								value.PrintRepInfo(gLog.Warning)
+								value.PrintRepInfo(c.Key,gLog.Warning)
 							}
 						case "COMPLETED":
 							{
@@ -155,7 +155,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 									}
 								}
 								if done {
-									value.PrintRepInfo(gLog.Info)
+									value.PrintRepInfo(c.Key,gLog.Info)
 									// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 								}
 							}
@@ -164,7 +164,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 								r++
 								cl += int64(c.Value.ContentLength)
 								if done {
-									value.PrintRepInfo(gLog.Info)
+									value.PrintRepInfo(c.Key,gLog.Info)
 									// gLog.Info.Printf("Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength,*repStatus)
 								}
 							}
@@ -174,7 +174,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 					} else {
 						skip++  /* number of objecys skipped after last modified date > toDate */
 					}
-					value.PrintRepInfo(gLog.Trace)
+					value.PrintRepInfo(c.Key,gLog.Trace)
 					// gLog.Trace.Printf("Key: %s - Last Modified:%v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength, *repStatus)
 				}
 				N++

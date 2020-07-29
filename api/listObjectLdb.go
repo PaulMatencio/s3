@@ -73,7 +73,6 @@ func ListObjectLdb(request datatype.ListObjLdbRequest) (datatype.Rlb, error) {
 
 
 // transform content returned by the bucketd API into JSON string
-
 func ContentToJson(contents []byte ) string {
 	result:= strings.Replace(string(contents),"\\","",-1)
 	result = strings.Replace(result,"\"{","{",-1)
