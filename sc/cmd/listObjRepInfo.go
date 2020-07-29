@@ -172,7 +172,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 							o++
 						}
 					} else {
+
 						skip++  /* number of objecys skipped after last modified date > toDate */
+						gLog.Info.Printf("Skip Key: %s - Last Modified: %v - size: %d - replication status: %v", c.Key,c.Value.LastModified,c.Value.ContentLength,*repStatus)
 					}
 					value.PrintRepInfo(c.Key,gLog.Trace)
 					// gLog.Trace.Printf("Key: %s - Last Modified:%v - size: %d - replication status: %v", c.Key,lastModified,c.Value.ContentLength, *repStatus)
