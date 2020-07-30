@@ -48,6 +48,7 @@ func initLriFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&done,"completed","",false,"print objects with COMPLETED/REPLICA status,by default only PENDING or FAILED are printed out ")
 	cmd.Flags().BoolVarP(&rBackend,"rback","",false,"print report of both S3 metadata and backend replication info (sproxyd)")
 	cmd.Flags().StringVarP(&toDate,"toDate","","","List replication info up to this given date <yyyy-mm-dd>")
+
 }
 
 func init() {
@@ -81,9 +82,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 	var (
 		nextMarker string
 		repStatus, backendStatus *string
-		p,r,f,o,t,cl int64
+		p,r,f,o,t,cl,ol,sl int64
 		cp,cf,cc, skip int64
-		size float64
+		compSize , othSize, skipSize float64
 		req        = datatype.ListObjLdbRequest{
 			Url:       url,
 			Bucket:    bucket,
@@ -170,6 +171,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 							}
 						default:
 							o++
+							ol += int64(c.Value.ContentLength)
 						}
 					} else {
 
@@ -187,7 +189,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 			} else {
 				gLog.Info.Println(err)
 			}
-			size = float64(cl)/(1024.0*1024.0*1024.0)  //  expressed in GB
+			compSize = float64(cl)/(1024.0*1024.0*1024.0)  //  expressed in GB
+			othSize = float64(ol)/(1024.0*1024.0*1024.0)  //  expressed in GB
+			skipSize = float64(sl)/(1024.0*1024.0*1024.0)
 			report.Total= t
 			report.ReportMeta.Completed=r
 			report.ReportMeta.Pending =p
@@ -199,7 +203,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 
 			report  = Report {
 				Total: t,
-				Size: size,
+				CompSize: compSize,
+				OthSize: othSize,
+				SkipSize: skipSize,
 				ReportMeta: ReportNumber {
 					Completed: r,
 					Pending: p,
@@ -243,7 +249,9 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 type Report struct {
 	Elapsed time.Duration
 	Total    int64
-	Size      float64
+	CompSize      float64
+	OthSize  float64
+	SkipSize  float64
 	ReportMeta	 ReportNumber
 	ReportBackend  ReportNumber
 	Skipped  int64
@@ -258,15 +266,15 @@ type ReportNumber struct {
 
 func (r Report) printReport (log *log.Logger,back bool) {
 	if back {
-		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d - skipped:%d",
+		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - cc:%d - cp:%d - cf:%d - other:%d/size(GB):%.2f - skipped:%d/size(GB):%.2f",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
-			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
-			r.ReportBackend.Completed,r.ReportBackend.Failed,r.ReportMeta.Other)
+			r.ReportMeta.Failed, r.ReportMeta.Completed,r.CompSize,
+			r.ReportBackend.Completed,r.ReportBackend.Failed,r.ReportMeta.Other,r.OthSize,r.OthSize,r.Skipped,r.SkipSize)
 	} else {
-		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d / size(GB):%.2f - other:%d - skipped:%d",
+		log.Printf("Total elapsed time: %v - total:%d - pending:%d - failed:%d - completed:%d/size(GB):%.2f - other:%d/size:%.2f - skipped:%d/size:%.2f",
 			r.Elapsed, r.Total, r.ReportMeta.Pending,
-			r.ReportMeta.Failed, r.ReportMeta.Completed,r.Size,
-			r.ReportMeta.Other,r.Skipped)
+			r.ReportMeta.Failed, r.ReportMeta.Completed,r.CompSize,
+			r.ReportMeta.Other,r.OthSize,r.Skipped,r.SkipSize)
 	}
 
 }
