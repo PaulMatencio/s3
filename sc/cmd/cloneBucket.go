@@ -217,6 +217,8 @@ func getObj(request datatype.GetObjRequest) (datatype.Robj){
 			robj.Metadata =result.Metadata
 		}
 		robj.Err = err
+	} else {
+		robj.Err = err
 	}
 	return robj
 }
