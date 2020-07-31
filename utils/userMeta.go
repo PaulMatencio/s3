@@ -24,6 +24,7 @@ func GetUserMeta(metad map[string]*string) (string,error) {
 	}
 }
 
+
 func GetPxiMeta(metad map[string]*string) (string,error) {
 
 	var (
@@ -125,6 +126,13 @@ func PrintUsermd(key string, metad map[string]*string) {
 	// fmt.Println("")
 
 }
+
+func PrintMetadata(metad map[string]*string) {
+	for k,v := range metad {
+		gLog.Trace.Printf("%s: %s", k,*v)
+	}
+}
+
 
 func WriteUsermd(metad map[string]*string ,pathname string ) {
 

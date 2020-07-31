@@ -6,6 +6,12 @@ import (
 	"net/http"
 )
 
+type CreateSession struct {
+	Region 		string
+	EndPoint 	string
+	AccessKey   string
+	SecretKey   string
+}
 type GetObjRequest struct {
 
 	Service 	*s3.S3
@@ -42,6 +48,15 @@ type PutObjRequest struct {
 	Usermd      map[string]string
 	Meta        []byte
 }
+
+type PutObjRequest3 struct {
+	Service     *s3.S3
+	Bucket       string
+	Key          string
+	Buffer       *bytes.Buffer
+	Metadata     map[string]*string
+}
+
 
 type FputObjRequest struct {
 	Service     *s3.S3

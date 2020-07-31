@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/s3/datatype"
 	"github.com/spf13/viper"
 )
 
@@ -111,4 +112,57 @@ func CreateSession() *session.Session {
 	return sess
 
 }
+func CreateSession2(req datatype.CreateSession) *session.Session {
+
+	var (
+		sess     *session.Session
+		loglevel  = *aws.LogLevel(1)
+	)
+
+	if viper.GetInt("loglevel") == 5 {
+		loglevel = aws.LogDebug
+	}
+
+
+	if viper.ConfigFileUsed() == ""  {
+
+		myCustomResolver := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+
+			if service == endpoints.S3ServiceID {
+				return endpoints.ResolvedEndpoint{
+					URL: "http://127.0.0.1:9000",
+					SigningRegion: "us-east-1",
+				}, nil
+			}
+
+			return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+
+		}
+
+		sess = session.Must(session.NewSession(&aws.Config{
+			// Region:           aws.String("us-east-1"),
+			Credentials: credentials.NewSharedCredentials("", "minio-account"),
+			EndpointResolver: endpoints.ResolverFunc(myCustomResolver),
+			//Endpoint: &endpoint,
+			S3ForcePathStyle: aws.Bool(true),
+			LogLevel: aws.LogLevel(loglevel),
+
+		}))
+
+	} else {
+
+		sess, _ = session.NewSession(&aws.Config{
+			Region:           aws.String(req.Region),
+			Endpoint:         aws.String(req.EndPoint),
+			Credentials:      credentials.NewStaticCredentials(req.AccessKey, req.SecretKey, ""),
+			S3ForcePathStyle: aws.Bool(true),
+			LogLevel:         aws.LogLevel(loglevel),
+		})
+
+	}
+
+	return sess
+
+}
+
 

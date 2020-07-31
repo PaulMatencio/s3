@@ -18,6 +18,13 @@ type  Ro struct {
 	Err error
 }
 
+type Robj struct {
+	Key string
+	Body *bytes.Buffer
+	Metadata map[string]*string
+	Err  error
+}
+
 type  Rp struct {
 
 	Idir string

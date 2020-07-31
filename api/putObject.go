@@ -73,3 +73,14 @@ func PutObject2(req datatype.PutObjRequest) (*s3.PutObjectOutput,error){
 	return req.Service.PutObject(input)
 }
 
+func PutObject3(req datatype.PutObjRequest3) (*s3.PutObjectOutput,error){
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(req.Bucket),
+		Key:    aws.String(req.Key),
+		Body: bytes.NewReader(req.Buffer.Bytes()),
+		Metadata: req.Metadata,
+	}
+	return req.Service.PutObject(input)
+}
+
+
