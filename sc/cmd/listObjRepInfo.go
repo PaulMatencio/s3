@@ -83,7 +83,7 @@ func initLoNFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
 	cmd.Flags().BoolVarP(&listMaster,"listMaster","",true,"list the current version only")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
-	cmd.Flags().StringVarP(&fromDate,"fromDate","","2000-01-01T00:00:00Z","clone objects after last modified from <yyyy-mm-ddThh:mm:ss>")
+	cmd.Flags().StringVarP(&fromDate,"fromDate","","2000-01-01T00:00:00Z","clone objects after last modified from <yyyy-mm-ddThh:mm:ssZ>")
 	cmd.Flags().StringVarP(&toDate,"toDate","","","List objects modified before date <yyyy-mm-dd>")
 	cmd.Flags().BoolVarP(&count,"count","",true,"Count only the number of  objects between --fromDate to --toDate")
 
@@ -304,7 +304,8 @@ func ListObjNew(cmd *cobra.Command,args []string) {
 		gLog.Error.Printf("Wrong date format %s", frDate)
 		return
 	}
-	gLog.Info.Printf("Counting objects from last modified date %v",lastDate)
+
+	gLog.Info.Printf("Counting objects from last modified date %v",frDate)
 
 	var (
 		nextMarker string
@@ -365,11 +366,11 @@ func ListObjNew(cmd *cobra.Command,args []string) {
 				return
 			} else {
 				Marker := strings.Split(nextMarker,"u00")
-				if Marker[0:len(endMarker)][0]== endMarker {
+				req.Marker = Marker[0]
+				if req.Marker[0:len(endMarker)] == endMarker {
 					counter.Print()
 					return
 				}
-				req.Marker = Marker[0]
 			}
 			if maxLoop != 0 && N > maxLoop {
                 counter.Print()
