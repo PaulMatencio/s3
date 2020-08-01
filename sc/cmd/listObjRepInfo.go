@@ -218,6 +218,7 @@ func ListObjRepInfo(cmd *cobra.Command,args []string) {
 				}
 				N++
 				if l > 0 {
+					//
 					nextMarker = s3Meta.Contents[l-1].Key
 					gLog.Info.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
 				}
@@ -348,7 +349,7 @@ func ListObjNew(cmd *cobra.Command,args []string) {
 				N++
 				if l > 0 {
 					nextMarker = s3Meta.Contents[l-1].Key
-					gLog.Info.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
+					gLog.Warning.Printf("Next marker %s Istruncated %v", nextMarker,s3Meta.IsTruncated)
 				}
 			} else {
 				gLog.Info.Println("Error passing content:",err)
@@ -367,7 +368,8 @@ func ListObjNew(cmd *cobra.Command,args []string) {
 			} else {
 				Marker := strings.Split(nextMarker,"u00")
 				req.Marker = Marker[0]
-				if req.Marker[0:len(endMarker)] == endMarker {
+				if len(endMarker) > 0 && req.Marker[0:len(endMarker)] == endMarker {
+					gLog.Info.Println("End marker matched- Req: %s / endMarker: %s",req.Marker,endMarker)
 					counter.Print()
 					return
 				}
