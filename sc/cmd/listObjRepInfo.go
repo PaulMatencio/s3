@@ -339,7 +339,7 @@ func ListObjNew(cmd *cobra.Command,args []string) {
 					value := c.Value
 					if  value.LastModified.Before(lastDate) && value.LastModified.After(frDate){
 						if !count {
-							gLog.Info.Printf("Key:%s - Last modidied date: %v - Size: %s", c.Key, c.Value.LastModified, c.Value.ContentLength)
+							gLog.Info.Printf("Key:%s - Last modidied date: %v - Size: %d", c.Key, c.Value.LastModified, c.Value.ContentLength)
 						}
 						n++
 					}
