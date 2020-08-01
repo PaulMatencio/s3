@@ -23,6 +23,7 @@ var (
 	}
 	srcBucket,tgtBucket string
 	fromDate string
+	check bool
 )
 
 func init() {
@@ -40,6 +41,7 @@ func initCbFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker,"marker","M","","start key processing from marker")
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
 	cmd.Flags().StringVarP(&fromDate,"fromDate","","2000-01-01T00:00:00Z","clone objects with last modified from <yyyy-mm-ddThh:mm:ss>")
+	cmd.Flags().BoolVarP(&check,"check","",true,"Check for new objects ,to be used with --fromDate argument")
 	// cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 }
 
@@ -98,7 +100,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 	}
 
 	if frDate, err = time.Parse(time.RFC3339, fromDate); err != nil {
-		gLog.Error.Printf("Wrong date format %s", toDate)
+		gLog.Error.Printf("Wrong date format %s", frDate)
 		return
 	}
 
@@ -130,7 +132,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 				//wg1.Add(len(result.Contents))
 				for _, v := range result.Contents {
 					// gLog.Trace.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size ,v.LastModified)
-					if (v.LastModified.After(frDate)) {
+					if (v.LastModified.After(frDate)) && !check {
 
 						svc := list.Service
 						wg1.Add(1)
@@ -178,6 +180,10 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 							}
 
 						}(get)
+					} else {
+						if check {
+							gLog.Info.Printf("New objet: %s - Last modified date: %v - Size: %d",*v.Key,v.LastModified,*v.Size)
+						}
 					}
 				}
 				if *result.IsTruncated {
@@ -187,11 +193,12 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 				wg1.Wait()
 			}
 		} else {
-			gLog.Error.Printf("%v", err)
-			break
+			gLog.Error.Printf("ListObj: Error: %v - List argument: %v", err,list)
+			gLog.Info.Printf("Exit due to listObj error - Total number of objects cloned so far: %d /size(KB): %.2f",total,float64(size/(1024.0)))
+			gLog.Info.Printf("Next marker: %s ",nextmarker)
+			return
 		}
 		if !*result.IsTruncated {
-
 			gLog.Info.Printf("Total number of objects cloned: %d /size(KB): %.2f",total,float64(size/(1024.0)))
 			return
 		} else {

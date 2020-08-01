@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/s3/gLog"
-	"github.com/spf13/viper"
-
 	// "github.com/golang/gLog"
 	"github.com/s3/api"
 	"github.com/s3/datatype"
@@ -16,7 +13,7 @@ import (
 
 // listObjectCmd represents the listObject command
 var (
-	loshort = "Command to list multiple objects of a given bucket"
+	loshort = "Command to list multiple objects in a given bucket"
 	listObjectCmd = &cobra.Command{
 		Use:   "lsObjs",
 		Short: loshort,
@@ -135,62 +132,3 @@ func listObject(cmd *cobra.Command,args []string) {
 	utils.Return(start)
 }
 
-func ListObjRepStatus(cmd *cobra.Command,args []string) {
-	var url string
-	if len(bucket) == 0 {
-		gLog.Warning.Printf("%s", missingBucket)
-		return
-	}
-	if url = utils.GetLevelDBUrl(*viper.GetViper()); len(url) == 0 {
-		gLog.Warning.Printf("levelDB url is missing")
-		return
-	}
-	var (
-		nextMarker string
-		req        = datatype.ListObjLdbRequest{
-			Url:       url,
-			Bucket:    bucket,
-			Prefix:    prefix,
-			MaxKey:    maxKey,
-			Marker:    marker,
-			Delimiter: delimiter,
-		}
-		s3Meta = datatype.S3Metadata{}
-		N = 0
-	)
-	for {
-		if result, err := api.ListObjectLdb(req); err != nil {
-			if err != nil {
-				gLog.Error.Println(err)
-			} else {
-				gLog.Info.Println("Result is empty")
-			}
-		} else {
-
-			if err = json.Unmarshal([]byte(result.Contents), &s3Meta); err == nil {
-				//gLog.Info.Println("Key:",s3Meta.Contents[0].Key,s3Meta.Contents[0].Value.XAmzMetaUsermd)
-				//num := len(s3Meta.Contentss3Meta.Contents)
-				// l := len(s3Meta.Contents)
-				for _, c := range s3Meta.Contents {
-					//m := &s3Meta.Contents[i].Value.XAmzMetaUsermd
-					repInfo := &c.Value.ReplicationInfo
-					lastModified := &c.Value.LastModified
-					gLog.Info.Printf("Key: %s - Last Modified %v  - replication info status  %v ", c.Key, repInfo,lastModified)
-				}
-				N++
-			} else {
-					gLog.Info.Println(err)
-			}
-
-			if !s3Meta.IsTruncated {
-				return
-			} else {
-				marker = nextMarker
-				gLog.Info.Printf("marker %s", marker)
-			}
-			if N >= maxLoop {
-				return
-			}
-		}
-	}
-}
