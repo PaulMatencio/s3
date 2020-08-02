@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"github.com/s3/gLog"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/gLog"
 )
 
 func ProcS3Error(err error) {
@@ -19,3 +19,4 @@ func ProcS3Error(err error) {
 		gLog.Error.Printf("[%v]",err.Error())
 	}
 }
+

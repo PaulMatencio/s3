@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/s3/api"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
@@ -42,6 +43,24 @@ func procS3Meta(key string, metad map[string]*string) {
 	}
 }
 
+func CheckBucket(svc *s3.S3, bucket string )(error) {
+	var (
+		req = datatype.StatBucketRequest{
+			Service:  svc,
+			Bucket: bucket,
+		}
+		_, err = api.StatBucket(req)
+	)
+	/* handle error */
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			gLog.Info.Printf("Bucket %s %v ",bucket,aerr.Code())
+		} else {
+			gLog.Error.Println(err.Error())
+		}
+	}
+	return err
+}
 
 func procGetResult(rd *datatype.Ro) {
 
