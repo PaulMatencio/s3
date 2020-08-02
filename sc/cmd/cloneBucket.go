@@ -153,7 +153,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 		MaxKey : maxKey,
 		Marker : marker,
 	}
-	
+
 	for {
 		var (
 			nextmarker string
@@ -351,7 +351,7 @@ func copyBucket(cmd *cobra.Command,args []string) {
 	svc3 = s3.New(api.CreateSession2(target))
 
 
-	if err:= CheckBucket(svc1,tgtBucket); err != nil {
+	if err:= CheckBucket(svc1,srcBucket); err != nil {
 		// gLog.Error.Printf("Error: %v ",err)
 		return;
 	}
