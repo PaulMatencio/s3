@@ -360,11 +360,12 @@ func copyBucket(cmd *cobra.Command,args []string) {
 		// gLog.Error.Printf("Error: %v ",err)
 		return;
 	}
-
+	begin:= time.Now()
 	for {
 		N++
 		if linea, _ := utils.ScanLines(scanner, int(maxKey)); len(linea) > 0 {
 			if l := len(linea); l > 0 {
+				start:= time.Now()
 				var wg1 sync.WaitGroup
 				//wg1.Add(len(result.Contents))
 				for _, v := range linea {
@@ -438,14 +439,15 @@ func copyBucket(cmd *cobra.Command,args []string) {
 					}
 				}
 				wg1.Wait()
+				gLog.Info.Printf("Elapsed time: %v -Total number of objects copied: %d of %d - size(KB): %.2f",time.Since(start),totalc,total,float64(sizec/(1024.0)))
 			}
 		} else {
-			gLog.Info.Printf("Total number of objects copied: %d of %d - size(KB): %.2f",totalc,total,float64(sizec/(1024.0)))
+			gLog.Info.Printf("Elapsed time: %v -Total number of objects copied: %d of %d - size(KB): %.2f",time.Since(begin) ,totalc,total,float64(sizec/(1024.0)))
 			return
 		}
 
 		if maxLoop != 0 && N > maxLoop {
-			gLog.Info.Printf("Total number of objects copied: %d of %d - size(KB): %.2f",totalc,total,float64(sizec/(1024.0)))
+			gLog.Info.Printf("Elapsed time: %v -Total number of objects copied: %d of %d - size(KB): %.2f",time.Since(begin) ,totalc,total,float64(sizec/(1024.0)))
 			return
 		}
 	}
