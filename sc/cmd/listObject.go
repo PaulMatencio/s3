@@ -47,7 +47,8 @@ func initLoFlags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed concurrently")
 	cmd.Flags().StringVarP(&marker,"marker","M","","start processing from this key")
 	cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
-	cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
+	// cmd.Flags().BoolVarP(&loop,"loop","L",false,"loop until all keys are processed")
+	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
 	// cmd.Flags().BoolVarP(&,"maxLoop","",false,"maximum number of loop")
 	cmd.Flags().BoolVarP(&full,"fullKey","F",false,"given prefix is a full documemt key")
 
@@ -90,6 +91,7 @@ func listObject(cmd *cobra.Command,args []string) {
 		Marker : marker,
 		Delimiter: delimiter,
 	}
+	L:=1
 	for {
 		var (
 			nextmarker string
@@ -105,23 +107,19 @@ func listObject(cmd *cobra.Command,args []string) {
 				}
 
 				if *result.IsTruncated {
-
 					nextmarker = *result.Contents[l-1].Key
 					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 				}
 
 
 			}
-			/*else {
-				gLog.Warning.Printf("List returns no object from %s", bucket)
-			}
-			*/
+
 		} else {
 			gLog.Error.Printf("%v", err)
 			break
 		}
-
-		if loop && *result.IsTruncated {
+		L++
+		if  *result.IsTruncated  && (maxLoop == 0 || L <= maxLoop) {
 			req.Marker = nextmarker
 		} else {
 			gLog.Info.Printf("Total number of objects returned: %d",total)

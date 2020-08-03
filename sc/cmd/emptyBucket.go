@@ -91,7 +91,7 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 		l  int
 	)
 	for {
-
+		L:= 1
 		if result, err = api.ListObject(req); err == nil {
 
 			if l = len(result.Contents); l > 0 {
@@ -153,15 +153,14 @@ func deleteObjects(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("ListObjects err %v",err)
 			break
 		}
-
+        L++
 		if *result.IsTruncated {
 
 			nextmarker = *result.Contents[l-1].Key
 			gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 
 		}
-
-		if loop && *result.IsTruncated {
+		if  *result.IsTruncated  && (maxLoop == 0 || L <= maxLoop) {
 			req.Marker = nextmarker
 
 		} else {

@@ -49,10 +49,8 @@ func init() {
 	initLoFlags(getobjsCmd)
 	getobjectsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you'd like to save")
 	getobjsCmd.Flags().StringVarP(&odir,"odir","O","","the output directory relative to the home directory you's like to save")
-
-
-	getobjectsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
-	getobjsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
+	// getobjectsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
+	// getobjsCmd.Flags().IntVarP(&loopc,"loop-count","c",1000000,"maximum loop count")
 
 }
 
@@ -122,7 +120,7 @@ func getObjects(cmd *cobra.Command,args []string) {
 	)
 
 	// svc  := s3.New(api.CreateSession()) /* create a new service for downloading object*/
-
+	L:= 1
 	for {
 
 		if result, err = api.ListObject(req); err == nil {
@@ -177,27 +175,22 @@ func getObjects(cmd *cobra.Command,args []string) {
 					}
 				}
 			}
+
 		} else {
 			gLog.Error.Printf("ListObjects err %v",err)
 			break
 		}
-
+		L++
 		if *result.IsTruncated {
-
 			nextmarker = *result.Contents[l-1].Key
 			gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
-
 		}
 
-		if loop && *result.IsTruncated  && n < loopc {
+		if  *result.IsTruncated  && (maxLoop == 0 || L <= maxLoop) {
 			req.Marker = nextmarker
 			n++
-
-
 		} else {
-
 			AvgMbs := 1000*float64(S)/float64(time.Since(start))
-
 			if total > 0 {
 				AvgSize = S / total
 				AvgObjs = 1000 * 1000 * 1000 * float64(total) / float64(time.Since(start))

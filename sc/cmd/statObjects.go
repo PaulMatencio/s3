@@ -108,7 +108,7 @@ func statObjects(cmd *cobra.Command,args []string) {
 	)
 
     svc  := s3.New(api.CreateSession()) // create another service point for  getting metadata
-
+	L:= 1
 	for {
 
 		if result, err = api.ListObject(req); err == nil {
@@ -166,17 +166,15 @@ func statObjects(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("ListObjects err %v",err)
 			break
 		}
-
+		L++
 		if *result.IsTruncated {
 
 			nextmarker = *result.Contents[l-1].Key
 			gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
-
 		}
 
-		if loop && *result.IsTruncated {
+		if  *result.IsTruncated  && (maxLoop == 0 || L <= maxLoop) {
 			req.Marker = nextmarker
-
 		} else {
 			gLog.Info.Printf("Total number of objects returned: %d",total)
 			break
