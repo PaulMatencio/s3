@@ -35,7 +35,7 @@ var (
 	}
 	srcBucket,tgtBucket string
 	fromDate,inputKeys string
-	check bool
+	check, overWrite bool
 )
 
 func init() {
@@ -67,6 +67,7 @@ func initCpFlags(cmd *cobra.Command) {
 	cmd.Flags().Int64VarP(&maxKey,"maxKey","m",100,"maximum number of keys to be processed ")
 	cmd.Flags().IntVarP(&maxLoop,"maxLoop","",1,"maximum number of loop, 0 means no upper limit")
 	cmd.Flags().BoolVarP(&check,"check","",true,"check mode")
+	cmd.Flags().BoolVarP(&overWrite,"overWrite","",false,"overwrite existing object")
 	// cmd.Flags().StringVarP(&delimiter,"delimiter","d","","key delimiter")
 }
 
@@ -251,29 +252,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 }
 
 
-func getObj(request datatype.GetObjRequest) (datatype.Robj){
-    var (
-    	// err1 error
-    	robj = datatype.Robj{
-			Key : request.Key,
-		}
-    )
-	if result,err := api.GetObject(request); err == nil {
-		b, err := utils.ReadObject(result.Body)
-		if err == nil {
-			robj.Body= b
-			robj.Metadata =result.Metadata
-		}
-		//err1= errors.New(fmt.Sprintf("Error %v reading object %s",err,request.Key))
-		robj.Err = err
-		// gLog.Error.Println(err)
-	} else {
-		// err1 = errors.New(fmt.Sprintf("Error %v getting object %s",err,request.Key))
-		robj.Err = err
-		// gLog.Error.Println(err)
-	}
-	return robj
-}
+
 
 func copyBucket(cmd *cobra.Command,args []string) {
 
@@ -378,9 +357,18 @@ func copyBucket(cmd *cobra.Command,args []string) {
 							Bucket:  srcBucket,
 							Key:     strings.TrimSpace(v),
 						}
+
 						go func(request datatype.GetObjRequest) {
 							defer wg1.Done()
 							for r1 := 0; r1 <= retryNumber; r1++ {
+
+								if result, err := statObj(svc3,request.Key); err == nil {
+									if len(*result.ETag) > 0 && !overWrite {
+										gLog.Warning.Printf("Object %s already existed in the target Bucket %s",request.Key,tgtBucket)
+										break
+									}
+								}
+
 								robj := getObj(request)
 								if robj.Err == nil {
 									// write object
@@ -394,12 +382,11 @@ func copyBucket(cmd *cobra.Command,args []string) {
 										Metadata: robj.Metadata,
 									}
 									gLog.Trace.Printf("Key %s  - Bucket %s - size: %d ", put.Key, put.Bucket, put.Buffer.Len())
-									utils.PrintMetadata(put.Metadata)
-
+									// utils.PrintMetadata(put.Metadata) /* debuging */
 									for r2 := 0; r2 <= retryNumber; r2++ {
 										r, err := api.PutObject3(put)
 										if err == nil {
-											gLog.Trace.Printf("Etag: %v - Version id: %v ", *r.ETag, r.VersionId)
+											gLog.Trace.Printf("Object Etag: %v - Version id: %v ", *r.ETag, r.VersionId)
 											mu.Lock()
 											totalc++
 											sizec += int64(robj.Body.Len())
@@ -451,4 +438,40 @@ func copyBucket(cmd *cobra.Command,args []string) {
 			return
 		}
 	}
+}
+
+func getObj(request datatype.GetObjRequest) (datatype.Robj){
+
+	var (
+		// err1 error
+		robj = datatype.Robj{
+			Key : request.Key,
+		}
+	)
+	gLog.Trace.Printf("Geting Object %s",request.Key)
+	if result,err := api.GetObject(request); err == nil {
+		b, err := utils.ReadObject(result.Body)
+		if err == nil {
+			robj.Body= b
+			robj.Metadata =result.Metadata
+		}
+		//err1= errors.New(fmt.Sprintf("Error %v reading object %s",err,request.Key))
+		robj.Err = err
+		// gLog.Error.Println(err)
+	} else {
+		// err1 = errors.New(fmt.Sprintf("Error %v getting object %s",err,request.Key))
+		robj.Err = err
+		// gLog.Error.Println(err)
+	}
+	return robj
+}
+
+func statObj(svc *s3.S3, key string) (*s3.HeadObjectOutput,error) {
+	gLog.Trace.Printf("checking object %s",key)
+	stat := datatype.StatObjRequest{
+		Service: svc,
+		Bucket: tgtBucket,
+		Key: key,
+	}
+	return api.StatObject(stat)
 }
