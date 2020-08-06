@@ -870,11 +870,11 @@ func GetPages(Req ToS3GetPages) (int,int,[]S3Error){
 					req.Buffer = image.Img //   add the image
 					err = nil
 					if !check {
-						/*
+
 						if _, err = writeToS3(req); err != nil {
 							gLog.Error.Printf("Error %v - Writing req.Key  %s to bucket %s",err,req.Key,req.Bucket)
 						}
-						 */
+
 					}
 					image.Img.Reset() // reset the image buffer
 				}(KEY, p, image, v)
