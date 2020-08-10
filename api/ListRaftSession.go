@@ -149,23 +149,29 @@ func doGet(url string,result interface{}) (Resp) {
 	var (
 		err error
 		response *http.Response
+		res Resp
 	)
 
 	if response, err = http.Get(url); err == nil {
-		gLog.Trace.Printf("Response: %v",response)
+		gLog.Trace.Printf("Response: %v", response)
 
 		if response.StatusCode == 200 {
 			defer response.Body.Close()
 			if contents, err := ioutil.ReadAll(response.Body); err == nil {
-				json.Unmarshal(contents,&result)
+				json.Unmarshal(contents, &result)
 			}
 		}
-	}
-	gLog.Trace.Printf("doGet url:%s\tStatus Code:%d",url,response.StatusCode)
-	res := Resp {
-		Result: &result,
-		Err: err,
-		Status : response.StatusCode,
+
+		gLog.Trace.Printf("doGet url:%s\tStatus Code:%d", url, response.StatusCode)
+		res = Resp{
+			Result: &result,
+			Err:    err,
+			Status: response.StatusCode,
+		}
+	} else {
+		res = Resp{
+			Err:    err,
+		}
 	}
 	return res
 

@@ -88,8 +88,8 @@ func listRaft(cmd *cobra.Command,args []string) {
 					} else {
 						fmt.Printf("\t\tError: %v\n",err)
 					}
-					*/
 
+					 */
 
 				}
 			}
@@ -127,7 +127,9 @@ func listRaft1(cmd *cobra.Command,args []string) {
 
 func getBucket(host string,port int) (error,[]string){
 	// var buckets []string
-	url := host+"/"+strconv.Itoa(port)
+	// admin port
+	port += 100
+	url := host+":"+strconv.Itoa(port)
 	return api.GetRaftBuckets(url)
 }
 
