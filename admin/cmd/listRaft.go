@@ -39,7 +39,7 @@ var (
 	}
 	raft,Host  string
 	buckets []string
-	leader datatype.RaftLeader
+	leader *datatype.RaftLeader
 	err error
 	Port int
 )
@@ -70,32 +70,22 @@ func listRaft(cmd *cobra.Command,args []string) {
 		 for _,r:= range *raftSess {
 			fmt.Printf("Id: %d\tconnected: %v\n",r.ID,r.ConnectedToLeader)
 			for _,v := range r.RaftMembers {
-				fmt.Printf("\tID: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n",v.ID,v.Name,v.Host,v.Port,v.Site)
-				if err,buckets = getBucket(v.Host,v.Port); err ==nil {
-					fmt.Printf("%v\n",buckets)
-					for _, v := range r.RaftMembers {
-						fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
-						Host=v.Host
-						Port=v.Port
-					}
-					/*
-					if err,buckets = getBucket(Host,Port); err ==nil {
-						fmt.Printf("\t\tBuckets: %v\n",buckets)
-					} else {
-						fmt.Printf("\t\tError: %v\n",err)
-					}
-					if err,leader = getLeader(Host,Port); err ==nil {
-						fmt.Printf("\t\tLeader\t IP:%d\t%s\n",leader.IP,leader.Port)
-					} else {
-						fmt.Printf("\t\tError: %v\n",err)
-					}
-
-					 */
-
-				}
+				fmt.Printf("\tID: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
+				Host=v.Host
+				Port=v.Port
 			}
-		 }
-	 } else {
+			if err,buckets = getBucket(Host,Port); err ==nil {
+				fmt.Printf("\t\tBuckets: %v\n",buckets)
+			} else {
+				fmt.Printf("\t\tError: %v\n",err)
+			}
+			if err,leader = getLeader(Host,Port); err ==nil {
+				fmt.Printf("\t\tLeader\t IP:%d\t%s\n",&leader.IP,&leader.Port)
+			} else {
+				fmt.Printf("\t\tError: %v\n",err)
+			}
+		}
+	} else {
 	 	gLog.Error.Printf("%v",err)
 	}
 }
@@ -131,11 +121,11 @@ func getBucket(host string,port int) (error,[]string){
 	// admin port
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.GetRaftBuckets(url)
+	return api.ListRaftBuckets(url)
 }
 
-func getLeader(host string,port int) (error,datatype.RaftLeader){
+func getLeader(host string,port int) (error,*datatype.RaftLeader){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.GetRaftLeader(url)
+	return api.ListRaftLeader(url)
 }
