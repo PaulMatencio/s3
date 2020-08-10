@@ -80,7 +80,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 				fmt.Printf("\t\tError: %v\n",err)
 			}
 			if err,leader = getLeader(Host,Port); err ==nil {
-				fmt.Printf("\t\tLeader\t IP:%d\t%s\n",&leader.IP,&leader.Port)
+				fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
 			} else {
 				fmt.Printf("\t\tError: %v\n",err)
 			}
