@@ -77,6 +77,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 						Host=v.Host
 						Port=v.Port
 					}
+					/*
 					if err,buckets = getBucket(Host,Port); err ==nil {
 						fmt.Printf("\t\tBuckets: %v\n",buckets)
 					} else {
@@ -87,6 +88,8 @@ func listRaft(cmd *cobra.Command,args []string) {
 					} else {
 						fmt.Printf("\t\tError: %v\n",err)
 					}
+					*/
+
 
 				}
 			}
@@ -109,9 +112,6 @@ func listRaft1(cmd *cobra.Command,args []string) {
 					fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 					Host=v.Host
 					Port=v.Port
-				}
-				if err,buckets = getBucket(Host,Port); err ==nil {
-					fmt.Printf("\t\tBuckets: %v\n",buckets)
 				}
 				if err,buckets = getBucket(Host,Port); err ==nil {
 					fmt.Printf("\t\tBuckets: %v\n",buckets)
