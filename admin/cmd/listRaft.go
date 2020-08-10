@@ -43,6 +43,7 @@ var (
 	err error
 	Port int
 )
+const http ="http://"
 
 func init() {
 	rootCmd.AddCommand(listRaftCmd)
@@ -129,11 +130,12 @@ func getBucket(host string,port int) (error,[]string){
 	// var buckets []string
 	// admin port
 	port += 100
-	url := host+":"+strconv.Itoa(port)
+	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftBuckets(url)
 }
 
 func getLeader(host string,port int) (error,datatype.RaftLeader){
-	url := host+"/"+strconv.Itoa(port)
+	port += 100
+	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftLeader(url)
 }
