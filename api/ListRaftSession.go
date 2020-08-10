@@ -4,24 +4,22 @@ import (
 	"encoding/json"
 	datatype "github.com/s3/datatype"
 	"github.com/s3/gLog"
-	"github.com/s3/utils"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"time"
-)
-var (
-	err            error
-	waitTime       = utils.GetWaitTime(*viper.GetViper())
-	retryNumber    = utils.GetRetryNumber(*viper.GetViper())
 )
 type Resp struct {
 	Result interface{}
 	Err    error
 	Status int
 }
-
-
+var (
+	err            error
+	// waitTime       = utils.GetWaitTime(*viper.GetViper())
+	waitTime time.Duration = 200
+	// retryNumber  = utils.GetRetryNumber(*viper.GetViper());
+	retryNumber = 3
+)
 
 func ListRaftSessions(url string) (error,*datatype.RaftSessions) {
 

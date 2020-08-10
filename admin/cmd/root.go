@@ -116,7 +116,9 @@ func initConfig() {
 		logOutput += string(os.PathSeparator) + cc
 	}
 	waitTime = utils.GetWaitTime(*viper.GetViper())
-	retryNumber =utils.GetRetryNumber(*viper.GetViper())
+	if retryNumber =utils.GetRetryNumber(*viper.GetViper()); retryNumber == 0 {
+		retryNumber = 1
+	}
 
 	gLog.InitLog(rootCmd.Name(),loglevel,logOutput)
 	log.Printf("Logging level: %d   Output: %s",loglevel,logOutput)
