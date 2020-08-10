@@ -55,6 +55,7 @@ func GetRaftSessions(url string) (error,*datatype.RaftSessions) {
 		req = "raft_sessions"
 	)
 	url  = url + "/_/" + req
+	gLog.Trace.Printf("GetRaft Sessions url: %s",url)
 	for i := 1; i <= retryNumber; i++ {
 		if res :=doGet(url,raftSessions); err == nil {
 			if res.Status == 200 {
@@ -101,6 +102,7 @@ func GetRaftBuckets(url string) (error,[]string) {
 		err error
 	)
 	url  = url + "/_/" + req
+	gLog.Trace.Printf("GetRaft bucket url: %s",url)
 	for i := 1; i <= retryNumber; i++ {
 		if res :=doGet(url,buckets); err == nil {
 			if res.Status == 200 {
@@ -123,6 +125,7 @@ func GetRaftLeader(url string) (error,datatype.RaftLeader) {
 		rl  datatype.RaftLeader
 	)
 	url  = url + "/_/" + req
+	gLog.Trace.Printf("GetRaft Leader url: %s",url)
 	for i := 1; i <= retryNumber; i++ {
 		if res := doGet(url,rl); err == nil {
 			if res.Status == 200 {
@@ -142,6 +145,7 @@ func doGet(url string,result interface{}) (Resp) {
 		err error
 		response *http.Response
 	)
+
 	if response, err = http.Get(url); err == nil {
 		gLog.Trace.Printf("Response: %v",response)
 
@@ -152,6 +156,7 @@ func doGet(url string,result interface{}) (Resp) {
 			}
 		}
 	}
+	gLog.Trace.Printf("doGet url:%s\tStatus Code:%d",url,response.StatusCode)
 	res := Resp {
 		Result: result,
 		Err: err,
