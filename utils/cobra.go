@@ -51,6 +51,9 @@ func GetLevelDBUrl(viper viper.Viper) (string) {
 	return viper.GetString("levelDB.url")
 }
 
+func GetBucketdUrl(viper viper.Viper) (string) {
+	return viper.GetString("bucketd.url")
+}
 func GetWaitTime(viper viper.Viper) (time.Duration) {
 	return viper.GetDuration("retry.waitime")
 }

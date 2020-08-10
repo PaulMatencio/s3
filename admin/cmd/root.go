@@ -58,7 +58,7 @@ func Execute() {
 func init() {
 
 	rootCmd.PersistentFlags().IntVarP(&loglevel, "loglevel", "l", 0,"Output level of logs (1: error, 2: Warning, 3: Info , 4 Trace, 5 Debug)")
-	rootCmd.PersistentFlags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.sindexd/config.yaml")
+	rootCmd.PersistentFlags().StringVarP(&config,"config", "c","", "sc config file; default $HOME/.admin/config.yaml")
 	rootCmd.PersistentFlags().BoolVarP(&autoCompletion,"autoCompletion", "C",false, "generate bash auto completion")
 	rootCmd.PersistentFlags().StringVarP(&cc,"cc", "a","", "string to be appended to the path directory of the log")
 

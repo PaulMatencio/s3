@@ -33,7 +33,7 @@ var (
 		Short: "list Raft sessions info",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			listRaft1(cmd,args)
+			listRaft(cmd,args)
 		},
 
 	}
@@ -50,18 +50,21 @@ func init() {
 }
 
 func initaLrFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&url,"url","u","","bucketd url")
+	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <ip:port>")
 	cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 }
 
 
 func listRaft(cmd *cobra.Command,args []string) {
 	if len(url) == 0 {
-		if url = utils.GetLevelDBUrl(*viper.GetViper()); len(url) == 0 {
-			gLog.Warning.Printf("The url of the Bucketd server is missing")
-			return
+		if url = utils.GetBucketdUrl(*viper.GetViper()); len(url) == 0 {
+			if url = utils.GetLevelDBUrl(*viper.GetViper()); len(url) == 0 {
+				gLog.Warning.Printf("The url of Bucketd server is missing")
+				return
+			}
 		}
 	}
+
 	if err,raftSess := api.GetRaftSessions(url); err == nil {
 		 for _,r:= range *raftSess {
 			fmt.Printf("Id: %d\tconnected: %v\n",r.ID,r.ConnectedToLeader)
