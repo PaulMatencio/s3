@@ -9,7 +9,7 @@ import (
 	"time"
 )
 type Resp struct {
-	Result interface{}
+	Result *interface{}
 	Err    error
 	Status int
 }
@@ -58,7 +58,8 @@ func GetRaftSessions(url string) (error,*datatype.RaftSessions) {
 	for i := 1; i <= retryNumber; i++ {
 		if res = doGet(url,raftSessions); res.Err == nil {
 			if res.Status == 200 {
-				raftSessions= res.Result.(datatype.RaftSessions)
+				b:= *res.Result
+				raftSessions = b.(datatype.RaftSessions)
 				break
 			}
 		} else {
@@ -107,7 +108,8 @@ func GetRaftBuckets(url string) (error,[]string) {
 	for i := 1; i <= retryNumber; i++ {
 		if res =doGet(url,buckets); res.Err == nil {
 			if res.Status == 200 {
-				buckets = res.Result.([]string)
+				b:= *res.Result
+				buckets = b.([]string)
 				break
 			}
 		} else {
@@ -131,7 +133,8 @@ func GetRaftLeader(url string) (error,datatype.RaftLeader) {
 	for i := 1; i <= retryNumber; i++ {
 		if res = doGet(url,rl); res.Err == nil {
 			if res.Status == 200 {
-				rl = res.Result.(datatype.RaftLeader)
+				b := *res.Result
+				rl = b.(datatype.RaftLeader)
 				break
 			}
 		} else {
@@ -160,7 +163,7 @@ func doGet(url string,result interface{}) (Resp) {
 	}
 	gLog.Trace.Printf("doGet url:%s\tStatus Code:%d",url,response.StatusCode)
 	res := Resp {
-		Result: result,
+		Result: &result,
 		Err: err,
 		Status : response.StatusCode,
 	}

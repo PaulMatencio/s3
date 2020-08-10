@@ -65,7 +65,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 		}
 	}
 	gLog.Info.Printf("Url: %s",url)
-	if err,raftSess := api.GetRaftSessions(url); err == nil {
+	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		 for _,r:= range *raftSess {
 			fmt.Printf("Id: %d\tconnected: %v\n",r.ID,r.ConnectedToLeader)
 			for _,v := range r.RaftMembers {
