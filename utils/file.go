@@ -249,3 +249,4 @@ func visit(path string, fi os.FileInfo, err error) error {
 	}
 	return err1
 }
+
