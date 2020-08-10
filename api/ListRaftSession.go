@@ -113,7 +113,7 @@ func GetRaftBuckets(url string) (error,[]string) {
 				break
 			}
 		} else {
-			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			gLog.Error.Printf("Error: %v - number of retries: %d" , res.Err, i )
 			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
@@ -138,7 +138,7 @@ func GetRaftLeader(url string) (error,datatype.RaftLeader) {
 				break
 			}
 		} else {
-			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			gLog.Error.Printf("Error: %v - number of retries: %d" , res.Err, i )
 			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
