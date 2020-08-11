@@ -115,13 +115,20 @@ func getRaftSession(r datatype.RaftSession) {
 		fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 		Host=v.Host
 		Port=v.Port
+		if err,status = getStatus(Host,Port); err ==nil {
+			fmt.Printf("\t\tStatus\t:%s\n",status)
+		} else {
+			fmt.Printf("\t\tError: %v\n",err)
+		}
 	}
-	// get the status
+	/*
 	if err,status = getStatus(Host,Port); err ==nil {
 		fmt.Printf("\t\tStatus\t:%s\n",status)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
+	*/
+	 
 	// get the Buckets
 	if err,buckets = getBucket(Host,Port); err ==nil {
 		l:= len(buckets)
