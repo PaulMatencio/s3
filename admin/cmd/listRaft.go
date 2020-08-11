@@ -123,7 +123,7 @@ func getRaftSession(r datatype.RaftSession) {
 			fmt.Printf("\t\tBuckets:\t%s\n",buckets[0])
 		}
 		for i:=1; i <  l; i++ {
-			fmt.Printf("\t\t\t%s\n",buckets[i])
+			fmt.Printf("\t\t\t\t%s\n",buckets[i])
 		}
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
