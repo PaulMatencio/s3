@@ -74,7 +74,7 @@ func GetRaftSessions(url string) (error,*datatype.RaftSessions) {
 	return res.Err,&raftSessions
 }
 
-func ListRaftBuckets(url string) (error,[]string) {
+func GetRaftBuckets(url string) (error,[]string) {
 	var (
 		rl  []string
 		req = "buckets"
@@ -101,7 +101,7 @@ func ListRaftBuckets(url string) (error,[]string) {
 	return err,rl
 }
 
-func GetRaftBuckets(url string) (error,[]string) {
+func GetRaftBuckets_v2(url string) (error,[]string) {
 	var (
 		buckets  []string
 		req = "buckets"
@@ -127,7 +127,7 @@ func GetRaftBuckets(url string) (error,[]string) {
 	return res.Err,buckets
 }
 
-func ListRaftLeader(url string) (error,*datatype.RaftLeader) {
+func GetRaftLeader(url string) (error,*datatype.RaftLeader) {
 	var (
 		req = "raft/leader"
 		err error
@@ -155,7 +155,7 @@ func ListRaftLeader(url string) (error,*datatype.RaftLeader) {
 	return err,&rl
 }
 
-func GetRaftLeader(url string) (error,datatype.RaftLeader) {
+func GetRaftLeaderV2(url string) (error,datatype.RaftLeader) {
 	var (
 		req = "raft/leader"
 		// err error
@@ -212,7 +212,7 @@ func doGet(url string,result interface{}) (Resp) {
 }
 
 
-func ListRaftState(url string) (error,*datatype.RaftState) {
+func GetRaftState(url string) (error,*datatype.RaftState) {
 	var (
 		req = "raft/state"
 		err error
@@ -240,7 +240,7 @@ func ListRaftState(url string) (error,*datatype.RaftState) {
 	return err,&rl
 }
 
-func ListRaftStatus(url string) (error,string) {
+func GetRaftStatus(url string) (error,string) {
 	var (
 		req = "status"
 		err error
@@ -256,6 +256,37 @@ func ListRaftStatus(url string) (error,string) {
 				if contents, err := ioutil.ReadAll(response.Body); err == nil {
 					// json.Unmarshal(contents,&rl)
 					rl= string(contents)
+				}
+			}else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
+			}
+			break
+		} else {
+			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			time.Sleep(waitTime * time.Millisecond)
+		}
+	}
+	return err,rl
+}
+
+
+func GetRaftConfig(what string, url string) (error,bool) {
+
+	var (
+		req = url +"/configuration/"+what
+		err error
+		rl  bool
+	)
+
+	url  = url + "/_/" + req
+	gLog.Trace.Printf("GetRaft Leader url: %s",url)
+	for i := 1; i <= retryNumber; i++ {
+		if response, err := http.Get(url); err == nil {
+			gLog.Trace.Printf("Response: %v",response)
+			if response.StatusCode == 200 {
+				defer response.Body.Close()
+				if contents, err := ioutil.ReadAll(response.Body); err == nil {
+					json.Unmarshal(contents,&rl)
 				}
 			}else {
 				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)

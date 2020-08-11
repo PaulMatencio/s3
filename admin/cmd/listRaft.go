@@ -41,6 +41,7 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
+	prune bool
 	err error
 	Port,id int
 )
@@ -112,7 +113,7 @@ func getRaftSession(r datatype.RaftSession) {
 
 	fmt.Printf("Id: %d\tconnected: %v\n",r.ID,r.ConnectedToLeader)
 	for _,v := range r.RaftMembers {
-		fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
+		fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 		Host=v.Host
 		Port=v.Port
 		/*
@@ -125,7 +126,7 @@ func getRaftSession(r datatype.RaftSession) {
 	}
 
 	if err,status = getStatus(Host,Port); err ==nil {
-		fmt.Printf("\t\tStatus\t%s\n",status)
+		fmt.Printf("\t\tStatus:\t%s\n",status)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
@@ -144,14 +145,22 @@ func getRaftSession(r datatype.RaftSession) {
 	}
 	// Get the leader
 	if err,leader = getLeader(Host,Port); err ==nil {
-		fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+		fmt.Printf("\t\tLeader:\t IP:%s\t%d\n",leader.IP,leader.Port)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
 	// Get the state
 	if err,state = getState(Host,Port); err ==nil {
 		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tState\t%+v\n",*state)
+		fmt.Printf("\t\tState:\t%+v\n",*state)
+	} else {
+		fmt.Printf("\t\tError: %v\n",err)
+	}
+
+	// Get the configuration
+	if err,prune = getConfig("prune",Host,Port); err ==nil {
+		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+		fmt.Printf("\t\tPrune:\t%+v\n",prune)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
@@ -161,25 +170,31 @@ func getRaftSession(r datatype.RaftSession) {
 func getBucket(host string,port int) (error,[]string){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.ListRaftBuckets(url)
+	return api.GetRaftBuckets(url)
 }
 
 func getLeader(host string,port int) (error,*datatype.RaftLeader){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.ListRaftLeader(url)
+	return api.GetRaftLeader(url)
 }
 
 func getState(host string,port int) (error,*datatype.RaftState){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.ListRaftState(url)
+	return api.GetRaftState(url)
 }
 
 func getStatus(host string,port int) (error,string){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
-	return api.ListRaftStatus(url)
+	return api.GetRaftStatus(url)
+}
+
+func getConfig(what string, host string,port int) (error,bool){
+	port += 100
+	url := http+ host+":"+strconv.Itoa(port)
+	return api.GetRaftConfig(what,url)
 }
 
 
