@@ -120,10 +120,10 @@ func getRaftSession(r datatype.RaftSession) {
 	if err,buckets = getBucket(Host,Port); err ==nil {
 		l:= len(buckets)
 		if l > 0{
-			fmt.Printf("\t\tBuckets:\t%s",buckets[0])
+			fmt.Printf("\t\tBuckets:\t%s\n",buckets[0])
 		}
-		for i:=1; i <= l; l++ {
-			fmt.Printf("\t\t\t%s",buckets[l])
+		for i:=1; i <= l; i++ {
+			fmt.Printf("\t\t\t%s\n",buckets[l])
 		}
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
@@ -137,7 +137,7 @@ func getRaftSession(r datatype.RaftSession) {
 	// Get the state
 	if err,state = getState(Host,Port); err ==nil {
 		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tState\t%+v",state)
+		fmt.Printf("\t\tState\t%+v\n",*state)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
