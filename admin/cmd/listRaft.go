@@ -118,7 +118,7 @@ func getRaftSession(r datatype.RaftSession) {
 	}
 	// get the status
 	if err,status = getStatus(Host,Port); err ==nil {
-		fmt.Printf("\t\tStatus\t IP:%s\n",status)
+		fmt.Printf("\t\tStatus\t:%s\n",status)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}

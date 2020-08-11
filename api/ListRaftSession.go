@@ -254,7 +254,8 @@ func ListRaftStatus(url string) (error,string) {
 			if response.StatusCode == 200 {
 				defer response.Body.Close()
 				if contents, err := ioutil.ReadAll(response.Body); err == nil {
-					json.Unmarshal(contents,&rl)
+					// json.Unmarshal(contents,&rl)
+					rl= string(contents)
 				}
 			}else {
 				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
