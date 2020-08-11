@@ -37,7 +37,7 @@ var (
 		},
 
 	}
-	raft,Host  string
+	raft,Host,status  string
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
@@ -116,6 +116,12 @@ func getRaftSession(r datatype.RaftSession) {
 		Host=v.Host
 		Port=v.Port
 	}
+	// get the status
+	if err,status = getStatus(Host,Port); err ==nil {
+		fmt.Printf("\t\tStatus\t IP:%s\n",status)
+	} else {
+		fmt.Printf("\t\tError: %v\n",err)
+	}
 	// get the Buckets
 	if err,buckets = getBucket(Host,Port); err ==nil {
 		l:= len(buckets)
@@ -160,6 +166,12 @@ func getState(host string,port int) (error,*datatype.RaftState){
 	port += 100
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.ListRaftState(url)
+}
+
+func getStatus(host string,port int) (error,string){
+	port += 100
+	url := http+ host+":"+strconv.Itoa(port)
+	return api.ListRaftStatus(url)
 }
 
 
