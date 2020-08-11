@@ -50,6 +50,12 @@ type RaftSessions []struct {
 	RaftMembers       []RaftMembers `json:"raftMembers"`
 	ConnectedToLeader bool          `json:"connectedToLeader"`
 }
+type RaftSession struct {
+	ID                int           `json:"id"`
+	RaftMembers       []RaftMembers `json:"raftMembers"`
+	ConnectedToLeader bool          `json:"connectedToLeader"`
+
+}
 
 type RaftMembers struct {
 	AdminPort   int    `json:"adminPort"`
@@ -65,6 +71,18 @@ type RaftLeader struct {
 	IP string `json:"ip,omitempty"`
 	Port int `json:"port,omitempty"`
 }
+
+
+type RaftState struct {
+	Term       int `json:"term"`
+	Voted      int `json:"voted"`
+	Appended   int `json:"appended"`
+	Backups    int `json:"backups"`
+	Committing int `json:"committing"`
+	Committed  int `json:"committed"`
+	Pruned     int `json:"pruned"`
+}
+
 
 
 func  (c RaftSessions) GetRaftSessions(file string) (error,*RaftSessions) {

@@ -69,7 +69,7 @@ func listConfig(cmd *cobra.Command,args []string) {
 	}
 }
 
-func prettyPrint(i interface{}) (string) {
+func PrettyPrint(i interface{}) (string) {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	return string(s)
 }

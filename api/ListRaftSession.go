@@ -37,6 +37,8 @@ func ListRaftSessions(url string) (error,*datatype.RaftSessions) {
 				if contents, err := ioutil.ReadAll(response.Body); err == nil {
 					json.Unmarshal(contents,&raftSessions)
 				}
+			} else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
 			}
 			break
 		} else {
@@ -61,6 +63,8 @@ func GetRaftSessions(url string) (error,*datatype.RaftSessions) {
 				b:= *res.Result
 				raftSessions = b.(datatype.RaftSessions)
 				break
+			}else {
+				gLog.Error.Printf("Status: %d %s",res.Status)
 			}
 		} else {
 			gLog.Error.Printf("Error: %v - number of retries: %d" , res.Err, i )
@@ -72,9 +76,8 @@ func GetRaftSessions(url string) (error,*datatype.RaftSessions) {
 
 func ListRaftBuckets(url string) (error,[]string) {
 	var (
-		buckets  []string
+		rl  []string
 		req = "buckets"
-
 		err error
 	)
 	url  = url + "/_/" + req
@@ -84,8 +87,10 @@ func ListRaftBuckets(url string) (error,[]string) {
 			if response.StatusCode == 200 {
 				defer response.Body.Close()
 				if contents, err := ioutil.ReadAll(response.Body); err == nil {
-					json.Unmarshal(contents,&buckets)
+					json.Unmarshal(contents,&rl)
 				}
+			}else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
 			}
 			break
 		} else {
@@ -93,7 +98,7 @@ func ListRaftBuckets(url string) (error,[]string) {
 			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
-	return err,buckets
+	return err,rl
 }
 
 func GetRaftBuckets(url string) (error,[]string) {
@@ -111,6 +116,8 @@ func GetRaftBuckets(url string) (error,[]string) {
 				b:= *res.Result
 				buckets = b.([]string)
 				break
+			} else {
+				gLog.Error.Printf("Status: %d",res.Status)
 			}
 		} else {
 			gLog.Error.Printf("Error: %v - number of retries: %d" , res.Err, i )
@@ -136,6 +143,8 @@ func ListRaftLeader(url string) (error,*datatype.RaftLeader) {
 				if contents, err := ioutil.ReadAll(response.Body); err == nil {
 					json.Unmarshal(contents,&rl)
 				}
+			}else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
 			}
 			break
 		} else {
@@ -200,4 +209,33 @@ func doGet(url string,result interface{}) (Resp) {
 	}
 	return res
 
+}
+
+
+func ListRaftState(url string) (error,*datatype.RaftState) {
+	var (
+		req = "raft/leader"
+		err error
+		rl  datatype.RaftState
+	)
+	url  = url + "/_/" + req
+	gLog.Trace.Printf("GetRaft Leader url: %s",url)
+	for i := 1; i <= retryNumber; i++ {
+		if response, err := http.Get(url); err == nil {
+			gLog.Trace.Printf("Response: %v",response)
+			if response.StatusCode == 200 {
+				defer response.Body.Close()
+				if contents, err := ioutil.ReadAll(response.Body); err == nil {
+					json.Unmarshal(contents,&rl)
+				}
+			}else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
+			}
+			break
+		} else {
+			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
+			time.Sleep(waitTime * time.Millisecond)
+		}
+	}
+	return err,&rl
 }
