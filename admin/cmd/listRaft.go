@@ -41,7 +41,7 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
-	prune bool
+	set bool
 	err error
 	Port,id int
 )
@@ -124,6 +124,22 @@ func getRaftSession(r datatype.RaftSession) {
 		}
 		 */
 	}
+	// Get the configuration
+	if err,set = getConfig("prune",Host,Port); err ==nil {
+		fmt.Printf("\t\tPrune:\t%+v\n",set)
+	} else {
+		fmt.Printf("\t\tError: %v\n",err)
+	}
+	if err,set = getConfig("prune_on_leader",Host,Port); err ==nil {
+		fmt.Printf("\t\tPrune_on_leader:\t%+v\n",set)
+	} else {
+		fmt.Printf("\t\tError: %v\n",err)
+	}
+	if err,set = getConfig("backup",Host,Port); err ==nil {
+		fmt.Printf("\t\tbackup:\t%+v\n",set)
+	} else {
+		fmt.Printf("\t\tError: %v\n",err)
+	}
 
 	if err,status = getStatus(Host,Port); err ==nil {
 		fmt.Printf("\t\tStatus:\t%s\n",status)
@@ -153,14 +169,6 @@ func getRaftSession(r datatype.RaftSession) {
 	if err,state = getState(Host,Port); err ==nil {
 		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
 		fmt.Printf("\t\tState:\t%+v\n",*state)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
-	}
-
-	// Get the configuration
-	if err,prune = getConfig("prune",Host,Port); err ==nil {
-		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tPrune:\t%+v\n",prune)
 	} else {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
