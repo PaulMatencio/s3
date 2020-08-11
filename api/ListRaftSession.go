@@ -214,7 +214,7 @@ func doGet(url string,result interface{}) (Resp) {
 
 func ListRaftState(url string) (error,*datatype.RaftState) {
 	var (
-		req = "raft/leader"
+		req = "raft/state"
 		err error
 		rl  datatype.RaftState
 	)
