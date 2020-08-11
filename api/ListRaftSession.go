@@ -273,7 +273,7 @@ func GetRaftStatus(url string) (error,string) {
 func GetRaftConfig(what string, url string) (error,bool) {
 
 	var (
-		req = url +"/configuration/"+what
+		req = "configuration/"+what
 		err error
 		rl  bool
 	)
