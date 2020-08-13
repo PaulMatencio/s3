@@ -111,72 +111,42 @@ func listRaft1(cmd *cobra.Command,args []string) {
 
 func getRaftSession(r datatype.RaftSession) {
 
-	fmt.Printf("Id: %d\tconnected: %v\n",r.ID,r.ConnectedToLeader)
-	for _,v := range r.RaftMembers {
+	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
+	for _, v := range r.RaftMembers {
 		fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
-		Host=v.Host
-		Port=v.Port
+		Host = v.Host
+		Port = v.Port
 		if id >= 0 {
-			if err, state = getState(Host, Port); err == nil {
-				// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-				fmt.Printf("\t\tState:\t%+v\n", *state)
-			} else {
-				fmt.Printf("\t\tError: %v\n", err)
-			}
+			printDetail(Host, Port)
 		}
 	}
-	// Get the configuration
-	if err,set = getConfig("prune",Host,Port); err ==nil {
-		fmt.Printf("\t\tPrune:\t%+v\n",set)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
-	}
-	if err,set = getConfig("prune_on_leader",Host,Port); err ==nil {
-		fmt.Printf("\t\tPrune_on_leader:\t%+v\n",set)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
-	}
-	if err,set = getConfig("backup",Host,Port); err ==nil {
-		fmt.Printf("\t\tbackup:\t%+v\n",set)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
-	}
-
-	if err,status = getStatus(Host,Port); err ==nil {
-		fmt.Printf("\t\tStatus:\t%s\n",status)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
-	}
-
-	// get the Buckets
-	if err,buckets = getBucket(Host,Port); err ==nil {
-		l:= len(buckets)
-		if l > 0{
-			fmt.Printf("\t\tBuckets:\t%s\n",buckets[0])
+	// print the Buckets
+	if err, buckets = getBucket(Host, Port); err == nil {
+		l := len(buckets)
+		if l > 0 {
+			fmt.Printf("\t\tBuckets:\t%s\n", buckets[0])
 		}
-		for i:=1; i <  l; i++ {
-			fmt.Printf("\t\t\t\t%s\n",buckets[i])
+		for i := 1; i < l; i++ {
+			fmt.Printf("\t\t\t\t%s\n", buckets[i])
 		}
 	} else {
-		fmt.Printf("\t\tError: %v\n",err)
+		fmt.Printf("\t\tError: %v\n", err)
 	}
-	// Get the leader
-	if err,leader = getLeader(Host,Port); err ==nil {
-		fmt.Printf("\t\tLeader:\t IP:%s\t%d\n",leader.IP,leader.Port)
+	// print  the leader
+	if err, leader = getLeader(Host, Port); err == nil {
+		fmt.Printf("\t\tLeader:\t IP:%s\t%d\n", leader.IP, leader.Port)
 	} else {
-		fmt.Printf("\t\tError: %v\n",err)
+		fmt.Printf("\t\tError: %v\n", err)
 	}
-	// Get the state
+	// Print detail of the leader
 	if id == -1 {
-		if err, state = getState(Host, Port); err == nil {
-			// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-			fmt.Printf("\t\tState:\t%+v\n", *state)
-		} else {
-			fmt.Printf("\t\tError: %v\n", err)
-		}
+		printDetail(leader.IP,leader.Port)
 	}
 
 }
+
+
+
 
 func getBucket(host string,port int) (error,[]string){
 	port += 100
@@ -208,3 +178,32 @@ func getConfig(what string, host string,port int) (error,bool){
 	return api.GetRaftConfig(what,url)
 }
 
+func printDetail(Host string,Port int){
+
+	if err, status = getStatus(Host, Port); err == nil {
+		fmt.Printf("\t\tStatus:\t%s\n", status)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, set = getConfig("prune", Host, Port); err == nil {
+		fmt.Printf("\t\tPrune:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, set = getConfig("prune_on_leader", Host, Port); err == nil {
+		fmt.Printf("\t\tPrune_on_leader:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, set = getConfig("backup", Host, Port); err == nil {
+		fmt.Printf("\t\tbackup:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, state = getState(Host, Port); err == nil {
+		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+		fmt.Printf("\t\tState:\t%+v\n", *state)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+}
