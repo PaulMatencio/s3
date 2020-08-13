@@ -118,25 +118,26 @@ func getRaftSession(r datatype.RaftSession) {
 		Port = v.Port
 		if id >= 0 {
 			printDetail(Host, Port)
+			fmt.Printf("\n")
 		}
 	}
 	// print the Buckets
 	if err, buckets = getBucket(Host, Port); err == nil {
 		l := len(buckets)
 		if l > 0 {
-			fmt.Printf("\t\tBuckets:\t%s\n", buckets[0])
+			fmt.Printf("\tBuckets:\t%s\n", buckets[0])
 		}
 		for i := 1; i < l; i++ {
-			fmt.Printf("\t\t\t\t%s\n", buckets[i])
+			fmt.Printf("\t\t\t%s\n", buckets[i])
 		}
 	} else {
-		fmt.Printf("\t\tError: %v\n", err)
+		fmt.Printf("\tError: %v\n", err)
 	}
 	// print  the leader
 	if err, leader = getLeader(Host, Port); err == nil {
-		fmt.Printf("\t\tLeader:\t IP:%s\t%d\n", leader.IP, leader.Port)
+		fmt.Printf("\tLeader:\t IP:%s\t%d\n", leader.IP, leader.Port)
 	} else {
-		fmt.Printf("\t\tError: %v\n", err)
+		fmt.Printf("\tError: %v\n", err)
 	}
 	// Print detail of the leader
 	if id == -1 {
