@@ -56,8 +56,8 @@ func initaLrFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
-	cmd.Flags().BoolVarP(&conf,"conf","",true,"Print Raft config information ")
-	cmd.Flags().BoolVarP(&all,"all","",true," Print all member")
+	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
+	cmd.Flags().BoolVarP(&all,"all","",true," Print all member otherwise only not initialized member")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -125,24 +125,24 @@ func getRaftSession(r datatype.RaftSession) {
 			return
 		}
 		Leader :=isLeader(Host,leader.IP)
-		if !isInitialized(status) || Leader || all {
+		if all  {
 			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
-			// fmt.Printf("\t\tStatus:\t%+v\n", status)
-			if id >= 0 {
-				fmt.Printf("\t\tStatus:\t%+v\n", status)
-				printDetail(Host, Port, conf)
+			printStatus(Host,Port)
+			printState(Host,Port)
+			fmt.Printf("\n")
+		} else {
+			if Leader || !isInitialized(status) {
+				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
+				printStatus(Host, Port)
+				printState(Host, Port)
 				fmt.Printf("\n")
 			}
 		}
 	}
-
-	// print the Buckets
-	if id == -1 {
-		fmt.Printf("\t\tStatus:\t%+v\n", status)
-		printDetail(leader.IP,leader.Port,false)
-	}
 	printBucket(Host,Port)
-
+	if conf {
+		printConfig(Host, Port)
+	}
 
 }
 
@@ -176,21 +176,9 @@ func getConfig(what string, host string,port int) (error,bool){
 	return api.GetRaftConfig(what,url)
 }
 
-func printDetail(Host string,Port int, failed bool){
-	// printStatus(Host,Port)
-	printState(Host,Port)
-	if conf {
-		printConfig(Host,Port)
-	}
-}
 
 func printStatus(Host string, Port int){
-	if err, status = getStatus(Host, Port); err == nil {
-		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tStatus:\t%+v\n", status)
-	} else {
-		fmt.Printf("\t\tError: %v\n", err)
-	}
+	fmt.Printf("\t\tStatus:\t%+v\n", status)
 }
 
 func printState(Host string, Port int) {
