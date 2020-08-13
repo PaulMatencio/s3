@@ -41,7 +41,7 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
-	set,conf,all,isLeader bool
+	set,conf,all bool
 	err error
 	Port,id int
 )
@@ -124,10 +124,8 @@ func getRaftSession(r datatype.RaftSession) {
 			fmt.Printf("\tError: %v\n", err)
 			return
 		}
-		if  Host == leader.IP {
-			isLeader= true
-		}
-		if !isInitialized(status) || isLeader || all {
+
+		if !isInitialized(status) || isLeader(Host,leader.IP) || all {
 			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, isLeader)
 			// fmt.Printf("\t\tStatus:\t%+v\n", status)
 			if id >= 0 {
@@ -219,21 +217,6 @@ func printBucket(Host string, Port int){
 	}
 }
 
-func printLeader(Host string, Port int){
-	// print  the leader
-	/*
-	if err, leader = getLeader(Host, Port); err == nil {
-		fmt.Printf("\tLeader:\t IP:%s\tPort:%d\n", leader.IP, leader.Port)
-	} else {
-		fmt.Printf("\tError: %v\n", err)
-	}
-	// Print detail of the leader, failed == false
-	*/
-
-	if id == -1 {
-		printDetail(leader.IP,leader.Port,false)
-	}
-}
 
 func printConfig(Host string, Port int) {
 	if err, set = getConfig("prune", Host, Port); err == nil {
@@ -255,6 +238,14 @@ func printConfig(Host string, Port int) {
 
 func isInitialized( status string) (bool){
 	if status == "isInitialized" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func isLeader( ip1 string, ip2 string) (bool){
+	if ip1==ip2 {
 		return true
 	} else {
 		return false
