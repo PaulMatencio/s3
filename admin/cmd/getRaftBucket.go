@@ -2,7 +2,9 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/s3/api"
+	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
@@ -24,7 +26,7 @@ var (
 
 func init() {
 	rootCmd.AddCommand(getRaftBucketCmd)
-	initaLrFlags(getRaftBucketCmd)
+	initaGrFlags(getRaftBucketCmd)
 }
 
 func initaGrFlags(cmd *cobra.Command) {
@@ -39,21 +41,26 @@ func getRaftBucket(cmd *cobra.Command, args []string){
 	if len(url) == 0 {
 		if url = utils.GetBucketdUrl(*viper.GetViper()); len(url) == 0 {
 			if url = utils.GetLevelDBUrl(*viper.GetViper()); len(url) == 0 {
-				gLog.Warning.Printf("The url of Bucketd server is missing")
+				gLog.Warning.Printf("The url of metadata server is missing")
 				return
 			}
 		}
 	}
 	gLog.Info.Printf("Url: %s",url)
-	if err,raftSess := api.ListRaftSessions(url); err == nil {
-		if id >= 0 && id <= len(*raftSess) {
-			getRaftSession((*raftSess)[id])
-		} else {
-			for _, r := range *raftSess {
-				getRaftSession(r)
-			}
+
+	if err,rb := api.GetRaftBucket(url,bucket); err == nil {
+		printBucket(*rb)
+		// Get Raft session
+		if err,rs := api.GetRaftSession(url,rb.RaftSessionID); err == nil {
+			printMembers(*rs)
 		}
 	} else {
-		gLog.Error.Printf("%v",err)
+		fmt.Printf("%v",err)
 	}
+}
+
+func printBucket(rb datatype.RaftBucket) {
+	fmt.Printf("Bucket:\t%s", bucket)
+	fmt.Printf("\tSession ID:%s",rb.RaftSessionID)
+	fmt.Printf("\tLeader:%s\n",rb.Leader)
 }

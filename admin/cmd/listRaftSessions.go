@@ -65,7 +65,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 	if len(url) == 0 {
 		if url = utils.GetBucketdUrl(*viper.GetViper()); len(url) == 0 {
 			if url = utils.GetLevelDBUrl(*viper.GetViper()); len(url) == 0 {
-				gLog.Warning.Printf("The url of Bucketd server is missing")
+				gLog.Warning.Printf("The url of metadata server is missing")
 				return
 			}
 		}
@@ -112,36 +112,12 @@ func listRaft1(cmd *cobra.Command,args []string) {
 }
 
 func getRaftSession(r datatype.RaftSession) {
-
-	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
-	for _, v := range r.RaftMembers {
-		Host,Port = v.Host,v.Port
-		if err, status = getStatus(Host, Port); err !=  nil {
-			fmt.Printf("\t\tError: %v\n", err)
-			return
+	err,Host,Port := printMembers(r)
+	if err != nil {
+		printBuckets(Host, Port)
+		if conf {
+			printConfig(Host, Port)
 		}
-		if err, leader = getLeader(Host, Port); err != nil {
-			fmt.Printf("\tError: %v\n", err)
-			return
-		}
-		Leader :=isLeader(Host,leader.IP)
-		if all  {
-			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
-			printStatus(Host,Port)
-			printState(Host,Port)
-			fmt.Printf("\n")
-		} else {
-			if Leader || !isInitialized(status) {
-				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
-				printStatus(Host, Port)
-				printState(Host, Port)
-				// fmt.Printf("\n")
-			}
-		}
-	}
-	printBucket(Host,Port)
-	if conf {
-		printConfig(Host, Port)
 	}
 	fmt.Printf("\n")
 }
@@ -177,6 +153,42 @@ func getConfig(what string, host string,port int) (error,bool){
 }
 
 
+func printMembers(r datatype.RaftSession) (error,string,int){
+	var (
+		Host string
+		Port int
+		err error
+	)
+	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
+	for _, v := range r.RaftMembers {
+		Host,Port = v.Host,v.Port
+		if err, status = getStatus(Host, Port); err !=  nil {
+			fmt.Printf("\t\tError: %v\n", err)
+			return err,Host,Port
+		}
+		if err, leader = getLeader(Host, Port); err != nil {
+			fmt.Printf("\tError: %v\n", err)
+			return err,Host,Port
+		}
+		Leader :=isLeader(Host,leader.IP)
+		if all  {
+			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
+			printStatus(Host,Port)
+			printState(Host,Port)
+			fmt.Printf("\n")
+		} else {
+			if Leader || !isInitialized(status) {
+				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
+				printStatus(Host, Port)
+				printState(Host, Port)
+				// fmt.Printf("\n")
+			}
+		}
+	}
+	return err,Host,Port
+}
+
+
 func printStatus(Host string, Port int){
 	fmt.Printf("\t\tStatus:\t%+v\n", status)
 }
@@ -190,7 +202,7 @@ func printState(Host string, Port int) {
 	}
 }
 
-func printBucket(Host string, Port int){
+func printBuckets(Host string, Port int){
 
 	if err, buckets = getBucket(Host, Port); err == nil {
 		l := len(buckets)
