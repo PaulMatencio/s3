@@ -72,6 +72,13 @@ type RaftLeader struct {
 	Port int `json:"port,omitempty"`
 }
 
+type RaftBucket struct {
+	RaftSessionID int    `json:"raftSessionId"`
+	Leader        RaftLeader `json:"leader"`
+	Creating      bool   `json:"creating"`
+	Deleting      bool   `json:"deleting"`
+	Version       int    `json:"version"`
+}
 
 type RaftState struct {
 	Term       int `json:"term"`
@@ -82,8 +89,6 @@ type RaftState struct {
 	Committed  int `json:"committed"`
 	Pruned     int `json:"pruned"`
 }
-
-
 
 func  (c RaftSessions) GetRaftSessions(file string) (error,*RaftSessions) {
 	gLog.Trace.Printf("Input json file :%s",file)

@@ -40,8 +40,8 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "sindexd",
-	Short: "Toolbox for sindexd to S3 migration and for sindexd to sindexd replication",
+	Use:   "admin",
+	Short: "S3 admin commands",
 	Long: ``,
 
 }

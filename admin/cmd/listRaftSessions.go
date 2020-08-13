@@ -55,7 +55,7 @@ func init() {
 func initaLrFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
-	cmd.Flags().IntVarP(&id,"id","i",-1,"session id")
+	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -78,7 +78,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 			}
 		}
 	} else {
-	 	gLog.Error.Printf("%v",err)
+		gLog.Error.Printf("%v",err)
 	}
 }
 
@@ -116,13 +116,14 @@ func getRaftSession(r datatype.RaftSession) {
 		fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 		Host=v.Host
 		Port=v.Port
-		/*
-		if err,status = getStatus(Host,Port); err ==nil {
-			fmt.Printf("\t\tStatus\t%s\n",status)
-		} else {
-			fmt.Printf("\t\tError: %v\n",err)
+		if id >= 0 {
+			if err, state = getState(Host, Port); err == nil {
+				// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+				fmt.Printf("\t\tState:\t%+v\n", *state)
+			} else {
+				fmt.Printf("\t\tError: %v\n", err)
+			}
 		}
-		 */
 	}
 	// Get the configuration
 	if err,set = getConfig("prune",Host,Port); err ==nil {
@@ -166,11 +167,13 @@ func getRaftSession(r datatype.RaftSession) {
 		fmt.Printf("\t\tError: %v\n",err)
 	}
 	// Get the state
-	if err,state = getState(Host,Port); err ==nil {
-		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tState:\t%+v\n",*state)
-	} else {
-		fmt.Printf("\t\tError: %v\n",err)
+	if id == -1 {
+		if err, state = getState(Host, Port); err == nil {
+			// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+			fmt.Printf("\t\tState:\t%+v\n", *state)
+		} else {
+			fmt.Printf("\t\tError: %v\n", err)
+		}
 	}
 
 }
@@ -204,6 +207,4 @@ func getConfig(what string, host string,port int) (error,bool){
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftConfig(what,url)
 }
-
-
 
