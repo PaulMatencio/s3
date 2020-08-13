@@ -41,7 +41,7 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
-	set,conf,notInit bool
+	set,conf,all,isLeader bool
 	err error
 	Port,id int
 )
@@ -57,7 +57,7 @@ func initaLrFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
 	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
-	cmd.Flags().BoolVarP(&notInit,"Init","e",false," Print only not initialized member ")
+	cmd.Flags().BoolVarP(&all,"all","a",true," Print all member")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -124,18 +124,27 @@ func getRaftSession(r datatype.RaftSession) {
 			fmt.Printf("\tError: %v\n", err)
 			return
 		}
-		if !isInitialized(status ) || !notInit || Host == leader.IP {
-			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, Host, Port, v.Site)
+		if  Host == leader.IP {
+			isLeader= true
+		}
+		if !isInitialized(status) || isLeader || all {
+			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, isLeader)
+			// fmt.Printf("\t\tStatus:\t%+v\n", status)
 			if id >= 0 {
+				fmt.Printf("\t\tStatus:\t%+v\n", status)
 				printDetail(Host, Port, conf)
 				fmt.Printf("\n")
 			}
 		}
 	}
+
 	// print the Buckets
+	if id == -1 {
+		fmt.Printf("\t\tStatus:\t%+v\n", status)
+		printDetail(leader.IP,leader.Port,false)
+	}
 	printBucket(Host,Port)
-	// print leader will set its ip and port
-	printLeader(Host,Port)
+	
 
 }
 
@@ -212,12 +221,15 @@ func printBucket(Host string, Port int){
 
 func printLeader(Host string, Port int){
 	// print  the leader
+	/*
 	if err, leader = getLeader(Host, Port); err == nil {
 		fmt.Printf("\tLeader:\t IP:%s\tPort:%d\n", leader.IP, leader.Port)
 	} else {
 		fmt.Printf("\tError: %v\n", err)
 	}
 	// Print detail of the leader, failed == false
+	*/
+
 	if id == -1 {
 		printDetail(leader.IP,leader.Port,false)
 	}
