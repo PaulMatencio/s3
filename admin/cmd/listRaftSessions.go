@@ -56,7 +56,7 @@ func initaLrFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
-	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
+	cmd.Flags().BoolVarP(&conf,"conf","",true,"Print Raft config information ")
 	cmd.Flags().BoolVarP(&all,"all","",true," Print all member")
 }
 
@@ -124,9 +124,9 @@ func getRaftSession(r datatype.RaftSession) {
 			fmt.Printf("\tError: %v\n", err)
 			return
 		}
-
-		if !isInitialized(status) || isLeader(Host,leader.IP) || all {
-			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, isLeader)
+		Leader :=isLeader(Host,leader.IP)
+		if !isInitialized(status) || Leader || all {
+			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
 			// fmt.Printf("\t\tStatus:\t%+v\n", status)
 			if id >= 0 {
 				fmt.Printf("\t\tStatus:\t%+v\n", status)
@@ -177,7 +177,7 @@ func getConfig(what string, host string,port int) (error,bool){
 }
 
 func printDetail(Host string,Port int, failed bool){
-	printStatus(Host,Port)
+	// printStatus(Host,Port)
 	printState(Host,Port)
 	if conf {
 		printConfig(Host,Port)
