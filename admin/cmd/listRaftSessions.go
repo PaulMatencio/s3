@@ -135,7 +135,7 @@ func getRaftSession(r datatype.RaftSession) {
 				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
 				printStatus(Host, Port)
 				printState(Host, Port)
-				fmt.Printf("\n")
+				// fmt.Printf("\n")
 			}
 		}
 	}
@@ -143,7 +143,7 @@ func getRaftSession(r datatype.RaftSession) {
 	if conf {
 		printConfig(Host, Port)
 	}
-
+	fmt.Printf("\n")
 }
 
 func getBucket(host string,port int) (error,[]string){
