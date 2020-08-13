@@ -171,9 +171,9 @@ func printDetail(Host string,Port int, failed bool){
 }
 
 func printStatus(Host string, Port int){
-	if err, state = getState(Host, Port); err == nil {
+	if err, status = getStatus(Host, Port); err == nil {
 		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
-		fmt.Printf("\t\tState:\t%+v\n", *state)
+		fmt.Printf("\t\tStatus:\t%+v\n", status)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
 	}
