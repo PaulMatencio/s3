@@ -57,7 +57,7 @@ func initaLrFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
 	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
-	cmd.Flags().BoolVarP(&all,"all","a",true," Print all member")
+	cmd.Flags().BoolVarP(&all,"all","",true," Print all member")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -144,7 +144,7 @@ func getRaftSession(r datatype.RaftSession) {
 		printDetail(leader.IP,leader.Port,false)
 	}
 	printBucket(Host,Port)
-	
+
 
 }
 
