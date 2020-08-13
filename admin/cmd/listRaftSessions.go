@@ -41,7 +41,7 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
-	set,failed bool
+	set,conf,notInit bool
 	err error
 	Port,id int
 )
@@ -56,7 +56,8 @@ func initaLrFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
-	cmd.Flags().BoolVarP(&failed,"failed","f",false,"Print only non initialized members and the leader ")
+	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
+	cmd.Flags().BoolVarP(&notInit,"Init","e",false," Print only not initialized member ")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -114,23 +115,29 @@ func getRaftSession(r datatype.RaftSession) {
 
 	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
 	for _, v := range r.RaftMembers {
-		fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
-		Host = v.Host
-		Port = v.Port
-		if id >= 0 {
-			printDetail(Host, Port,failed)
-			fmt.Printf("\n")
+		Host,Port = v.Host,v.Port
+		if err, status = getStatus(Host, Port); err == nil {
+			fmt.Printf("\t\tError: %v\n", err)
+			return
+		}
+		if err, leader = getLeader(Host, Port); err != nil {
+			fmt.Printf("\tError: %v\n", err)
+			return
+		}
+		if !isInitialized(status ) || !notInit || Host == leader.IP {
+			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, Host, Port, v.Site)
+			if id >= 0 {
+				printDetail(Host, Port, conf)
+				fmt.Printf("\n")
+			}
 		}
 	}
 	// print the Buckets
 	printBucket(Host,Port)
+	// print leader will set its ip and port
 	printLeader(Host,Port)
-	// Print detail of the leader, failed == false
-	if id == -1 {
-		printDetail(leader.IP,leader.Port,false)
-	}
-}
 
+}
 
 func getBucket(host string,port int) (error,[]string){
 	port += 100
@@ -165,7 +172,7 @@ func getConfig(what string, host string,port int) (error,bool){
 func printDetail(Host string,Port int, failed bool){
 	printStatus(Host,Port)
 	printState(Host,Port)
-	if !failed {
+	if conf {
 		printConfig(Host,Port)
 	}
 }
@@ -203,14 +210,17 @@ func printBucket(Host string, Port int){
 	}
 }
 
-func printLeader(Host string, Port int) {
+func printLeader(Host string, Port int){
 	// print  the leader
 	if err, leader = getLeader(Host, Port); err == nil {
 		fmt.Printf("\tLeader:\t IP:%s\tPort:%d\n", leader.IP, leader.Port)
 	} else {
 		fmt.Printf("\tError: %v\n", err)
 	}
-
+	// Print detail of the leader, failed == false
+	if id == -1 {
+		printDetail(leader.IP,leader.Port,false)
+	}
 }
 
 func printConfig(Host string, Port int) {
@@ -228,5 +238,13 @@ func printConfig(Host string, Port int) {
 		fmt.Printf("\t\tbackup:\t%+v\n", set)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
+	}
+}
+
+func isInitialized( status string) (bool){
+	if status == "isInitialized" {
+		return true
+	} else {
+		return false
 	}
 }
