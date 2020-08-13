@@ -162,38 +162,29 @@ func getConfig(what string, host string,port int) (error,bool){
 	return api.GetRaftConfig(what,url)
 }
 
-func printDetail(Host string,Port int, detailed bool){
-
-	if err, status = getStatus(Host, Port); err == nil {
-		fmt.Printf("\t\tStatus:\t%s\n", status)
-	} else {
-		fmt.Printf("\t\tError: %v\n", err)
+func printDetail(Host string,Port int, failed bool){
+	printStatus(Host,Port)
+	printState(Host,Port)
+	if !failed {
+		printConfig(Host,Port)
 	}
+}
 
+func printStatus(Host string, Port int){
 	if err, state = getState(Host, Port); err == nil {
 		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
 		fmt.Printf("\t\tState:\t%+v\n", *state)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
 	}
+}
 
-	if !failed {
-		if err, set = getConfig("prune", Host, Port); err == nil {
-			fmt.Printf("\t\tPrune:\t%+v\n", set)
-		} else {
-			fmt.Printf("\t\tError: %v\n", err)
-		}
-		if err, set = getConfig("prune_on_leader", Host, Port); err == nil {
-			fmt.Printf("\t\tPrune_on_leader:\t%+v\n", set)
-		} else {
-			fmt.Printf("\t\tError: %v\n", err)
-		}
-		if err, set = getConfig("backup", Host, Port); err == nil {
-			fmt.Printf("\t\tbackup:\t%+v\n", set)
-		} else {
-			fmt.Printf("\t\tError: %v\n", err)
-		}
-
+func printState(Host string, Port int) {
+	if err, state = getState(Host, Port); err == nil {
+		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
+		fmt.Printf("\t\tState:\t%+v\n", *state)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
 	}
 }
 
@@ -215,9 +206,27 @@ func printBucket(Host string, Port int){
 func printLeader(Host string, Port int) {
 	// print  the leader
 	if err, leader = getLeader(Host, Port); err == nil {
-		fmt.Printf("\tLeader:\t IP:%s\t%d\n", leader.IP, leader.Port)
+		fmt.Printf("\tLeader:\t IP:%s\tPort:%d\n", leader.IP, leader.Port)
 	} else {
 		fmt.Printf("\tError: %v\n", err)
 	}
 
+}
+
+func printConfig(Host string, Port int) {
+	if err, set = getConfig("prune", Host, Port); err == nil {
+		fmt.Printf("\t\tPrune:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, set = getConfig("prune_on_leader", Host, Port); err == nil {
+		fmt.Printf("\t\tPrune_on_leader:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
+	if err, set = getConfig("backup", Host, Port); err == nil {
+		fmt.Printf("\t\tbackup:\t%+v\n", set)
+	} else {
+		fmt.Printf("\t\tError: %v\n", err)
+	}
 }
