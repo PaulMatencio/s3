@@ -116,7 +116,7 @@ func getRaftSession(r datatype.RaftSession) {
 	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
 	for _, v := range r.RaftMembers {
 		Host,Port = v.Host,v.Port
-		if err, status = getStatus(Host, Port); err == nil {
+		if err, status = getStatus(Host, Port); err !=  nil {
 			fmt.Printf("\t\tError: %v\n", err)
 			return
 		}
