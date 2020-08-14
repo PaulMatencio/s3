@@ -55,12 +55,12 @@ func getRaftBucket(cmd *cobra.Command, args []string){
 			printMembers(*rs)
 		}
 	} else {
-		fmt.Printf("%v",err)
+		fmt.Printf("%v\n",err)
 	}
 }
 
 func printBucket(rb datatype.RaftBucket) {
 	fmt.Printf("Bucket:\t%s", bucket)
-	fmt.Printf("\tSession ID:%s",rb.RaftSessionID)
-	fmt.Printf("\tLeader:%s\n",rb.Leader)
+	fmt.Printf("\tSession ID:%d",rb.RaftSessionID)
+	fmt.Printf("\tLeader IP:%s\tPort:%d\n",rb.Leader.IP,rb.Leader.Port)
 }

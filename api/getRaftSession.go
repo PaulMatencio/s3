@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"io/ioutil"
@@ -36,6 +37,7 @@ func GetRaftSession(url string, sessionId int) (error,*datatype.RaftSession) {
 			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
+	fmt.Printf("%v",rb)
 	return err,&rb
 }
 
