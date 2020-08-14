@@ -76,5 +76,5 @@ func printBucket(rb datatype.RaftBucket) {
 
 
 func printMember(v datatype.RaftMembers){
-	fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", v.ID, v.Name, Host, Port, v.Site,v.AdminPort)
+	fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", v.ID, v.Name, v.Host, v.Port, v.Site,v.AdminPort)
 }
