@@ -41,9 +41,11 @@ var (
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
-	set,conf,all bool
+	set,conf,notInit bool
 	err error
-	Port,id int
+	id,aPort int
+	wsbs   []string
+	wsb   string
 )
 const http ="http://"
 
@@ -57,7 +59,8 @@ func initaLrFlags(cmd *cobra.Command) {
 	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
 	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
-	cmd.Flags().BoolVarP(&all,"all","",true," Print all member otherwise only not initialized member")
+	cmd.Flags().BoolVarP(&notInit,"notInit","e",false," Print only not initialized member")
+	// cmd.Flags().StringVarP(&wsb,"wsb","e","","Warm Standby IP addresses separated by a comma")
 }
 
 func listRaft(cmd *cobra.Command,args []string) {
@@ -70,6 +73,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 			}
 		}
 	}
+
 	gLog.Info.Printf("Url: %s",url)
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		if id >= 0 && id <= len(*raftSess) {
@@ -97,9 +101,9 @@ func listRaft1(cmd *cobra.Command,args []string) {
 				for _, v := range r.RaftMembers {
 					fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 					Host=v.Host
-					Port=v.Port
+					aPort=v.AdminPort
 				}
-				if err,buckets = getBucket(Host,Port); err ==nil {
+				if err,buckets = getBucket(Host,aPort); err ==nil {
 					fmt.Printf("\t\tBuckets: %v\n",buckets)
 				}
 			}
@@ -113,42 +117,42 @@ func listRaft1(cmd *cobra.Command,args []string) {
 
 func getRaftSession(r datatype.RaftSession) {
 
-	err,Host,Port := printSessions(r)
+	err,Host,aPort := printSessions(r)
 	if err != nil {
-		printBuckets(Host, Port)
+		printBuckets(Host, aPort)
 		if conf {
-			printConfig(Host, Port)
+			printConfig(Host, aPort)
 		}
 	}
 	fmt.Printf("\n")
 }
 
 func getBucket(host string,port int) (error,[]string){
-	port += 100
+
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftBuckets(url)
 }
 
 func getLeader(host string,port int) (error,*datatype.RaftLeader){
-	port += 100
+
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftLeader(url)
 }
 
 func getState(host string,port int) (error,*datatype.RaftState){
-	port += 100
+
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftState(url)
 }
 
 func getStatus(host string,port int) (error,string){
-	port += 100
+
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftStatus(url)
 }
 
 func getConfig(what string, host string,port int) (error,bool){
-	port += 100
+
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftConfig(what,url)
 }
@@ -157,36 +161,35 @@ func getConfig(what string, host string,port int) (error,bool){
 func printSessions(r datatype.RaftSession) (error,string,int){
 	var (
 		Host string
-		Port int
+		aPort int
 		err error
 	)
 	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
 	for _, v := range r.RaftMembers {
-		Host,Port = v.Host,v.Port
-		if err, status = getStatus(Host, Port); err !=  nil {
+		Host,aPort = v.Host,v.AdminPort
+		if err, status = getStatus(Host, aPort); err !=  nil {
 			fmt.Printf("\t\tError: %v\n", err)
-			return err,Host,Port
+			return err,Host,aPort
 		}
-		if err, leader = getLeader(Host, Port); err != nil {
+		if err, leader = getLeader(Host, aPort); err != nil {
 			fmt.Printf("\tError: %v\n", err)
-			return err,Host,Port
+			return err,Host,aPort
 		}
 		Leader :=isLeader(Host,leader.IP)
-		if all  {
-			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
-			printStatus(Host,Port)
-			printState(Host,Port)
+		if !notInit  { // printall
+			fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, v.Port, v.Site, Leader)
+			printStatus(Host,aPort)
+			printState(Host,aPort)
 			fmt.Printf("\n")
 		} else {
 			if Leader || !isInitialized(status) {
-				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, Port, v.Site, Leader)
-				printStatus(Host, Port)
-				printState(Host, Port)
-				// fmt.Printf("\n")
+				fmt.Printf("\tMember Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tisLeader:%v\n", v.ID, v.Name, Host, v.Port, v.Site, Leader)
+				printStatus(Host, aPort)
+				printState(Host, aPort)
 			}
 		}
 	}
-	return err,Host,Port
+	return err,Host,aPort
 }
 
 
@@ -254,3 +257,5 @@ func isLeader( ip1 string, ip2 string) (bool){
 		return false
 	}
 }
+
+

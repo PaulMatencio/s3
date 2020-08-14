@@ -50,13 +50,13 @@ func listConfig(cmd *cobra.Command,args []string) {
 				for _,v := range a {
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
-					fmt.Printf("Repd: %d\tCluster: %s\t Meta:%s\tHost:%s\tPort:%d\tSite:%s\n", r.Num, cluster,meta,v.Host,v.Port,v.Site)
+					fmt.Printf("Repd: %d\tCluster: %s\t Meta: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
 				}
 				w := r.Wsbs
 				for _,v := range w {
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
-					fmt.Printf("Wsb: %d\tCluster: %s\t Meta:%s\tHost:%s\tPort:%d\tSite:%s\n", r.Num, cluster,meta,v.Host,v.Port,v.Site)
+					fmt.Printf("Wsb: %d\tCluster: %s\t Meta:%s\tHost:%s\tPort:%d\tSite:%s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
 				}
 				fmt.Printf("\n")
 
