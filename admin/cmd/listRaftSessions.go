@@ -118,7 +118,7 @@ func listRaft1(cmd *cobra.Command,args []string) {
 func getRaftSession(r datatype.RaftSession) {
 
 	err,Host,aPort := printSessions(r)
-	if err != nil {
+	if err == nil {
 		printBuckets(Host, aPort)
 		if conf {
 			printConfig(Host, aPort)
