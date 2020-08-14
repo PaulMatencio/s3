@@ -2,18 +2,17 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"io/ioutil"
 	"net/http"
-	"time"
 	"strconv"
+	"time"
 )
 
-func GetRaftSession(url string, sessionId int) (error,*datatype.RaftSession) {
+func GetRaftSession(url string, sessionId int) (error,*datatype.RaftSessionInfo) {
 	var (
-		rb      datatype.RaftSession
+		rb      datatype.RaftSessionInfo
 		req     = "raft_sessions"
 		id = strconv.Itoa(sessionId)
 	)
@@ -37,7 +36,7 @@ func GetRaftSession(url string, sessionId int) (error,*datatype.RaftSession) {
 			time.Sleep(waitTime * time.Millisecond)
 		}
 	}
-	fmt.Printf("%v",rb)
+	// fmt.Printf("%v",rb)
 	return err,&rb
 }
 

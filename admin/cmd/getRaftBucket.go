@@ -52,7 +52,16 @@ func getRaftBucket(cmd *cobra.Command, args []string){
 		printBucket(*rb)
 		// Get Raft session
 		if err,rs := api.GetRaftSession(url,rb.RaftSessionID); err == nil {
-			printMembers(*rs)
+			fmt.Printf("Leader\n")
+			printMember(rs.Leader)
+			fmt.Printf("Connected\n")
+			for _,m := range rs.Connected {
+				printMember(m)
+			}
+			fmt.Printf("Disconnected\n")
+			for _,m := range rs.Disconnected {
+				printMember(m)
+			}
 		}
 	} else {
 		fmt.Printf("%v\n",err)
@@ -63,4 +72,9 @@ func printBucket(rb datatype.RaftBucket) {
 	fmt.Printf("Bucket:\t%s", bucket)
 	fmt.Printf("\tSession ID:%d",rb.RaftSessionID)
 	fmt.Printf("\tLeader IP:%s\tPort:%d\n",rb.Leader.IP,rb.Leader.Port)
+}
+
+
+func printMember(v datatype.RaftMembers){
+	fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", v.ID, v.Name, Host, Port, v.Site,v.AdminPort)
 }
