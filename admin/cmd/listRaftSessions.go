@@ -109,9 +109,6 @@ func listRaft(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("%v", err)
 		}
 	}
-
-	return
-
 	gLog.Info.Printf("Url: %s",url)
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		if id >= 0 && id <= len(*raftSess) {
