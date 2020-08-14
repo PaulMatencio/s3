@@ -2,13 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/mitchellh/go-homedir"
-	"github.com/s3/datatype"
 	"github.com/s3/gLog"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"time"
 )
 
@@ -42,18 +38,3 @@ func GetRaftConfig(what string, url string) (error,bool) {
 	return err,rl
 }
 
-func ReadRaftConfig(topology string) (error,*datatype.Clusters) {
-	var (
-		filePath string
-		c        datatype.Clusters
-		// cluster,meta  string
-	)
-	if home, err := homedir.Dir(); err == nil {
-		filePath = filepath.Join(home, topology)
-		viper.Set("topology", filePath)
-		if err, c := c.GetClusters(filePath); err == nil {
-			return err,c
-		}
-	}
-	return err,&c
-}

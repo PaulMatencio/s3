@@ -37,31 +37,50 @@ var (
 		},
 
 	}
-	raft,Host,status  string
+	lrs= &cobra.Command{
+		Use:   "lrs",
+		Short: "list Raft sessions info",
+		Long: ``,
+		Hidden: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			listRaft(cmd,args)
+		},
+	}
+	raft,Host,status,topology  string
 	buckets []string
 	leader *datatype.RaftLeader
 	state *datatype.RaftState
 	set,conf,notInit bool
 	err error
 	id,aPort int
-	wsbs   []string
-	wsb   string
+	filePath,cluster string
+	mWsb = [][]datatype.Wsbs{}
+
+	c  datatype.Clusters
+
 )
 const http ="http://"
+type wsb struct {
+	Name string
+	Host string
+	Port int
+}
 
 func init() {
 	rootCmd.AddCommand(listRaftCmd)
-	initaLrFlags(listRaftCmd)
+	initLrsFlags(listRaftCmd)
+	rootCmd.AddCommand(lrs)
+	initLrsFlags(lrs)
 }
 
-func initaLrFlags(cmd *cobra.Command) {
+func initLrsFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
-	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().IntVarP(&id,"id","i",-1,"raft session id")
 	cmd.Flags().BoolVarP(&conf,"conf","",false,"Print Raft config information ")
 	cmd.Flags().BoolVarP(&notInit,"notInit","e",false," Print only not initialized member")
-	// cmd.Flags().StringVarP(&wsb,"wsb","e","","Warm Standby IP addresses separated by a comma")
+	cmd.Flags().StringVarP(&topoLogy, "topoLogy", "t", ".admin/topology.json","path to the S3 metadata configuration file")
 }
+
 
 func listRaft(cmd *cobra.Command,args []string) {
 
@@ -73,6 +92,25 @@ func listRaft(cmd *cobra.Command,args []string) {
 			}
 		}
 	}
+
+	if home, err := homedir.Dir(); err == nil {
+		filePath = filepath.Join(home, topoLogy)
+		viper.Set("topology", filePath)
+		if err, c := c.GetClusters(filePath); err == nil {
+			for _, r := range c.Topology {
+				w := r.Wsbs
+				a := []datatype.Wsbs{}
+				for _, v := range w {
+					a= append(a,v)
+				}
+				mWsb= append(mWsb,a)
+			}
+		} else {
+			gLog.Error.Printf("%v", err)
+		}
+	}
+
+	return
 
 	gLog.Info.Printf("Url: %s",url)
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
@@ -95,13 +133,13 @@ func listRaft1(cmd *cobra.Command,args []string) {
 		viper.Set("raft", filePath)
 		c := datatype.RaftSessions{}
 		if err, raftSess := c.GetRaftSessions(filePath); err == nil {
-
 			for _, r := range *raftSess {
 				fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
 				for _, v := range r.RaftMembers {
 					fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 					Host=v.Host
 					aPort=v.AdminPort
+
 				}
 				if err,buckets = getBucket(Host,aPort); err ==nil {
 					fmt.Printf("\t\tBuckets: %v\n",buckets)
@@ -126,6 +164,7 @@ func getRaftSession(r datatype.RaftSession) {
 	}
 	fmt.Printf("\n")
 }
+
 
 func getBucket(host string,port int) (error,[]string){
 
@@ -167,6 +206,7 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
 	for _, v := range r.RaftMembers {
 		Host,aPort = v.Host,v.AdminPort
+		// cluster = strings.Split(v.Name,"-")[1]
 		if err, status = getStatus(Host, aPort); err !=  nil {
 			fmt.Printf("\t\tError: %v\n", err)
 			return err,Host,aPort
@@ -188,11 +228,18 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 				printState(Host, aPort)
 			}
 		}
+		/* print wsb*/
+	}
+	for _,v := range mWsb[r.ID] {
+		fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, Host, v.Port, v.Site)
+		if err, status = getStatus(Host, aPort); err != nil {
+			printStatus(Host, aPort)
+		}
+		printState(Host,aPort)
+		fmt.Printf("\n")
 	}
 	return err,Host,aPort
 }
-
-
 
 
 func printStatus(Host string, Port int){
@@ -225,8 +272,9 @@ func printBuckets(Host string, Port int){
 
 
 func printConfig(Host string, Port int) {
+	fmt.Printf("Config:\n")
 	if err, set = getConfig("prune", Host, Port); err == nil {
-		fmt.Printf("\t\tPrune:\t%+v\n", set)
+		fmt.Printf("\t\tPrune:\t\t%+v\n", set)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
 	}
@@ -236,7 +284,7 @@ func printConfig(Host string, Port int) {
 		fmt.Printf("\t\tError: %v\n", err)
 	}
 	if err, set = getConfig("backup", Host, Port); err == nil {
-		fmt.Printf("\t\tbackup:\t%+v\n", set)
+		fmt.Printf("\t\tbackup:\t\t%+v\n", set)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
 	}

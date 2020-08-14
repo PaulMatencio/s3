@@ -26,12 +26,11 @@ var (
 
 func init() {
 	rootCmd.AddCommand(getRaftBucketCmd)
-	initaGrFlags(getRaftBucketCmd)
+	initGrbFlags(getRaftBucketCmd)
 }
 
-func initaGrFlags(cmd *cobra.Command) {
+func initGrbFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&url,"url","u","","bucketd url <htp://ip:port>")
-	// cmd.Flags().StringVarP(&raft, "raft", "i", ".admin/RaftSessions.json","path to raft sessions file")
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","bucket name")
 }
 
