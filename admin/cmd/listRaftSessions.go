@@ -93,6 +93,8 @@ func listRaft(cmd *cobra.Command,args []string) {
 	}
 	if U,err := URL.Parse(url); err != nil {
 		gLog.Error.Printf("Invalid URL")
+
+	} else {
 		HOST = U.Host
 		SUBNET = strings.Split(HOST,".")[2]
 	}
@@ -106,7 +108,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 				a := []datatype.Wsbs{}
 				for _, v := range r.Wsbs {
 					if strings.Split(v.Host,".")[2]  != SUBNET{
-						gLog.Warning.Printf("Wrong toplogy file: %s\tOnly active members will be displayed",filePath)
+						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed",filePath)
 					}
 					wrong= true
 					break
@@ -122,7 +124,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 			gLog.Warning.Printf("%v", err)
 		}
 	}
-
+	return
 	gLog.Info.Printf("Url: %s",url)
 
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
@@ -248,16 +250,17 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 	}
     */
 
-
-	for _,v := range mWsb[r.ID] {
-		// if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
+    if len(mWsb) > 0 {
+		for _, v := range mWsb[r.ID] {
+			// if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
 			fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 			if err, status = getStatus(v.Host, v.AdminPort); err != nil {
 				printStatus(v.Host, v.AdminPort)
 			}
 			printState(v.Host, v.AdminPort)
 			fmt.Printf("\n")
-		// }
+			// }
+		}
 	}
 	return err,Host,aPort
 }
