@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -55,16 +56,12 @@ var (
 	id,aPort int
 	filePath,cluster string
 	mWsb = [][]datatype.Wsbs{}
-
+	subnet string
 	c  datatype.Clusters
 
 )
 const http ="http://"
-type wsb struct {
-	Name string
-	Host string
-	Port int
-}
+
 
 func init() {
 	rootCmd.AddCommand(listRaftCmd)
@@ -110,6 +107,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 		}
 	}
 	gLog.Info.Printf("Url: %s",url)
+
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		if id >= 0 && id <= len(*raftSess) {
 			getRaftSession((*raftSess)[id])
@@ -124,6 +122,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 }
 
 /*  used for testing */
+
 func listRaft1(cmd *cobra.Command,args []string) {
 	if home, err := homedir.Dir(); err == nil {
 		filePath := filepath.Join(home, raft)
@@ -136,7 +135,6 @@ func listRaft1(cmd *cobra.Command,args []string) {
 					fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 					Host=v.Host
 					aPort=v.AdminPort
-
 				}
 				if err,buckets = getBucket(Host,aPort); err ==nil {
 					fmt.Printf("\t\tBuckets: %v\n",buckets)
@@ -227,13 +225,20 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 		}
 		/* print wsb*/
 	}
+
+	if ar := strings.Split(Host,"."); len(ar)>2 {
+		subnet = ar[2]
+	}
+
 	for _,v := range mWsb[r.ID] {
-		fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, Host, v.Port, v.Site)
-		if err, status = getStatus(Host, aPort); err != nil {
-			printStatus(Host, aPort)
+		if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
+			fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
+			if err, status = getStatus(v.Host, v.AdminPort); err != nil {
+				printStatus(v.Host, v.AdminPort)
+			}
+			printState(v.Host, v.AdminPort)
+			fmt.Printf("\n")
 		}
-		printState(Host,aPort)
-		fmt.Printf("\n")
 	}
 	return err,Host,aPort
 }
