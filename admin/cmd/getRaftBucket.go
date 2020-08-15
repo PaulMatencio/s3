@@ -14,19 +14,28 @@ import (
 var (
 	getRaftBucketCmd = &cobra.Command{
 		Use:   "getRaftBucket",
-		Short: "Get Raft Bucket info",
+		Short: "Get Raft Bucket Info",
 		Long: ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			getRaftBucket(cmd,args)
+		},
+	}
+	grbiCmd = &cobra.Command{
+		Use:   "grbi",
+		Short: "Get Raft Bucket Info",
+		Long: ``,
+		Hidden: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			getRaftBucket(cmd,args)
 		},
 	}
 
 )
-
-
 func init() {
 	rootCmd.AddCommand(getRaftBucketCmd)
+	rootCmd.AddCommand(grbiCmd)
 	initGrbFlags(getRaftBucketCmd)
+	initGrbFlags(grbiCmd)
 }
 
 func initGrbFlags(cmd *cobra.Command) {

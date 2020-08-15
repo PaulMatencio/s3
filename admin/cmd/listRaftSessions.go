@@ -188,7 +188,7 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 		aPort int
 		err error
 	)
-	fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
+	fmt.Printf("Id: %d\tConnected: %v\n", r.ID, r.ConnectedToLeader)
 	for _, v := range r.RaftMembers {
 		Host,aPort = v.Host,v.AdminPort
 		// cluster = strings.Split(v.Name,"-")[1]
@@ -216,7 +216,7 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 	}
 
     if len(mWsb) > 0 {
-		fmt.Println("Warm Standby")
+		fmt.Println("\tWarm Standby members:")
 		for _, v := range mWsb[r.ID] {
 			fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 			if err, status = getStatus(v.Host, v.AdminPort); err != nil {
