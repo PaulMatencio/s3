@@ -109,9 +109,9 @@ func listRaft(cmd *cobra.Command,args []string) {
 				for _, v := range r.Wsbs {
 					if strings.Split(v.Host,".")[2]  != SUBNET{
 						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed",filePath)
+						wrong= true
+						break
 					}
-					wrong= true
-					break
 					a= append(a,v)
 				}
 				if wrong {
@@ -124,7 +124,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 			gLog.Warning.Printf("%v", err)
 		}
 	}
-	 
+	
 	gLog.Info.Printf("Url: %s",url)
 
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
