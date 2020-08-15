@@ -23,10 +23,10 @@ import (
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	URL "net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
-	URL "net/url"
 )
 
 var (
@@ -91,42 +91,18 @@ func listRaft(cmd *cobra.Command,args []string) {
 			}
 		}
 	}
+	/* check URL validity */
 	if U,err := URL.Parse(url); err != nil {
-		gLog.Error.Printf("Invalid URL")
+		gLog.Error.Printf("Invalid URL, valid syntax URL =>  http://<ip>:<port>")
+		return
 
 	} else {
 		HOST = U.Host
 		SUBNET = strings.Split(HOST,".")[2]
 	}
-	/* */
-
-	if home, err := homedir.Dir(); err == nil {
-		filePath = filepath.Join(home, topoLogy)
-		if err, c := c.GetClusters(filePath); err == nil {
-			wrong:= false
-			for _, r := range c.Topology {
-				a := []datatype.Wsbs{}
-				for _, v := range r.Wsbs {
-					if strings.Split(v.Host,".")[2]  != SUBNET{
-						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed",filePath)
-						wrong= true
-						break
-					}
-					a= append(a,v)
-				}
-				if wrong {
-					break
-				}
-				mWsb= append(mWsb,a)
-			}
-
-		} else {
-			gLog.Warning.Printf("%v", err)
-		}
-	}
-	
+	/* read the S3 topology file.If error or wrong file a message will be displayed , but the program simply continue . */
+	mWsb = *readTopology(topoLogy,SUBNET)
 	gLog.Info.Printf("Url: %s",url)
-
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		if id >= 0 && id <= len(*raftSess) {
 			getRaftSession((*raftSess)[id])
@@ -140,35 +116,35 @@ func listRaft(cmd *cobra.Command,args []string) {
 	}
 }
 
-/*  used for testing */
-
-func listRaft1(cmd *cobra.Command,args []string) {
+func readTopology(topology string, subnet string ) (*[][]datatype.Wsbs){
 	if home, err := homedir.Dir(); err == nil {
-		filePath := filepath.Join(home, raft)
-		viper.Set("raft", filePath)
-		c := datatype.RaftSessions{}
-		if err, raftSess := c.GetRaftSessions(filePath); err == nil {
-			for _, r := range *raftSess {
-				fmt.Printf("Id: %d\tconnected: %v\n", r.ID, r.ConnectedToLeader)
-				for _, v := range r.RaftMembers {
-					fmt.Printf("\tId: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
-					Host=v.Host
-					aPort=v.AdminPort
+		filePath := filepath.Join(home, topology)
+		if err, c := c.GetClusters(filePath); err == nil {
+			wrong:= false
+			for _, r := range c.Topology {
+				a := []datatype.Wsbs{}
+				for _, v := range r.Wsbs {
+					if strings.Split(v.Host,".")[2]  != subnet{
+						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed",filePath)
+						wrong= true
+						break
+					}
+					a= append(a,v)
 				}
-				if err,buckets = getBucket(Host,aPort); err ==nil {
-					fmt.Printf("\t\tBuckets: %v\n",buckets)
+				if wrong {
+					break
 				}
+				mWsb= append(mWsb,a)
 			}
+
 		} else {
-			gLog.Error.Printf("%v", err)
+			gLog.Warning.Printf("readToplogy error: %v\tInput file:%d", err,filePath)
 		}
-	} else {
-		gLog.Error.Printf("%v", err)
 	}
+	return &mWsb
 }
 
 func getRaftSession(r datatype.RaftSession) {
-
 	err,Host,aPort := printSessions(r)
 	if err == nil {
 		printBuckets(Host, aPort)
@@ -181,31 +157,26 @@ func getRaftSession(r datatype.RaftSession) {
 
 
 func getBucket(host string,port int) (error,[]string){
-
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftBuckets(url)
 }
 
 func getLeader(host string,port int) (error,*datatype.RaftLeader){
-
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftLeader(url)
 }
 
 func getState(host string,port int) (error,*datatype.RaftState){
-
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftState(url)
 }
 
 func getStatus(host string,port int) (error,string){
-
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftStatus(url)
 }
 
 func getConfig(what string, host string,port int) (error,bool){
-
 	url := http+ host+":"+strconv.Itoa(port)
 	return api.GetRaftConfig(what,url)
 }
@@ -242,24 +213,17 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 				printState(Host, aPort)
 			}
 		}
-		/* print wsb*/
 	}
-    /*
-	if ar := strings.Split(Host,"."); len(ar)>2 {
-		subnet = ar[2]
-	}
-    */
 
     if len(mWsb) > 0 {
+		fmt.Println("Warm Standby")
 		for _, v := range mWsb[r.ID] {
-			// if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
 			fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 			if err, status = getStatus(v.Host, v.AdminPort); err != nil {
 				printStatus(v.Host, v.AdminPort)
 			}
 			printState(v.Host, v.AdminPort)
 			fmt.Printf("\n")
-			// }
 		}
 	}
 	return err,Host,aPort
