@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	URL "net/url"
 )
 
 var (
@@ -56,8 +57,9 @@ var (
 	id,aPort int
 	filePath,cluster string
 	mWsb = [][]datatype.Wsbs{}
-	subnet string
 	c  datatype.Clusters
+	HOST,SUBNET   string
+
 
 )
 const http ="http://"
@@ -89,23 +91,38 @@ func listRaft(cmd *cobra.Command,args []string) {
 			}
 		}
 	}
+	if U,err := URL.Parse(url); err != nil {
+		gLog.Error.Printf("Invalid URL")
+		HOST = U.Host
+		SUBNET = strings.Split(HOST,".")[2]
+	}
+	/* */
 
 	if home, err := homedir.Dir(); err == nil {
 		filePath = filepath.Join(home, topoLogy)
-		viper.Set("topology", filePath)
 		if err, c := c.GetClusters(filePath); err == nil {
+			wrong:= false
 			for _, r := range c.Topology {
-				w := r.Wsbs
 				a := []datatype.Wsbs{}
-				for _, v := range w {
+				for _, v := range r.Wsbs {
+					if strings.Split(v.Host,".")[2]  != SUBNET{
+						gLog.Warning.Printf("Wrong toplogy file: %s\tOnly active members will be displayed",filePath)
+					}
+					wrong= true
+					break
 					a= append(a,v)
+				}
+				if wrong {
+					break
 				}
 				mWsb= append(mWsb,a)
 			}
+
 		} else {
-			gLog.Error.Printf("%v", err)
+			gLog.Warning.Printf("%v", err)
 		}
 	}
+
 	gLog.Info.Printf("Url: %s",url)
 
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
