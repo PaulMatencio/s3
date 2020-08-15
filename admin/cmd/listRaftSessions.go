@@ -242,20 +242,22 @@ func printSessions(r datatype.RaftSession) (error,string,int){
 		}
 		/* print wsb*/
 	}
-
+    /*
 	if ar := strings.Split(Host,"."); len(ar)>2 {
 		subnet = ar[2]
 	}
+    */
+
 
 	for _,v := range mWsb[r.ID] {
-		if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
+		// if ar := strings.Split(v.Host, "."); len(ar) > 2 && ar[2] == subnet {
 			fmt.Printf("\tWsb Id: %d\tName: %s\tHost: %s\tPort: %d\tSite: %s\n", v.ID, v.Name, v.Host, v.Port, v.Site)
 			if err, status = getStatus(v.Host, v.AdminPort); err != nil {
 				printStatus(v.Host, v.AdminPort)
 			}
 			printState(v.Host, v.AdminPort)
 			fmt.Printf("\n")
-		}
+		// }
 	}
 	return err,Host,aPort
 }
