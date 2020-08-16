@@ -62,6 +62,10 @@ func GetRetryNumber(viper viper.Viper) (int) {
 	return viper.GetInt("retry.number")
 }
 
+func GetTopology(viper viper.Viper) (string) {
+	return viper.GetString("admin.topology")
+}
+
 
 func InitConfig(config string,viper viper.Viper,rootcmd cobra.Command) {
 

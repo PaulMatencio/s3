@@ -7,7 +7,6 @@ import (
 	"github.com/s3/datatype"
 	"github.com/s3/gLog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"path/filepath"
 	"strings"
 )
@@ -40,20 +39,19 @@ func listConfig(cmd *cobra.Command,args []string) {
 		c  datatype.Clusters
 		cluster,meta  string
 	)
+
 	if home, err := homedir.Dir(); err == nil {
 		filePath = filepath.Join(home,topoLogy)
-		viper.Set("topology",filePath)
-		if err,c := c.GetClusters(filePath); err == nil {
 
-			for _,r := range c.Topology {
-				a:= r.Repds
-				for _,v := range a {
+		if err,c := c.New(filePath); err == nil {
+			for _,r := range c.GetCluster() {
+				for _,v := range r.GetRepds(){
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
 					fmt.Printf("Repd: %d\tCluster: %s\t Meta: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
 				}
-				w := r.Wsbs
-				for _,v := range w {
+
+				for _,v := range r.GetWsbs() {
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
 					fmt.Printf("Wsb: %d\tCluster: %s\t Meta:%s\tHost:%s\tPort:%d\tSite:%s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
@@ -67,6 +65,31 @@ func listConfig(cmd *cobra.Command,args []string) {
 	} else {
 		gLog.Error.Printf("Error opening topology file: %v - filepath",err)
 	}
+}
+
+func getS3Host(topology string) *map[string]bool {
+
+	s3Host := make(map[string]bool)
+	if home, err := homedir.Dir(); err == nil {
+		filePath = filepath.Join(home,topology)
+		if err,c := c.New(filePath); err == nil {
+
+			for _,r := range c.GetCluster() {
+				for _,v := range r.GetRepds(){
+					s3Host[v.Host] = true
+				}
+				for _,v := range r.GetWsbs(){
+					s3Host[v.Host] = true
+				}
+			}
+		} else {
+			gLog.Error.Printf("%v",err)
+		}
+	} else {
+		gLog.Error.Printf("Error opening topology file: %v - filepath",err)
+	}
+	return &s3Host
+
 }
 
 func PrettyPrint(i interface{}) (string) {

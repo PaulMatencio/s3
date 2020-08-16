@@ -100,9 +100,11 @@ func listRaft(cmd *cobra.Command,args []string) {
 		HOST = U.Host
 		SUBNET = strings.Split(HOST,".")[2]
 	}
-	/* read the S3 topology file.If error or wrong file a message will be displayed , but the program simply continue . */
-	mWsb = *readTopology(topoLogy,SUBNET)
+	/* get Wsbs if they exists . */
+	mWsb = *getWsbs(topoLogy,SUBNET)
+
 	gLog.Info.Printf("Url: %s",url)
+
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
 		if id >= 0 && id <= len(*raftSess) {
 			getRaftSession((*raftSess)[id])
@@ -116,16 +118,16 @@ func listRaft(cmd *cobra.Command,args []string) {
 	}
 }
 
-func readTopology(topology string, subnet string ) (*[][]datatype.Wsbs){
+func getWsbs(topology string, subnet string ) (*[][]datatype.Wsbs){
 	if home, err := homedir.Dir(); err == nil {
 		filePath := filepath.Join(home, topology)
-		if err, c := c.GetClusters(filePath); err == nil {
+		if err, cl := c.New(filePath); err == nil {
 			wrong:= false
-			for _, r := range c.Topology {
+			for _, r := range cl.GetCluster() {
 				a := []datatype.Wsbs{}
-				for _, v := range r.Wsbs {
+				for _, v := range r.GetWsbs(){
 					if strings.Split(v.Host,".")[2]  != subnet{
-						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed",filePath)
+						gLog.Warning.Printf("Wrong toplogy file: %s - Only Ralf sessions members will be displayed\n",filePath)
 						wrong= true
 						break
 					}
