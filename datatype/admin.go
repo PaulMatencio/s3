@@ -7,7 +7,7 @@ import (
 )
 
 type Clusters struct {
-	Topology []Cluster `json:"members"`
+	Topology []Cluster `json:"topology"`
 }
 
 func (c Clusters) GetCluster() []Cluster {
@@ -16,13 +16,12 @@ func (c Clusters) GetCluster() []Cluster {
 
 func  (c Clusters) New(file string) (error,*Clusters) {
 	gLog.Trace.Printf("Input json file :%s",file)
+	cl:= Clusters{}
 	if cFile, err := os.Open(file); err == nil {
 		defer cFile.Close()
-		// decoder:= json.NewDecoder(cFile)
-		return json.NewDecoder(cFile).Decode(&c),&c
-
+		return json.NewDecoder(cFile).Decode(&cl),&cl
 	} else {
-		return err,&c
+		return err,&cl
 	}
 }
 
@@ -97,27 +96,6 @@ type RaftSessionInfo struct {
 	Connected    []RaftMembers   `json:"connected"`
 	Disconnected []RaftMembers `json:"disconnected"`
 }
-/*
-type Leader struct {
-	AdminPort   int    `json:"adminPort"`
-	DisplayName string `json:"display_name"`
-	Host        string `json:"host"`
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Port        int    `json:"port"`
-	Site        string `json:"site"`
-}
-
-type Connected struct {
-	AdminPort   int    `json:"adminPort"`
-	DisplayName string `json:"display_name"`
-	Host        string `json:"host"`
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Port        int    `json:"port"`
-	Site        string `json:"site"`
-}
-*/
 
 type RaftMembers struct {
 	AdminPort   int    `json:"adminPort"`

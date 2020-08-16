@@ -73,6 +73,7 @@ func healthCheck(cmd *cobra.Command,args []string) {
 	}
 	if home, err := homedir.Dir(); err == nil {
 		filePath = filepath.Join(home, topoLogy)
+
 		if err, c := cl.New(topology); err == nil {
 			if err, s3Host := c.GetHost(); err == nil {
 				for host, _ := range *s3Host {

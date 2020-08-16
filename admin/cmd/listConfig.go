@@ -42,19 +42,17 @@ func listConfig(cmd *cobra.Command,args []string) {
 
 	if home, err := homedir.Dir(); err == nil {
 		filePath = filepath.Join(home,topoLogy)
-
-		if err,c := c.New(filePath); err == nil {
-			for _,r := range c.GetCluster() {
+		if err,cl:= c.New(filePath); err == nil {
+			for _,r := range cl.GetCluster() {
 				for _,v := range r.GetRepds(){
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
 					fmt.Printf("Repd: %d\tCluster: %s\t Meta: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
 				}
-
 				for _,v := range r.GetWsbs() {
 					cluster = strings.Split(v.Name,"-")[1]
 					meta = strings.Split(v.Name,"-")[0]
-					fmt.Printf("Wsb: %d\tCluster: %s\t Meta:%s\tHost:%s\tPort:%d\tSite:%s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
+					fmt.Printf("Wsb : %d\tCluster: %s\t Meta: %s\tHost: %s\tPort: %d\tSite: %s\tAdmin port: %d\n", r.Num, cluster,meta,v.Host,v.Port,v.Site,v.AdminPort)
 				}
 				fmt.Printf("\n")
 
