@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	URL "net/url"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -32,7 +33,7 @@ import (
 var (
 	listRaftCmd = &cobra.Command{
 		Use:   "listRaftSessions",
-		Short: "list Raft sessions info",
+		Short: "list Raft Bucket sessions info",
 		Long: ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			listRaft(cmd,args)
@@ -238,11 +239,22 @@ func printStatus(Host string, Port int){
 
 func printState(Host string, Port int) {
 	if err, state = getState(Host, Port); err == nil {
-		// fmt.Printf("\t\tLeader\t IP:%s\t%d\n",leader.IP,leader.Port)
 		fmt.Printf("\t\tState:\t%+v\n", *state)
+		// pStruct(state)
 	} else {
 		fmt.Printf("\t\tError: %v\n", err)
 	}
+}
+func pStruct(state *datatype.RaftState)   {
+	e := reflect.ValueOf(state).Elem()
+	fmt.Printf("\t")
+	for i := 0; i < e.NumField(); i++ {
+		varName := e.Type().Field(i).Name
+		// varType := e.Type().Field(i).Type
+		varValue := e.Field(i).Interface()
+		fmt.Printf("%v:%v - ", varName,varValue)
+	}
+	fmt.Printf("\n")
 }
 
 func printBuckets(Host string, Port int){

@@ -27,6 +27,8 @@ func GetRaftBucket(url string, bucket string) (error,*datatype.RaftBucket) {
 					gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
 				}
 				break
+			} else {
+				gLog.Error.Printf("Status: %d %s",response.StatusCode,response.Status)
 			}
 		} else {
 			gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )

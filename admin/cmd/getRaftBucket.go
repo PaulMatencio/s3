@@ -58,7 +58,7 @@ func getRaftBucket(cmd *cobra.Command, args []string){
 
 	if err,rb := api.GetRaftBucket(url,bucket); err == nil {
 		printBucket(*rb)
-		// Get Raft session
+
 		if err,rs := api.GetRaftSession(url,rb.RaftSessionID); err == nil {
 			fmt.Printf("Leader\n")
 			printMember(rs.Leader)

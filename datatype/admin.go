@@ -194,5 +194,14 @@ func (h HealthCheck) GetSproxyd()  HealthCode {
 	return h.Sproxyd
 }
 
+func (h HealthCheck) Print(name string )  {
+
+}
+
+
+
+
+
+
 
 

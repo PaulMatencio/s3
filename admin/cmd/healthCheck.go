@@ -97,10 +97,9 @@ func checkHealth(host string,port string ){
 	url := http + host +":" + port
 	fmt.Printf("Host:\t%s\n",host)
 	if err,hc := api.HeathCheck(url); err == nil {
-		sproxyd := hc.Sproxyd
-		fmt.Printf("Sproxyd:\tCode:%s\tMessage:%s\n",sproxyd.Code,sproxyd.Message)
-
+		fmt.Printf("Sproxyd:\tCode:%s\tMessage:%s\n",hc.Sproxyd.Code,hc.Sproxyd.Message)
+		fmt.Printf("Bucket-Client:\tCode:%s\tMessage:%s\tBody:%v\n",hc.Bucketclient.Code,hc.Bucketclient)
+		fmt.Printf("Sproxyd:\tCode:%s\tMessage:%s\n",hc.Sproxyd.Code,hc.Sproxyd.Message)
 	}
-
-
 }
+
