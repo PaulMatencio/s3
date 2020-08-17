@@ -32,6 +32,7 @@ import (
 	directory "github.com/moses/directory/lib"
 	sindexd "github.com/moses/sindexd/lib"
 	"github.com/spf13/cobra"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 var (
@@ -165,7 +166,13 @@ func migToS3 (index string)  {
 
 	indSpecs := directory.GetIndexSpec("PD")
 	indSpecs1 := directory.GetIndexSpec("PN")
-	svc      := s3.New(api.CreateSession())
+	tos3:= datatype.CreateSession{
+		EndPoint: viper.GetString("toS3.url"),
+		Region: viper.GetString("toS3.region"),
+		AccessKey: viper.GetString("toS3.access_key_id"),
+		SecretKey: viper.GetString("toS3.secret_access_key"),
+	}
+	svc := s3.New(api.CreateSession2(tos3))
 	num := 0
 
 	switch (index) {
@@ -259,7 +266,7 @@ func migToS3 (index string)  {
 				marker = resp.Next_marker
 				gLog.Info.Printf("Next marker => %s %d", marker, num)
 				// stop if number of iteration > maxLoop
-				if maxLoop != 0 && num > maxLoop {
+				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
 				}
 			}
@@ -359,10 +366,17 @@ func writeToS3(svc  *s3.S3 , bucket string,  key string,meta []byte) (*s3.PutObj
 	}
 	// write to S3
 	// if error not nil retry
-	for i:= 0; i <= retryNumber; i++ {
+	for i:= 1; i <= retryNumber; i++ {
 		 if r,err = api.PutObject(req); err == nil {
 			break
 		 } else {
+			 if aerr, ok := err.(awserr.Error); ok {
+				 switch aerr.Code() {
+				 case s3.ErrCodeNoSuchBucket:
+					 gLog.Error.Printf("Error: %v", err)
+					 break
+				 }
+			 }
 		 	 gLog.Error.Printf("Error: %v - number of retries: %d" , err, i )
 		 	 /* wait time between 2 retries */
 			 time.Sleep(waitTime * time.Millisecond)
