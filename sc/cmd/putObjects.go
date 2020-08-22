@@ -146,8 +146,8 @@ func putfObjsAsync(idir string) {
 					rg = &datatype.Rp{}
 					case <-time.After(50 * time.Millisecond):
 						fmt.Printf("w")
-					}
 				}
+			}
 		}
 	} else {
 

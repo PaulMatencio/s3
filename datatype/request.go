@@ -3,6 +3,9 @@ package datatype
 import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"time"
+
+	// "github.com/aws/aws-sdk-go/aws"
 	"net/http"
 )
 
@@ -12,12 +15,22 @@ type CreateSession struct {
 	AccessKey   string
 	SecretKey   string
 }
-type GetObjRequest struct {
 
+type GetObjRequest struct {
 	Service 	*s3.S3
 	Bucket 		string
 	Key    		string
+}
 
+type GetMultipartObjRequest struct {
+
+	Service     *s3.S3
+	Bucket       string
+	Key          string
+	PartNumber   int64
+	PartSize     int64
+	Concurrency  int
+	OutputFilePath  string
 }
 
 type CopyObjRequest struct {
@@ -76,6 +89,15 @@ type ListObjRequest struct {
 	Delimiter     string
 }
 
+type ListMultipartObjRequest struct {
+	Service 	*s3.S3
+	Bucket       string
+	Prefix       string
+	MaxUploads	 int64
+	UploadIdmarker string
+	KeyMarker        string
+	Delimiter     string
+}
 
 type ListBucketRequest struct {
 	Service 	*s3.S3
@@ -167,3 +189,39 @@ type PutObjectAclRequest struct {
 
 }
 
+type MultiPartUploadRequest struct {
+	Service     *s3.S3
+	Bucket       string
+	Key          string
+	PartNumber   int64
+	UploadId     string
+	Buffer       *bytes.Buffer
+	// Metadata     map[string]*string
+}
+
+type CreateMultipartUploadRequest struct {
+	 Service     *s3.S3
+	 Bucket      string
+	 Key         string
+	 ContentType string
+}
+
+type CompleteMultipartUploadRequest struct {
+	Service  *s3.S3
+	Resp     *s3.CreateMultipartUploadOutput
+	CompletedParts []*s3.CompletedPart
+}
+
+type AbortMultipartUploadRequest struct {
+	Service  *s3.S3
+	Resp     *s3.CreateMultipartUploadOutput
+}
+
+type UploadPartRequest struct {
+	Service  *s3.S3
+	Resp     *s3.CreateMultipartUploadOutput
+	Content  []byte
+	PartNumber int
+	RetryNumber int
+	WaitTime  time.Duration
+}

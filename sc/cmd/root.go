@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -20,7 +21,8 @@ var (
 	// log          = lumber.NewConsoleLogger(lumber.INFO)
 
 	odir,pdir  string
-	loglevel,profiling,bucketNumber int
+	waitTime time.Duration
+	loglevel,profiling,bucketNumber,retryNumber int
 
 	missingBucket = "Missing bucket - please provide the bucket name"
 	missingToBucket = "Missing target bucket - please provide the target bucket name"
@@ -121,6 +123,11 @@ func initConfig() {
 	}
 	if metaEx = viper.GetString("meta.extension"); metaEx == "" {
 		metaEx = "md"
+	}
+
+	 waitTime = utils.GetWaitTime(*viper.GetViper())
+	if retryNumber =utils.GetRetryNumber(*viper.GetViper()); retryNumber == 0 {
+		retryNumber =1
 	}
 
 }
