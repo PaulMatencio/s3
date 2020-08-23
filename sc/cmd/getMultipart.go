@@ -7,7 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+	"github.com/s3/utils"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"strings"
 	"time"
 )
 
@@ -20,14 +22,17 @@ var (
 			getMultipart(cmd, args)
 		},
 	}
+	outfile string
 )
+
 
 func initGMPFlags(cmd *cobra.Command) {
 
-	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the name of the bucket")
-	cmd.Flags().StringVarP(&key, "key", "k", "", "object key")
-	cmd.Flags().StringVarP(&odir, "odir", "o", "", "the output directory relative to the home directory you'd like to save")
-	cmd.Flags().Int64VarP(&maxPartSize, "maxPartSize", "m", MinPartSize, "Maximum part size")
+	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "The name of the bucket")
+	cmd.Flags().StringVarP(&key, "key", "k", "", "Object key")
+	cmd.Flags().StringVarP(&odir, "odir", "o", "", "The output directory relative to the home directory you'd like to save")
+	cmd.Flags().Int64VarP(&maxPartSize, "maxPartSize", "m", MinPartSize, "Maximum part size(MB)")
+	cmd.Flags().IntVarP(&partNumber, "partNumber", "p", 5, "Part numner")
 	cmd.Flags().IntVarP(&maxCon, "maxCon", "M", 5, "Maximum concurrent parts download , 0 => all parts")
 }
 
@@ -44,33 +49,41 @@ func getMultipart(cmd *cobra.Command, args []string) {
 		return
 	}
 	var (
-		partnumber int64 = 50
 		svc = s3.New(api.CreateSession())
 	)
 
 	if len(odir) == 0 {
 		gLog.Warning.Printf("%s", missingOutputFolder)
 		odir,_ = os.UserHomeDir()
-		gLog.Warning.Printf("user home directory %s will be used for output folder",odir)
-
+	} else {
+		if sep := strings.Split(odir, string(os.PathSeparator)); len(sep) == 1 {
+			cwd, _ := os.Getwd()
+			odir = filepath.Join(cwd, odir)
+		}
+		if !utils.Exist(odir){
+			utils.MakeDir(odir)
+		}
 	}
+	gLog.Info.Printf("output folder %s",odir)
+	outfile = filepath.Join(odir, key)
 
+	maxPartSize = maxPartSize*1024*1024  // convert into bytes
 	if maxPartSize < MinPartSize {
-		gLog.Warning.Printf("Minimum maxPartize is %d", MinPartSize)
+		gLog.Warning.Printf("max part size %d < min part size %d", maxPartSize,MinPartSize)
 		maxPartSize = MinPartSize
-		gLog.Warning.Printf("%d will be used for max Part Size",maxPartSize)
+		gLog.Warning.Printf("min part size %d will be used for max part size",maxPartSize)
 	}
 	gLog.Info.Printf("Downloading key %s", key)
 	// Create a downloader with the s3 client and custom options
 
-	outfile := filepath.Join(odir, key)
 	start:= time.Now()
 	req := datatype.GetMultipartObjRequest{
+
 		Service:        svc,
 		Bucket:         bucket,
 		Key:            key,
-		PartNumber:     partnumber,
-		PartSize:       partSize,
+		PartNumber:     int64(partNumber),
+		PartSize:       maxPartSize,
 		Concurrency:    maxCon,
 		OutputFilePath: outfile,
 	}

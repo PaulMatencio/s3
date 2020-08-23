@@ -31,6 +31,7 @@ type GetMultipartObjRequest struct {
 	PartSize     int64
 	Concurrency  int
 	OutputFilePath  string
+	Discard      bool
 }
 
 type CopyObjRequest struct {

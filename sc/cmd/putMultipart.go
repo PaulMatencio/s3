@@ -40,6 +40,7 @@ const (
 	MinPartSize                = 5 * 1024 * 1024     // 5 MB
 	MaxFileSize                = MinPartSize * 409.6 // 2 GB
 	DefaultDownloadConcurrency = 5
+	Dummy                      = "/dev/null"
 )
 
 type Resp struct {
@@ -78,7 +79,7 @@ func putMultipart(cmd *cobra.Command, args []string) {
 		gLog.Warning.Printf("%s", missingInputFile)
 		return
 	}
-	maxPartSize= maxPartSize *1024*1024   // convert to byte
+	maxPartSize= maxPartSize *1024*1024   // convert into byte
 	if maxPartSize < MinPartSize {
 		gLog.Error.Printf("Minimum maxPartize is %d", MinPartSize)
 		return

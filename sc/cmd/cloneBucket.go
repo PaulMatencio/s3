@@ -222,7 +222,9 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 						}(get,objsize)
 					} else {
 						if check {
-							gLog.Info.Printf("New objet: %s - Last modified date: %v - Size: %d",*v.Key,v.LastModified,*v.Size)
+							if (v.LastModified.After(frDate)) {
+								gLog.Info.Printf("New objet: %s - Last modified date: %v - Size: %d", *v.Key, v.LastModified, *v.Size)
+							}
 						}
 					}
 				}
