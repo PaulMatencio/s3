@@ -215,7 +215,7 @@ func bkupSindexd (index string, check bool)  {
 		i := indSpecs["NP"]
 		i1 := indSpecs1["NP"]
 		if i == nil || i1 == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			gLog.Error.Printf("No NP entry in PD or PN Index spcification tables")
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
