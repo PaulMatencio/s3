@@ -122,7 +122,7 @@ func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&maxKey, "maxKey", "m", 100, "maximum number of keys to be processed concurrently")
 	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "maximum number of loop, 0 means no upper limit")
 	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the name of the S3  bucket")
-	cmd.Flags().BoolVarP(&check, "check", "v", true, "Check mode")
+	cmd.Flags().BoolVarP(&check, "check", "v", false, "Check mode")
 }
 
 /*
@@ -543,8 +543,12 @@ func incToS3(index string, index1 string) {
 					if v[0:2] != "XP" || index1 != "BN" {
 						if !check {
 							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
-
 							// deleting key from the target S3
+							if _,err := delFromS3(svc,v,bucket); err == nil {
+								gLog.Info.Printf("Object %s is removed from %s",v,bucket)
+							} else {
+								gLog.Error.Printf("%v",err)
+							}
 
 						} else {
 							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
@@ -611,5 +615,16 @@ func addToS3(req addRequest) {
 	}
 
 	wg.Wait()
+
+}
+
+func delFromS3(svc *s3.S3, key string,bucket string) (*s3.DeleteObjectOutput,error){
+
+	req:= datatype.DeleteObjRequest{
+		Service : svc,
+		Bucket: bucket,
+		Key: key,
+	}
+	return api.DeleteObjects(req)
 
 }
