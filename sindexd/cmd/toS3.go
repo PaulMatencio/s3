@@ -533,7 +533,7 @@ func incToS3(index string, index1 string) {
 			responses := directory.GetAsyncKeys(specs, indSpecs1)
 			var indSpec *sindexd.Index_spec
 			for _, r := range responses {
-				
+
 				indSpec = r.Index_Spec
 				/*  delete All Key not found from the target URL, one key at a time */
 				for _, v := range r.Response.Not_found {
@@ -601,7 +601,7 @@ func addToS3(req addRequest) {
 						gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
 					}
 				} else {
-					gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
+					gLog.Info.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
 				}
 			}(req.Service, k, cc, v1, req.Check)
 
