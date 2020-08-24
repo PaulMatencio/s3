@@ -533,7 +533,8 @@ func incToS3(index string, index1 string) {
 			responses := directory.GetAsyncKeys(specs, indSpecs1)
 			var indSpec *sindexd.Index_spec
 			for _, r := range responses {
-
+				
+				indSpec = r.Index_Spec
 				/*  delete All Key not found from the target URL, one key at a time */
 				for _, v := range r.Response.Not_found {
 					gLog.Warning.Printf("Key %s is not found in indSpect %v in Host %v", v, *indSpec, sindexd.HP.Hosts())
