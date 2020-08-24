@@ -160,7 +160,7 @@ func writeToS3(svc *s3.S3, bucket string, key string, meta []byte) (*s3.PutObjec
 		err  error
 		r    *s3.PutObjectOutput
 	)
-	gLog.Trace.Println(key, bucket)
+	gLog.Trace.Printf("Writting key %s to bucket %s\n",key , bucket)
 	req := datatype.PutObjRequest{
 		Service: svc,
 		Bucket:  bucket,
@@ -558,12 +558,10 @@ func incToS3(index string, index1 string) {
 							} else {
 								gLog.Error.Printf("%v",err)
 							}
-
 						} else {
-							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
+							gLog.Info.Printf("Check Mode: Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
 						}
 					}
-
 				}
 				/*
 				     Add concurrently key=value to toS3
@@ -599,7 +597,6 @@ func incToS3(index string, index1 string) {
 func addToS3(req addRequest) {
 
 	var wg sync.WaitGroup
-
 	for k, v := range req.Resp.Fetched {
 		if v1, err := json.Marshal(v); err == nil {
 			wg.Add(1)
@@ -608,10 +605,20 @@ func addToS3(req addRequest) {
 				defer wg.Done()
 				buck:= setBucketName(cc, req.Bucket, req.Index)
 				if !check {
-					if r, err := writeToS3(svc, buck, k, value); err == nil {
-						gLog.Trace.Println(buck, *r.ETag, *r)
+					//check if the object already exists
+					stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k,}
+					if result, err := api.StatObject(stat); err == nil {
+						if len(*result.ETag) > 0 {
+							gLog.Warning.Printf("Object %s already existed in the target Bucket %s", k, buck)
+						} else {
+							if r, err := writeToS3(svc, buck, k, value); err == nil {
+								gLog.Trace.Println(buck, *r.ETag, *r)
+							} else {
+								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+							}
+						}
 					} else {
-						gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+						gLog.Error.Printf("Stat object %v - error %v",k,err)
 					}
 				} else {
 					gLog.Info.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
