@@ -109,6 +109,14 @@ type addRequest struct {
 	Check     bool
 
 }
+
+type delRequest struct {
+	Service  *s3.S3
+	Bucket    string
+	Index     string
+	Key       string
+}
+
 func init() {
 	rootCmd.AddCommand(toS3Cmd)
 	initToS3Flags(toS3Cmd)
@@ -544,7 +552,8 @@ func incToS3(index string, index1 string) {
 						if !check {
 							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
 							// deleting key from the target S3
-							if _,err := delFromS3(svc,v,bucket); err == nil {
+							var delreq = delRequest {Service: svc,Bucket: bucket, Key:v,Index:index1,}
+							if _,err := delFromS3(delreq); err == nil {
 								gLog.Info.Printf("Object %s is removed from %s",v,bucket)
 							} else {
 								gLog.Error.Printf("%v",err)
@@ -559,7 +568,7 @@ func incToS3(index string, index1 string) {
 				/*
 				     Add concurrently key=value to toS3
 				*/
-				var addreq = addRequest {Service: svc,Bucket: bucket,Index: index,Resp : r.Response,Check: check,}
+				var addreq = addRequest {Service: svc,Bucket: bucket,Index: index1,Resp : r.Response,Check: check,}
 				addToS3(addreq)
 			}
 
@@ -618,13 +627,14 @@ func addToS3(req addRequest) {
 
 }
 
-func delFromS3(svc *s3.S3, key string,bucket string) (*s3.DeleteObjectOutput,error){
+func delFromS3(req delRequest) (*s3.DeleteObjectOutput,error){
 
-	req:= datatype.DeleteObjRequest{
-		Service : svc,
-		Bucket: bucket,
-		Key: key,
+	cc := strings.Split(req.Key, "/")[0]
+	delreq:= datatype.DeleteObjRequest{
+		Service : req.Service,
+		Bucket:  setBucketName(cc, req.Bucket, req.Index),
+		Key: req.Key,
 	}
-	return api.DeleteObjects(req)
+	return api.DeleteObjects(delreq)
 
 }
