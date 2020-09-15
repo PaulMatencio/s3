@@ -93,12 +93,17 @@ func listRaft(cmd *cobra.Command,args []string) {
 		}
 	}
 	/* check URL validity */
-	if U,err := URL.Parse(url); err != nil {
+	if U,err := URL.ParseRequestURI(url); err != nil {
 		gLog.Error.Printf("Invalid URL, valid syntax URL =>  http://<ip>:<port>")
 		return
 
 	} else {
 		HOST = U.Host
+		if len(U.Port()) == 0 {
+			gLog.Error.Printf("Invalid Port number or port number is missing")
+			return
+		}
+
 		SUBNET = strings.Split(HOST,".")[2]
 	}
 	/* get Wsbs if they exists . */
