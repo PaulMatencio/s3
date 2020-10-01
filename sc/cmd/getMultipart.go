@@ -30,7 +30,7 @@ func initGMPFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "The name of the bucket")
 	cmd.Flags().StringVarP(&key, "key", "k", "", "Object key")
-	cmd.Flags().StringVarP(&odir, "odir", "o", "", "The output directory relative to the home directory you'd like to save")
+	cmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory relative to the working (or Home ir omitted)  directory you'like to save")
 	cmd.Flags().Int64VarP(&maxPartSize, "maxPartSize", "m", MinPartSize, "Maximum part size(MB)")
 	cmd.Flags().IntVarP(&partNumber, "partNumber", "p", 5, "Part numner")
 	cmd.Flags().IntVarP(&maxCon, "maxCon", "M", 5, "Maximum concurrent parts download , 0 => all parts")

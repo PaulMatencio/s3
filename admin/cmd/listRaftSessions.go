@@ -112,7 +112,7 @@ func listRaft(cmd *cobra.Command,args []string) {
 	gLog.Info.Printf("Url: %s",url)
 
 	if err,raftSess := api.ListRaftSessions(url); err == nil {
-		if id >= 0 && id <= len(*raftSess) {
+		if id >= 0 && id < len(*raftSess) {
 			getRaftSession((*raftSess)[id])
 		} else {
 			for _, r := range *raftSess {

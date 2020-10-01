@@ -21,7 +21,6 @@ var (
 		Use:   "getObj",
 		Short: goshort,
 		Long: ``,
-
 		Run: getObject,
 	}
 
@@ -49,7 +48,7 @@ func initGoFlags(cmd *cobra.Command) {
 func initFgoFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","tha name of the bucket")
 	cmd.Flags().StringVarP(&key,"key","k","","the  key of the object")
-	cmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory relative to the home directory you'like to save")
+	cmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory relative to the working (or Home ir omitted)  directory you'like to save")
 
 }
 
@@ -72,21 +71,17 @@ func init() {
 
 func getObject(cmd *cobra.Command,args []string) {
 
-
 	// handle any missing args
 	start := utils.LumberPrefix(cmd)
 
 	switch {
-
 	case len(bucket) == 0:
 		gLog.Warning.Printf("%s",missingBucket)
 		return
-
 	case len(key) == 0:
 		gLog.Warning.Printf("%s",missingKey)
 		return
 	}
-
 
 	req := datatype.GetObjRequest{
 		Service : s3.New(api.CreateSession()),
@@ -110,7 +105,6 @@ func getObject(cmd *cobra.Command,args []string) {
 	} else {
 
 		utils.PrintUsermd(req.Key,result.Metadata)
-
 		b, err := utils.ReadObject(result.Body)
 		if err == nil {
 			gLog.Info.Printf("Key: %s  - ETag: %s  - Content length: %d - Object lenght: %d",key,*result.ETag,*result.ContentLength,b.Len())
@@ -122,38 +116,37 @@ func getObject(cmd *cobra.Command,args []string) {
 func fGetObject(cmd *cobra.Command,args []string) {
 
 	var (
-
 		err  error
 		result *s3.GetObjectOutput
-
 		start = utils.LumberPrefix(cmd)
-
 	)
 	// handle any missing args
 
-
-
 	switch {
-
 	case len(bucket) == 0:
 		gLog.Warning.Printf("%s",missingBucket)
 		return
-
 	case len(key) == 0:
 		gLog.Warning.Printf("%s",missingKey)
 		return
 
-	case len(odir) == 0:
-		gLog.Warning.Printf("%s",missingOutputFolder)
-		return
 	}
 
-	// Make the output directory if it does not exist
-	pdir = filepath.Join(utils.GetHomeDir(),odir)
-	utils.MakeDir(pdir)
+	if len(odir) == 0 {
+		gLog.Warning.Printf("%s", missingOutputFolder)
+		odir,_ = os.UserHomeDir()
+	} else {
+		if sep := strings.Split(odir, string(os.PathSeparator)); len(sep) == 1 {
+			cwd, _ := os.Getwd()
+			odir = filepath.Join(cwd, odir)
+		}
+		if !utils.Exist(odir){
+			utils.MakeDir(odir)
+		}
+	}
 
-	pathname := filepath.Join(pdir,strings.Replace(key,string(os.PathSeparator),"_",-1))
-
+	pathname := filepath.Join(odir,strings.Replace(key,string(os.PathSeparator),"_",-1))
+    gLog.Trace.Printf("Output pathname: %s",pathname)
 	//  build a request
 	req := datatype.GetObjRequest{
 		Service : s3.New(api.CreateSession()),
@@ -162,11 +155,7 @@ func fGetObject(cmd *cobra.Command,args []string) {
 	}
 	// get the object
 	result, err = api.GetObject(req);
-
-
-
 	if err != nil {
-
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
@@ -178,9 +167,6 @@ func fGetObject(cmd *cobra.Command,args []string) {
 			gLog.Error.Printf("[%v]",err.Error())
 		}
 	} else {
-
-
-
 		if err = utils.SaveObject(result,pathname); err == nil {
 			gLog.Info.Printf("Object %s is downloaded to %s",key,pathname)
 		} else {
