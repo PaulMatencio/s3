@@ -12,9 +12,11 @@ import (
 func GetMultipart(req datatype.GetMultipartObjRequest ) (int64,error) {
 
 	input := s3.GetObjectInput{
-		Key:        aws.String(req.Key),
-		Bucket:     aws.String(req.Bucket),
-		PartNumber: aws.Int64(req.PartNumber),
+		Key:    aws.String(req.Key),
+		Bucket: aws.String(req.Bucket),
+	}
+    if req.PartNumber > 0 {
+		input.PartNumber =  aws.Int64(req.PartNumber)
 	}
 
 	downLoader := s3manager.NewDownloaderWithClient(req.Service, func(d *s3manager.Downloader) {

@@ -32,7 +32,7 @@ func initGMPFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&key, "key", "k", "", "Object key")
 	cmd.Flags().StringVarP(&odir,"odir","O","","the ouput directory relative to the working (or Home ir omitted)  directory you'like to save")
 	cmd.Flags().Int64VarP(&maxPartSize, "maxPartSize", "m", MinPartSize, "Maximum part size(MB)")
-	cmd.Flags().IntVarP(&partNumber, "partNumber", "p", 5, "Part number")
+	cmd.Flags().IntVarP(&partNumber, "partNumber", "p", 0, "Part number")
 	cmd.Flags().IntVarP(&maxCon, "maxCon", "M", 5, "Maximum concurrent parts download , 0 => all parts")
 }
 
@@ -53,7 +53,7 @@ func getMultipart(cmd *cobra.Command, args []string) {
 		gLog.Warning.Printf("%s", missingKey)
 		return
 	}
-	
+
 	if len(odir) == 0 {
 		gLog.Warning.Printf("%s", missingOutputFolder)
 		odir,_ = os.UserHomeDir()
