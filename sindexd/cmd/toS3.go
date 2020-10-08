@@ -618,7 +618,19 @@ func addToS3(req addRequest) {
 							}
 						}
 					} else {
-						gLog.Error.Printf("Stat object %v - error %v",k,err)
+						/* check if status 404 */
+						if aerr, ok := err.(awserr.Error); ok {
+							switch aerr.Code() {
+							case s3.ErrCodeNoSuchBucket:
+								gLog.Error.Printf("Stat object %v - Bucket %s not found - error %v",k,buck,err)
+							case s3.ErrCodeNoSuchKey:
+								if r, err := writeToS3(svc, buck, k, value); err == nil {
+									gLog.Trace.Println(buck, *r.ETag, *r)
+								} else {
+									gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+								}
+							}
+						}
 					}
 				} else {
 					gLog.Info.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)

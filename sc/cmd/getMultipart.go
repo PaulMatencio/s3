@@ -55,18 +55,18 @@ func getMultipart(cmd *cobra.Command, args []string) {
 	}
 
 	if len(odir) == 0 {
-		gLog.Warning.Printf("%s", missingOutputFolder)
+		gLog.Warning.Printf("%s", "Missing ouput directory, home directory  will be used")
 		odir,_ = os.UserHomeDir()
 	} else {
 		if sep := strings.Split(odir, string(os.PathSeparator)); len(sep) == 1 {
 			cwd, _ := os.Getwd()
 			odir = filepath.Join(cwd, odir)
-		}
+		}  
 		if !utils.Exist(odir){
 			utils.MakeDir(odir)
 		}
 	}
-	gLog.Info.Printf("output folder %s",odir)
+	gLog.Info.Printf("output directory  %s",odir)
 	outfile = filepath.Join(odir, key)
 
 	maxPartSize = maxPartSize*1024*1024  // convert into bytes
