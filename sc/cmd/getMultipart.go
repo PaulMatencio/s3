@@ -91,8 +91,8 @@ func getMultipart(cmd *cobra.Command, args []string) {
 
 	if n, err := api.GetMultipart(req); err == nil {
 		elapsed := time.Since(start)
-		mbs:= n*1000000/(1024*1024* int64(elapsed))
-		gLog.Info.Printf("Downloaded %s to folder: %s - size: %d - MB/sec: %d - Elapsed time: %v ",key,odir, n,mbs,elapsed)
+		mbs:= float64(n)*1000/float64(elapsed)
+		gLog.Info.Printf("Downloaded %s to folder: %s - size: %d - MB/sec: %.2f - Elapsed time: %v ",key,odir, n,mbs,elapsed)
 	} else {
 		gLog.Error.Printf("%v", err)
 	}
