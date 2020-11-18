@@ -67,7 +67,7 @@ func copyObject(cmd *cobra.Command,args []string) {
 		req = datatype.CopyObjRequest{
 			Service:  s3.New(api.CreateSession()),
 			Sbucket: sbucket,
-			Skey: key,
+			Skey: skey,
 			Tbucket: bucket,
 			Tkey: key,
 		}
