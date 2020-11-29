@@ -199,7 +199,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 										for r2 := 0; r2 <= retryNumber; r2++ {
 											r, err := api.PutObject3(put)
 											if err == nil {
-												gLog.Trace.Printf("Retry: %d - Key: %s - Etag: %s",r2, put.Key, *r.ETag)
+												gLog.Trace.Printf("Retry: %d - Key: %s - Etag: %s- Total cloned: %d",r2, put.Key, *r.ETag,totalc)
 												mu.Lock()
 												totalc++
 												sizec += objsize
@@ -230,7 +230,8 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 					}
 				}
 				if *result.IsTruncated {
-					nextmarker = *result.Contents[l-1].Key
+					// nextmarker = *result.Contents[l-1].Key
+					nextmarker = *result.NextMarker
 					gLog.Warning.Printf("Truncated %v - Next marker: %s ", *result.IsTruncated, nextmarker)
 				}
 				wg1.Wait()

@@ -107,7 +107,8 @@ func listObject(cmd *cobra.Command,args []string) {
 				}
 
 				if *result.IsTruncated {
-					nextmarker = *result.Contents[l-1].Key
+					//nextmarker = *result.Contents[l-1].Key
+					nextmarker = *result.NextMarker
 					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 				}
 
