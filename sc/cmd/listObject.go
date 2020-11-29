@@ -27,7 +27,7 @@ var (
 		Short: loshort,
 		Hidden: true,
 		Long: ``,
-		Run: listObject,
+		Run: listObjectV2,
 	}
 )
 
@@ -99,22 +99,17 @@ func listObject(cmd *cobra.Command,args []string) {
 			err error
 		)
 		if result, err = api.ListObject(req); err == nil {
-
 			if l := len(result.Contents); l > 0 {
 				total += int64(l)
 				for _, v := range result.Contents {
 					gLog.Info.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size,v.LastModified)
 				}
-
 				if *result.IsTruncated {
-					//nextmarker = *result.Contents[l-1].Key
-					nextmarker = *result.NextMarker
+					nextmarker = *result.Contents[l-1].Key
+					// nextmarker = *result.NextMarker
 					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 				}
-
-
 			}
-
 		} else {
 			gLog.Error.Printf("%v", err)
 			break
@@ -131,3 +126,63 @@ func listObject(cmd *cobra.Command,args []string) {
 	utils.Return(start)
 }
 
+func listObjectV2(cmd *cobra.Command,args []string) {
+	var (
+		start = utils.LumberPrefix(cmd)
+		total int64 = 0
+	)
+
+	if len(bucket) == 0 {
+		gLog.Warning.Printf("%s",missingBucket)
+		utils.Return(start)
+		return
+	}
+	if full {
+		bucket = bucket +"-"+fmt.Sprintf("%02d",utils.HashKey(prefix,bucketNumber))
+	}
+
+	if R {
+		prefix = utils.Reverse(prefix)
+	}
+	req := datatype.ListObjRequest{
+		Service : s3.New(api.CreateSession()),
+		Bucket: bucket,
+		Prefix : prefix,
+		MaxKey : maxKey,
+		Marker : marker,
+		Delimiter: delimiter,
+	}
+	L:=1
+	for {
+		var (
+			nextmarker string
+			result  *s3.ListObjectsV2Output
+			err error
+		)
+		if result, err = api.ListObjectV2(req); err == nil {
+			if l := len(result.Contents); l > 0 {
+				total += int64(l)
+				for _, v := range result.Contents {
+					gLog.Info.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size,v.LastModified)
+				}
+				if *result.IsTruncated {
+					//nextmarker = *result.Contents[l-1].Key
+					nextmarker = *result.ContinuationToken
+					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
+				}
+			}
+		} else {
+			gLog.Error.Printf("%v", err)
+			break
+		}
+		L++
+		if  *result.IsTruncated  && (maxLoop == 0 || L <= maxLoop) {
+			req.Marker = nextmarker
+		} else {
+			gLog.Info.Printf("Total number of objects returned: %d",total)
+			break
+		}
+	}
+
+	utils.Return(start)
+}

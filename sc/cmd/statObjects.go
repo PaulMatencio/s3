@@ -169,8 +169,8 @@ func statObjects(cmd *cobra.Command,args []string) {
 		L++
 		if *result.IsTruncated {
 
-			// nextmarker = *result.Contents[l-1].Key
-			nextmarker = *result.NextMarker
+			nextmarker = *result.Contents[l-1].Key
+			//nextmarker = *result.NextMarker
 			gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 		}
 

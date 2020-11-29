@@ -230,8 +230,8 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 					}
 				}
 				if *result.IsTruncated {
-					// nextmarker = *result.Contents[l-1].Key
-					nextmarker = *result.NextMarker
+					nextmarker = *result.Contents[l-1].Key
+					//nextmarker = *result.NextMarker
 					gLog.Warning.Printf("Truncated %v - Next marker: %s ", *result.IsTruncated, nextmarker)
 				}
 				wg1.Wait()
