@@ -47,7 +47,7 @@ func init() {
 }
 
 func initCbFlags(cmd *cobra.Command) {
-
+    /*  clone bucket */
 	cmd.Flags().StringVarP(&srcBucket,"srcBucket","s","","the name of the source bucket")
 	cmd.Flags().StringVarP(&tgtBucket,"tgtBucket","t","","the name of the target bucket")
 	cmd.Flags().StringVarP(&prefix,"prefix","p","","key prefix")
@@ -60,7 +60,7 @@ func initCbFlags(cmd *cobra.Command) {
 }
 
 func initCpFlags(cmd *cobra.Command) {
-
+	/*  copz bucket */
 	cmd.Flags().StringVarP(&srcBucket,"srcBucket","s","","the name of the source bucket")
 	cmd.Flags().StringVarP(&tgtBucket,"tgtBucket","t","","the name of the target bucket")
 	cmd.Flags().StringVarP(&inputKeys,"input","i","","file of input keys")
@@ -199,7 +199,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 										for r2 := 0; r2 <= retryNumber; r2++ {
 											r, err := api.PutObject3(put)
 											if err == nil {
-												gLog.Trace.Printf("Etag: %s - Version id: %s ", r.ETag, r.VersionId)
+												gLog.Trace.Printf("Retry: %d - Key: %s - Etag: %s",r2, put.Key, *r.ETag)
 												mu.Lock()
 												totalc++
 												sizec += objsize
@@ -224,6 +224,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 						if check {
 							if (v.LastModified.After(frDate)) {
 								gLog.Info.Printf("New objet: %s - Last modified date: %v - Size: %d", *v.Key, v.LastModified, *v.Size)
+								total++
 							}
 						}
 					}
@@ -240,16 +241,19 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 			gLog.Info.Printf("Next marker: %s ",nextmarker)
 			return
 		}
+
 		if !*result.IsTruncated {
 			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)))
 			return
 		} else {
 			list.Marker = nextmarker
 		}
+
 		if maxLoop != 0 && N > maxLoop {
 			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)))
 			return
 		}
+
 	}
 }
 
