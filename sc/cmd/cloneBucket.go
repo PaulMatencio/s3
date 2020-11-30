@@ -154,7 +154,7 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 		MaxKey : maxKey,
 		Marker : marker,
 	}
-
+	begin:= time.Now()
 	for {
 		var (
 			nextmarker string
@@ -244,14 +244,14 @@ func cloneBucket(cmd *cobra.Command,args []string) {
 		}
 
 		if !*result.IsTruncated {
-			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)))
+			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f - Elapsed time: %v",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)),time.Since(begin))
 			return
 		} else {
 			list.Marker = nextmarker
 		}
 
 		if maxLoop != 0 && N > maxLoop {
-			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)))
+			gLog.Info.Printf("Total number of objects cloned: %d of %d - size %.2f of size(KB): %.2f -Elapsed time: %v",totalc,total,float64(size/(1024.0)),float64(sizec/(1024.0)),time.Since(begin))
 			return
 		}
 
@@ -319,6 +319,7 @@ func copyBucket(cmd *cobra.Command,args []string) {
 			return
 		}
 	}
+
      /* check if source bucket and target bucket  exist   */
 
 
@@ -356,9 +357,10 @@ func copyBucket(cmd *cobra.Command,args []string) {
 				//wg1.Add(len(result.Contents))
 				for _, v := range linea {
 					// gLog.Trace.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size ,v.LastModified)
+					total++
 					if !check {
 						wg1.Add(1)
-						total++
+						// total++
 						get := datatype.GetObjRequest{
 							Service: svc1,
 							Bucket:  srcBucket,
