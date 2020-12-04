@@ -105,8 +105,8 @@ func listObject(cmd *cobra.Command,args []string) {
 					gLog.Info.Printf("Key: %s - Size: %d  - LastModified: %v", *v.Key, *v.Size,v.LastModified)
 				}
 				if *result.IsTruncated {
-					// nextmarker = *result.Contents[l-1].Key
-					nextmarker = *result.NextMarker
+					nextmarker = *result.Contents[l-1].Key
+					// nextmarker = *result.NextMarker
 					gLog.Warning.Printf("Truncated %v  - Next marker : %s ", *result.IsTruncated, nextmarker)
 				}
 			}
