@@ -227,7 +227,7 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 	case "PN", "PD": /* pubication date or publication number */
 		migToS3("PD") // Read sindexd pub date tables and write to both  s3 bucket-pd and bucket-pn
 	case "BN":
-		migToS3b(index)
+		migToS3b(iIndex)
 	case "OM", "NP": /* all other countries or Cite NPL table */
 		migToS3(iIndex)
 	case "OB":
