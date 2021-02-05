@@ -129,7 +129,7 @@ func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&marker, "marker", "k", "", "Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey, "maxKey", "m", 100, "maximum number of keys to be processed concurrently")
 	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "maximum number of loop, 0 means no upper limit")
-	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the name of the S3  bucket")
+	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the prefix of the S3  bucket names")
 	cmd.Flags().BoolVarP(&check, "check", "v", false, "Check mode")
 }
 
@@ -437,6 +437,10 @@ func migToS3b(index string) {
 				marker = resp.Next_marker
 				num++
 				gLog.Info.Printf("Next marker => %s %d", marker, num)
+				// stop if number of iteration > maxLoop
+				if maxLoop != 0 && num >= maxLoop {
+					Nextmarker = false
+				}
 			}
 		} else {
 			gLog.Error.Printf("Error: %v getting prefix %s", response.Err, prefix)
