@@ -17,3 +17,8 @@ func KeyToAscii(key string) (int) {
 
 }
 
+func ParseSindexdLog() {
+
+
+}
+

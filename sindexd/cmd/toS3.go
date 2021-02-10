@@ -152,7 +152,8 @@ func setBucketName(cc string, bucket string, index string) string {
 
 
 /*
-	Write to S3
+	Write to S3  ( only meta data, empty object
+
  */
 func writeToS3(svc *s3.S3, bucket string, key string, meta []byte) (*s3.PutObjectOutput, error) {
 	var (
@@ -661,3 +662,4 @@ func delFromS3(req delRequest) (*s3.DeleteObjectOutput,error){
 	return api.DeleteObjects(delreq)
 
 }
+

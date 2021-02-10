@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	directory "github.com/moses/directory/lib"
 	"github.com/s3/utils"
 	"github.com/spf13/cobra"
 	"strings"
@@ -25,7 +26,7 @@ import (
 var (
 	modulo int
 	ccode     string
-	hashCC= &cobra.Command{
+	hashCCcmd= &cobra.Command{
 		Use:   "hcc",
 		Short: "check hash country code",
 		Long: ``,
@@ -33,14 +34,26 @@ var (
 			hashCmd(cmd)
 		},
 	}
+	getCCcmd = &cobra.Command{
+		Use:   "getCC",
+		Short: "get CC",
+		Long: `List Scality Sindexd entries with prefix: 
+            There are 3 set of index-ids: 
+            PN => Publication number index-ids
+            PD => Publication date index-ids
+            BN => Legacy BNS id index-ids`,
+		Run: func(cmd *cobra.Command, args []string) {
+			getCountry(cmd,args)
+		},
+	}
 )
 
 func init() {
-
-	rootCmd.AddCommand(hashCC)
-	hashCC.Flags().StringVarP(&ccode,"cp","p","US","country code separated by c")
-	hashCC.Flags().IntVarP(&modulo, "modulo", "m", 5,"modulo")
-
+	rootCmd.AddCommand(hashCCcmd)
+	rootCmd.AddCommand(getCCcmd)
+	hashCCcmd.Flags().StringVarP(&ccode,"cp","p","US","country code separated by c")
+	hashCCcmd.Flags().IntVarP(&modulo, "modulo", "m", 5,"modulo")
+	getCCcmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [pn|pd|bn]")
 }
 
 
@@ -59,3 +72,16 @@ func hashCmd(cmd *cobra.Command){
 	}
 
 }
+
+func getCountry(cmd *cobra.Command,args []string) {
+	if len(iIndex) == 0 {
+		usage(cmd.Name())
+		return
+	}
+	indSpecs := directory.GetIndexSpec(iIndex)
+	countrySpecs := directory.GetCountrySpec(indSpecs)
+	for k,v := range countrySpecs {
+		fmt.Println(k,v)
+	}
+}
+

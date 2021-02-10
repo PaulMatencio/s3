@@ -41,12 +41,12 @@ var (
 		Use:   "lsi",
 		Short: "List Scality Sindexd entries with prefix",
 		Long: `List Scality Sindexd entries with prefix: 
-            There are 5 set of tables: 
-            PN => Publication number tables
-            PD => Publication date tables
-            NP => Cite NPL table
-            XX => New loaded document id table	
-            BN => Legacy BNS id table`,
+            There are 5 set of index-ids: 
+            PN => Publication number index-ids
+            PD => Publication date index-ids
+            NP => Cite NPL index-id
+            XX => New loaded document id index-id	
+            BN => Legacy BNS id index-ids`,
 		Run: func(cmd *cobra.Command, args []string) {
 			listPrefix(cmd,args)
 		},
@@ -67,6 +67,7 @@ func initLpFlags(cmd *cobra.Command) {
 func init() {
 	rootCmd.AddCommand(listPrefixCmd)
 	initLpFlags(listPrefixCmd)
+
 }
 
 func listPrefix(cmd *cobra.Command,args []string) {
@@ -116,6 +117,8 @@ func listPrefix(cmd *cobra.Command,args []string) {
 func listPref (prefix string)  {
 
 	indSpecs := directory.GetIndexSpec(iIndex)
+	// countrySpecs := directory.GetCountrySpec(indSpecs)
+
 	if pref := strings.Split(prefix,"/"); pref[0] == "NP" {
 		pref[0]= "XP"
 		prefix =""
