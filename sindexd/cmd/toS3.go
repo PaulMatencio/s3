@@ -99,6 +99,7 @@ var (
 	}
 	// bucket_pd, bucket_pn string
 	maxLoop int
+	redo bool
 )
 
 type addRequest struct {
@@ -131,6 +132,7 @@ func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "maximum number of loop, 0 means no upper limit")
 	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the prefix of the S3  bucket names")
 	cmd.Flags().BoolVarP(&check, "check", "v", false, "Check mode")
+	cmd.Flags().BoolVarP(&check, "redo", "r", false, "Redo the migration of the indexd-id")
 }
 
 /*
@@ -325,6 +327,20 @@ func migToS3(index string) {
 							write to S3 buckets of not run in check mode
 						*/
 						if !check {
+							// if redo , bypass write to S3  if the object already existed
+							if redo {
+								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
+								if _, err := api.StatObject(stat); err == nil {
+									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
+									return
+								} else {
+									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
+										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
+										return
+									}
+								}
+							}
+							//  write toS3
 							if r, err := writeToS3(svc, buck, k, value); err == nil {
 								gLog.Trace.Println(buck, *r.ETag, *r)
 								if r, err := writeToS3(svc, buck1, k1, value); err == nil {
@@ -373,7 +389,8 @@ func migToS3(index string) {
 
 
 func migToS3b(index string) {
-
+	gLog.Warning.Printf("Please use the command inctoS3 instead")
+	//return
 	indSpecs := directory.GetIndexSpec(index)
 	svc := s3.New(api.CreateSession())
 	num := 0
@@ -414,6 +431,21 @@ func migToS3b(index string) {
 							write to S3 buckets of not run in check mode
 						*/
 						if !check {
+
+							// if redo , bypass write to S3  if the object already existed
+							if redo {
+								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
+								if _, err := api.StatObject(stat); err == nil {
+									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
+									return
+								} else {
+									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
+										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
+										return
+									}
+								}
+							}
+							// write to S3
 							if r, err := writeToS3(svc, buck, k, value); err == nil {
 								gLog.Trace.Println(buck, *r.ETag, *r)
 							} else {
@@ -582,8 +614,6 @@ func incToS3(index string, index1 string) {
 				delete(keyObj, k)
 			}
 			Key1 = Key1[:0]
-
-
 			if len(resp.Next_marker) == 0 {
 				Nextmarker = false
 			} else {

@@ -78,26 +78,27 @@ func parseLog(cmd *cobra.Command,args []string) {
 
 }
 
-func ParseLog(logFile string,maxKey int,bucket string)  {
+func ParseLog(logFile string,maxKey int,bucket string) {
 
 	var (
-		scanner   *bufio.Scanner
-		err error
-		idxMap = buildIdxMap()
+		scanner *bufio.Scanner
+		err     error
+		idxMap  = buildIdxMap()
 	)
 
 	if scanner, err = utils.Scanner(logFile); err != nil {
-		gLog.Error.Printf("Error scanning %v file %s",err,logFile)
+		gLog.Error.Printf("Error scanning %v file %s", err, logFile)
 		return
 	}
-
-	if linea, _ := utils.ScanLines(scanner, int(maxKey)); len(linea) > 0 {
-		if l := len(linea); l > 0 {
+	stop := false
+	for (!stop) {
+		if linea, _ := utils.ScanLines(scanner, int(maxKey)); len(linea) > 0 {
 			for _, v := range linea {
-				oper :=parseSindexdLog(v ,idxMap, bucket,bucketNumber)
-				gLog.Info.Println(oper.Oper,oper.Bucket,oper.Key,oper.Value)
+				oper := parseSindexdLog(v, idxMap, bucket, bucketNumber)
+				gLog.Info.Println(oper.Oper, oper.Bucket, oper.Key, oper.Value)
 			}
+		} else {
+			stop = true
 		}
 	}
-
 }

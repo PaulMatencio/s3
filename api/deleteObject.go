@@ -7,12 +7,9 @@ import (
 )
 
 func DeleteObjects(req datatype.DeleteObjRequest) (*s3.DeleteObjectOutput,error){
-
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(req.Bucket),
 		Key:    aws.String(req.Key),
-
 	}
-
 	return req.Service.DeleteObject(input)
 }

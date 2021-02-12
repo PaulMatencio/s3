@@ -83,7 +83,7 @@ func parseSindexdLog(linei string,idxMap map[string]CCidx, bucket string,bucketN
 	}
 
 	if key[0:2] == "20" {
-		buck = bucket+"_last_loaded"
+		buck = bucket+"-last-loaded"
 	} else {
 		if v, ok := idxMap[idxId]; ok {
 			cc := v.CC
