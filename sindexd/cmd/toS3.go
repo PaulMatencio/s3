@@ -252,18 +252,20 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 */
 
 func migToS3(index string) {
+	var (
+	indSpecs = directory.GetIndexSpec("PD")
+	indSpecs1 = directory.GetIndexSpec("PN")
 
-	indSpecs := directory.GetIndexSpec("PD")
-	indSpecs1 := directory.GetIndexSpec("PN")
-
-	tos3 := datatype.CreateSession{
+	tos3 = datatype.CreateSession{
 		EndPoint:  viper.GetString("toS3.url"),
 		Region:    viper.GetString("toS3.region"),
 		AccessKey: viper.GetString("toS3.access_key_id"),
 		SecretKey: viper.GetString("toS3.secret_access_key"),
 	}
-	svc := s3.New(api.CreateSession2(tos3))
-	num := 0
+	svc = s3.New(api.CreateSession2(tos3))
+	num,total,totalc = 0,0,0 // num =  number of loop , total = total number of k
+	mu  sync.Mutex   // mu = mutex for counter totalc, mu1 mutex for counter total
+	)
 
 	switch index {
 	case "OM":
@@ -294,6 +296,7 @@ func migToS3(index string) {
 		     	write ( publication date key, value) to bucket-pd
 		     	write ( publication number key, vale ) to bucket-pn
 	*/
+	start := time.Now()
 	for Nextmarker {
 
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
@@ -303,11 +306,14 @@ func migToS3(index string) {
 
 			for k, v := range resp.Fetched {
 
-				/*   Publication date
-				     key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
+				/*
+					Publication date
+				    key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
 				*/
+
 				if v1, err := json.Marshal(v); err == nil {
 					cc := strings.Split(k, "/")[0]
+					total ++
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
 						var (
@@ -332,6 +338,9 @@ func migToS3(index string) {
 								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
 								if _, err := api.StatObject(stat); err == nil {
 									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
+									mu.Lock()
+									totalc++
+									mu.Unlock()
 									return
 								} else {
 									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
@@ -381,6 +390,7 @@ func migToS3(index string) {
 			Nextmarker = false
 		}
 	}
+	gLog.Info.Printf("Index/Prefix: %s/%s -Total number of migrated objects %d - Total number of skipped objects %d - Duration %v",index,prefix,total,totalc,time.Since(start))
 }
 
 /*
@@ -389,11 +399,12 @@ func migToS3(index string) {
 
 
 func migToS3b(index string) {
-	gLog.Warning.Printf("Please use the command inctoS3 instead")
-	//return
-	indSpecs := directory.GetIndexSpec(index)
-	svc := s3.New(api.CreateSession())
-	num := 0
+	var (
+		indSpecs = directory.GetIndexSpec(index)
+		svc = s3.New(api.CreateSession())
+		num,total,totalc = 0,0,0 // num =  number of loop , total = total number of k
+		mu       sync.Mutex   // mu = mutex for counter totalc, mu1 mutex for counter total
+	)
 	switch index {
 	case "OB":
 		prefix = ""
@@ -403,24 +414,28 @@ func migToS3b(index string) {
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification BN: %v", *i)
-
 	default:
 	}
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ", index, prefix, marker)
+
 	/*
 			Loop on  the get prefix
 		     for each key value retuned by the list prefix
 		     	write ( publication date key, value) to bucket-pd
 		     	write ( publication number key, vale ) to bucket-pn
+
 	*/
+
+	start := time.Now()
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
-
 			var wg sync.WaitGroup
 			wg.Add(len(resp.Fetched))
+
 			for k, v := range resp.Fetched {
 				if v1, err := json.Marshal(v); err == nil {
+					total ++
 					cc := strings.Split(k, "/")[0]
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
@@ -431,12 +446,14 @@ func migToS3b(index string) {
 							write to S3 buckets of not run in check mode
 						*/
 						if !check {
-
 							// if redo , bypass write to S3  if the object already existed
 							if redo {
 								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
 								if _, err := api.StatObject(stat); err == nil {
 									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
+									mu.Lock()
+									totalc ++
+									mu.Unlock()
 									return
 								} else {
 									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
@@ -480,6 +497,7 @@ func migToS3b(index string) {
 			Nextmarker = false
 		}
 	}
+	gLog.Info.Printf("Index/Prefix: %s/%s -Total number of migrated objects %d - Total number of skipped objects %d - Duration %v",index,prefix,total,totalc,time.Since(start))
 }
 
 

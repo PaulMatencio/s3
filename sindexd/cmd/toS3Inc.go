@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"strings"
 	"sync"
+	"time"
 )
 
 // readLogCmd represents the readLog command
@@ -85,6 +86,9 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 		scanner *bufio.Scanner
 		err     error
 		idxMap  = buildIdxMap()
+		total,skip,delete,add int
+		stop bool
+		mu,mu1,mu2 sync.Mutex
 	)
 
 	if scanner, err = utils.Scanner(logFile); err != nil {
@@ -93,12 +97,15 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 	}
 
 	var wg sync.WaitGroup
-	stop := false
+	stop = false
+	total,skip,delete,add = 0,0,0,0
+	start := time.Now()
 	for !stop {
 		if linea, _ := utils.ScanLines(scanner, int(maxKey)); len(linea) > 0 {
 			if l := len(linea); l > 0 {
 				wg.Add(l)
 				for _, v := range linea {
+					total ++
 					go func(v string, svc *s3.S3) {
 						defer wg.Done()
 						oper := parseSindexdLog(v, idxMap, bucket, bucketNumber)
@@ -107,10 +114,13 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 							gLog.Trace.Println(oper.Oper, oper.Bucket, oper.Key, oper.Value)
 							if !check {
 								//check if the object already exists
-
 								stat := datatype.StatObjRequest{Service: svc, Bucket: oper.Bucket, Key: oper.Key}
 								if _, err := api.StatObject(stat); err == nil {
 									gLog.Warning.Printf("Object %s already existed in the target Bucket %s", oper.Key, oper.Bucket)
+									mu.Lock()
+									skip ++
+									mu.Unlock()
+
 								} else {
 									/* check if status 404 */
 									if aerr, ok := err.(awserr.Error); ok {
@@ -119,14 +129,20 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 											gLog.Error.Printf("Bucket %s is not found - error %v", oper.Bucket, err)
 										case s3.ErrCodeNoSuchKey:
 											if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
-												gLog.Info.Println(oper.Key,oper.Bucket, *r.ETag, *r)
+												gLog.Trace.Println(oper.Key,oper.Bucket, *r.ETag, *r)
+												mu2.Lock()
+												add++
+												mu2.Unlock()
 											} else {
 												gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
 											}
 										default:
 											if strings.Contains(err.Error(),"NotFound")  {
 												if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
-													gLog.Info.Println(oper.Key,oper.Bucket, *r.ETag, *r)
+													gLog.Trace.Println(oper.Key,oper.Bucket, *r.ETag, *r)
+													mu2.Lock()
+													add++
+													mu2.Unlock()
 												} else {
 													gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
 												}
@@ -152,6 +168,10 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 									// api.DeleteObjects(delreq)
 									if ret, err := api.DeleteObjects(delreq); err == nil {
 										gLog.Info.Printf("Object %s is removed from %s - %v", oper.Key, oper.Bucket,ret.DeleteMarker)
+										mu1.Lock()
+										delete ++
+										mu1.Unlock()
+
 									} else {
 										gLog.Error.Printf("Delete %s from %s - error %v", oper.Key,oper.Bucket,err)
 									}
@@ -168,4 +188,5 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 			stop = true
 		}
 	}
+	gLog.Info.Printf("Keys: total: %d - added :%d - skipped: %d - deleted: %d Duration: %v",total,add,skip,delete,time.Since(start))
 }
