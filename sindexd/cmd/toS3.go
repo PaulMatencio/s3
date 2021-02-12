@@ -132,7 +132,7 @@ func initToS3Flags(cmd *cobra.Command) {
 	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "maximum number of loop, 0 means no upper limit")
 	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the prefix of the S3  bucket names")
 	cmd.Flags().BoolVarP(&check, "check", "v", false, "Check mode")
-	cmd.Flags().BoolVarP(&check, "redo", "r", false, "Redo the migration of the indexd-id")
+	cmd.Flags().BoolVarP(&redo, "redo", "r", false, "Redo the migration of the indexd-id")
 }
 
 /*
