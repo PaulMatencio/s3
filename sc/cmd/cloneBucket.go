@@ -399,7 +399,7 @@ func copyBucket(cmd *cobra.Command,args []string) {
 											mu.Lock()
 											totalc++
 											sizec += int64(robj.Body.Len())
-											gLog.Trace.Println(totalc,sizec)
+											// gLog.Trace.Println(totalc,sizec)
 											mu.Unlock()
 											break /* break r2*/
 										} else {
