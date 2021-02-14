@@ -39,8 +39,8 @@ import (
 var (
 	toS3Cmd = &cobra.Command{
 		Use:   "toS3",
-		Short: "Migrate Scality sindexd entries to S3 metadata",
-		Long: `Migtate Scality sindexd entries to S3 metadata: 
+		Short: "Migrate Scality index-ids to S3 metadata",
+		Long: `Migtate Scality  index-ids to S3 metadata: 
 
      See Usage for the description of the other -- flags. See Examples below for full and incremental migration below 
      --index [PN|PD|NP|OM|XX-PN|XX-PD|XX-BN]
@@ -81,7 +81,7 @@ var (
            - Cite NPL table 
                 sindexd toSindexd -i NP -m 1000
      	
-        - Incremental migration		
+        - Incremental migration (!!!  IMPORTANT: Please use the incToS3 subcommand for the incremental migration !!!)  
                 
                 sindexd toS3-i XX-PN  -p 20200403  -m 500 ( publication number for every country of April 3,2020 )
                 sindexd toS3 -i XX-PN  -p 20200403/US  ( publication number for for US  of April 3,2020)
@@ -124,15 +124,15 @@ func init() {
 }
 
 func initToS3Flags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&sindexUrl, "sindexd", "s", "", "sindexd endpoint <url:port>")
-	cmd.Flags().StringVarP(&prefix, "prefix", "p", "", "the prefix of the key")
-	cmd.Flags().StringVarP(&iIndex, "iIndex", "i", "", "Index table [PN|PD|BN|NP|OM|OB|XX-PN|XX-PD|XX-BN]")
+	cmd.Flags().StringVarP(&sindexUrl, "sindexd", "s", "", "Sindexd endpoint <url:port>")
+	cmd.Flags().StringVarP(&prefix, "prefix", "p", "", "The prefix of the key")
+	cmd.Flags().StringVarP(&iIndex, "iIndex", "i", "", "Index classification [PN|PD|BN|NP|OM|OB|XX-PN|XX-PD|XX-BN]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "", "Start with this Marker (Key) for the Get Prefix ")
-	cmd.Flags().IntVarP(&maxKey, "maxKey", "m", 100, "maximum number of keys to be processed concurrently")
-	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "maximum number of loop, 0 means no upper limit")
-	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "the prefix of the S3  bucket names")
-	cmd.Flags().BoolVarP(&check, "check", "v", false, "Check mode")
-	cmd.Flags().BoolVarP(&redo, "redo", "r", false, "Redo the migration of the indexd-id")
+	cmd.Flags().IntVarP(&maxKey, "maxKey", "m", 100, "Maximum number of keys to be processed concurrently")
+	cmd.Flags().IntVarP(&maxLoop, "maxLoop", "", 1, "Maximum number of loop, 0 means no upper limit")
+	cmd.Flags().StringVarP(&bucket, "bucket", "b", "", "The prefix of the S3  bucket names")
+	cmd.Flags().BoolVarP(&check, "check", "v", false, "Run in Checking  mode")
+	cmd.Flags().BoolVarP(&redo, "redo", "r", false, "Rerun the migration - Existing objects will be preserved")
 }
 
 /*
@@ -203,6 +203,11 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 	if len(sindexUrl) == 0 {
 		sindexUrl = viper.GetString("sindexd.url")
 	}
+
+	if iIndex[0:2] == "XX" {
+		gLog.Warning.Printf("Please use the command incToS3 for the incremental migration of the index-ids to S3")
+		return
+	}
 	if len(iIndex) == 0 {
 		iIndex = "PN"
 	}
@@ -236,6 +241,7 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 	case "OB":
 		migToS3b(iIndex)
 	case "XX-PN":
+		gLog.Warning.Printf("Please use the command incToS3 instead")
 		incToS3("XX", "PN")
 	case "XX-PD":
 		incToS3("XX", "PD")
@@ -263,8 +269,8 @@ func migToS3(index string) {
 		SecretKey: viper.GetString("toS3.secret_access_key"),
 	}
 	svc = s3.New(api.CreateSession2(tos3))
-	num,total,totalc = 0,0,0 // num =  number of loop , total = total number of k
-	mu  sync.Mutex   // mu = mutex for counter totalc, mu1 mutex for counter total
+	num,total,skip,error, error1 = 0,0,0,0,0 // num =  number of loop , total = total number of k
+	mu,mue,mue1  sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
 	)
 
 	switch index {
@@ -273,10 +279,10 @@ func migToS3(index string) {
 		i := indSpecs["OTHER"]
 		i1 := indSpecs1["OTHER"]
 		if i == nil || i1 == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			gLog.Error.Printf("No OTHER entry in PD or PN Index-id specification")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification PN: %v  - PD %v", *i1, *i)
+		gLog.Info.Printf("Index-id specification PN: %v - PD: %v", *i1, *i)
 	case "NP":
 		prefix = "XP"
 		i := indSpecs["NP"]
@@ -292,7 +298,7 @@ func migToS3(index string) {
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ", index, prefix, marker)
 	/*
 			Loop on  the get prefix
-		     for each key value retuned by the list prefix
+		     for each key value returned by the list prefix of the Sindexd index-id
 		     	write ( publication date key, value) to bucket-pd
 		     	write ( publication number key, vale ) to bucket-pn
 	*/
@@ -339,7 +345,7 @@ func migToS3(index string) {
 								if _, err := api.StatObject(stat); err == nil {
 									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
 									mu.Lock()
-									totalc++
+									skip++
 									mu.Unlock()
 									return
 								} else {
@@ -356,9 +362,16 @@ func migToS3(index string) {
 									gLog.Trace.Println(buck1, *r.ETag)
 								} else {
 									gLog.Error.Printf("Error %v - Writing key %s to bucket %s", err, k1, buck1)
+									mue1.Lock()
+									error1++
+									mue1.Unlock()
+
 								}
 							} else {
 								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+								mue.Lock()
+								error++
+								mue.Unlock()
 							}
 						} else {
 							gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
@@ -368,10 +381,13 @@ func migToS3(index string) {
 
 				} else {
 					gLog.Error.Printf("Error %v - Marshalling %s:%v", err, k, v)
+					mue.Lock()
+					error++
+					mue.Unlock()
 					wg.Done()
 				}
 			}
-			// Wait for all the go routine to be cpmpleted
+			// Wait for all the go routine to be completed
 			wg.Wait()
 
 			if len(resp.Next_marker) == 0 {
@@ -379,7 +395,7 @@ func migToS3(index string) {
 			} else {
 				num++
 				marker = resp.Next_marker
-				gLog.Info.Printf("Next marker => %s %d", marker, num)
+				gLog.Info.Printf("Next marker => %s %d - Total processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -390,7 +406,7 @@ func migToS3(index string) {
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s -Total number of migrated objects %d - Total number of skipped objects %d - Duration %v",index,prefix,total,totalc,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Migrated: %d - Skipped: %d - Errors: %d/%d - Duration: %v",index,prefix,total,skip,error/error1,time.Since(start))
 }
 
 /*
@@ -402,15 +418,15 @@ func migToS3b(index string) {
 	var (
 		indSpecs = directory.GetIndexSpec(index)
 		svc = s3.New(api.CreateSession())
-		num,total,totalc = 0,0,0 // num =  number of loop , total = total number of k
-		mu       sync.Mutex   // mu = mutex for counter totalc, mu1 mutex for counter total
+		num,total,skip,error = 0,0,0,0// num =  number of loop , total = total number of k
+		mu,mue  sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
 	)
 	switch index {
 	case "OB":
 		prefix = ""
 		i := indSpecs["OTHER"]
 		if i == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index spcification tables")
+			gLog.Error.Printf("No OTHER entry in PD or PN Index specification tables")
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification BN: %v", *i)
@@ -423,7 +439,6 @@ func migToS3b(index string) {
 		     for each key value retuned by the list prefix
 		     	write ( publication date key, value) to bucket-pd
 		     	write ( publication number key, vale ) to bucket-pn
-
 	*/
 
 	start := time.Now()
@@ -435,7 +450,7 @@ func migToS3b(index string) {
 
 			for k, v := range resp.Fetched {
 				if v1, err := json.Marshal(v); err == nil {
-					total ++
+					// total ++
 					cc := strings.Split(k, "/")[0]
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
@@ -452,12 +467,15 @@ func migToS3b(index string) {
 								if _, err := api.StatObject(stat); err == nil {
 									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
 									mu.Lock()
-									totalc ++
+									skip ++
 									mu.Unlock()
 									return
 								} else {
 									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
 										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
+										mue.Lock()
+										error ++
+										mue.Unlock()
 										return
 									}
 								}
@@ -465,16 +483,23 @@ func migToS3b(index string) {
 							// write to S3
 							if r, err := writeToS3(svc, buck, k, value); err == nil {
 								gLog.Trace.Println(buck, *r.ETag, *r)
+
 							} else {
 								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+								mue.Lock()
+								error ++
+								mue.Unlock()
 							}
 						} else {
-							gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
+							gLog.Trace.Printf("Checking mode: Writing key/value %s/%s - to bucket %s", k, value, buck)
 						}
 					}(svc, k, cc, v1, check)
 
 				} else {
 					gLog.Error.Printf("Error %v - Marshalling %s:%v", err, k, v)
+					mue.Lock()
+					error ++
+					mue.Unlock()
 					wg.Done()
 				}
 			}
@@ -486,24 +511,30 @@ func migToS3b(index string) {
 			} else {
 				marker = resp.Next_marker
 				num++
-				gLog.Info.Printf("Next marker => %s %d", marker, num)
+				// gLog.Info.Printf("Next marker => %s %d", marker, num)
+				gLog.Info.Printf("Next marker => %s %d - Total processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
 				}
 			}
 		} else {
-			gLog.Error.Printf("Error: %v getting prefix %s", response.Err, prefix)
+			gLog.Error.Printf("Error: %v with getting prefix %s", response.Err, prefix)
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s -Total number of migrated objects %d - Total number of skipped objects %d - Duration %v",index,prefix,total,totalc,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Migrated: %d - Skipped: %d - Errors: %v - Duration: %v",index,prefix,total,skip,error,time.Since(start))
 }
 
 
 
 func incToS3(index string, index1 string) {
+	/*
 
+	Should not be used
+	it is replaced by sub command incToS3
+
+	 */
 	var (
 		Key1      = []string{}
 		indSpecs  = directory.GetIndexSpec(index)  //should be XX

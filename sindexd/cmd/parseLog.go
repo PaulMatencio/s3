@@ -28,9 +28,15 @@ var (
 	logFile string
 	maxLine int
 	parseLogCmd = &cobra.Command{
-		Use:   "readLog",
-		Short: "read sindexd log",
-		Long: ``,
+		Use:   "parseLog",
+		Short: "parse a preformated sindexd log file",
+		Long: `
+         The sindexd log must be preformated as following  
+		 input record  format: Month day hour ADD|DELETE index_id: [Index-id] key:[key] value: [value]
+ 		 month: [Jan|Feb|Mar|Apr......|Dec]
+		 day:0..31
+		 hour: hh:mm:ss
+		`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("parsing sindexd log")
 			parseLog(cmd,args)
