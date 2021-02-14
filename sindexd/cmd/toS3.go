@@ -374,7 +374,7 @@ func migToS3(index string) {
 								mue.Unlock()
 							}
 						} else {
-							gLog.Trace.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
+							gLog.Trace.Printf("Check mode: Writing key/value %s/%s - to bucket %s", k, value, buck)
 							gLog.Trace.Printf("Check mode: Writing key/value %s/%s - to bucket %s", k1, value, buck1)
 						}
 					}(svc, k, cc, v1, check)
@@ -395,7 +395,7 @@ func migToS3(index string) {
 			} else {
 				num++
 				marker = resp.Next_marker
-				gLog.Info.Printf("Next marker => %s %d - Total processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -406,7 +406,7 @@ func migToS3(index string) {
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s - Migrated: %d - Skipped: %d - Errors: %d/%d - Duration: %v",index,prefix,total,skip,error/error1,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %d/%d - Duration: %v",index,prefix,total,skip,error,error1,time.Since(start))
 }
 
 /*
@@ -512,7 +512,7 @@ func migToS3b(index string) {
 				marker = resp.Next_marker
 				num++
 				// gLog.Info.Printf("Next marker => %s %d", marker, num)
-				gLog.Info.Printf("Next marker => %s %d - Total processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -523,7 +523,7 @@ func migToS3b(index string) {
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s - Migrated: %d - Skipped: %d - Errors: %v - Duration: %v",index,prefix,total,skip,error,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %v - Duration: %v",index,prefix,total,skip,error,time.Since(start))
 }
 
 
@@ -717,7 +717,7 @@ func addToS3(req addRequest) {
 						}
 					}
 				} else {
-					gLog.Info.Printf("Check mode: Writing key/vakue %s/%s - to bucket %s", k, value, buck)
+					gLog.Info.Printf("Check mode: Writing key/value %s/%s - to bucket %s", k, value, buck)
 				}
 			}(req.Service, k, cc, v1, req.Check)
 
