@@ -125,7 +125,7 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 								//check if the object already exists
 								stat := datatype.StatObjRequest{Service: svc, Bucket: oper.Bucket, Key: oper.Key}
 								if _, err := api.StatObject(stat); err == nil {
-									gLog.Trace.Printf("Object %s already existed in the Bucket %s", oper.Key, oper.Bucket)
+									gLog.Warning.Printf("Object %s already existed in the Bucket %s", oper.Key, oper.Bucket)
 									mu.Lock()
 									skip ++
 									mu.Unlock()
@@ -176,7 +176,7 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 									}
 									// api.DeleteObjects(delreq)
 									if ret, err := api.DeleteObjects(delreq); err == nil {
-										gLog.Trace.Printf("Object %s is deleted from %s - %v", oper.Key, oper.Bucket,ret.DeleteMarker)
+										gLog.Warning.Printf("Object %s is deleted from %s - %v", oper.Key, oper.Bucket,ret.DeleteMarker)
 										mu1.Lock()
 										delete ++
 										mu1.Unlock()

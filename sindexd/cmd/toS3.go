@@ -631,7 +631,7 @@ func incToS3(index string, index1 string) {
 				indSpec = r.Index_Spec
 				/*  delete All Key not found from the target URL, one key at a time */
 				for _, v := range r.Response.Not_found {
-					gLog.Warning.Printf("Key %s is not found in indSpect %v in Host %v", v, *indSpec, sindexd.HP.Hosts())
+					gLog.Warning.Printf("Key %s is not found in index Specification %v in Host %v", v, *indSpec, sindexd.HP.Hosts())
 					indSpec = r.Index_Spec
 					// there is no legacy BNS XP  tables
 					if v[0:2] != "XP" || index1 != "BN" {
