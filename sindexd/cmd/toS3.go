@@ -395,7 +395,7 @@ func migToS3(index string) {
 			} else {
 				num++
 				marker = resp.Next_marker
-				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num,total,skip,error,time.Since(start))
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -450,7 +450,7 @@ func migToS3b(index string) {
 
 			for k, v := range resp.Fetched {
 				if v1, err := json.Marshal(v); err == nil {
-					// total ++
+					total ++
 					cc := strings.Split(k, "/")[0]
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
@@ -512,7 +512,7 @@ func migToS3b(index string) {
 				marker = resp.Next_marker
 				num++
 				// gLog.Info.Printf("Next marker => %s %d", marker, num)
-				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d", marker, num,total,skip,error)
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num,total,skip,error,time.Since(start))
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
