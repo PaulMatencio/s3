@@ -455,7 +455,8 @@ func migToS3b(index string) {
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
 						var (
-							buck = setBucketName(cc, bucket, index)
+							// buck = setBucketName(cc, bucket, index)
+							buck = setBucketName(cc, bucket, "bn")
 						)
 						/*
 							write to S3 buckets of not run in check mode
