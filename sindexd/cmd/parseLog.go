@@ -100,8 +100,11 @@ func ParseLog(logFile string,maxKey int,bucket string) {
 	for (!stop) {
 		if linea, _ := utils.ScanLines(scanner, int(maxKey)); len(linea) > 0 {
 			for _, v := range linea {
-				oper := parseSindexdLog(v, idxMap, bucket, bucketNumber)
-				gLog.Info.Println(oper.Oper, oper.Bucket, oper.Key, oper.Value)
+				if err,oper := parseSindexdLog(v, idxMap, bucket, bucketNumber);err ==nil {
+					gLog.Info.Println(oper.Oper, oper.Bucket, oper.Key, oper.Value)
+				} else {
+					gLog.Error.Printf("Error: %v while parsing sindexd log entry: %s",err,v)
+				}
 			}
 		} else {
 			stop = true

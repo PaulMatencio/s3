@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	directory "github.com/moses/directory/lib"
 	"github.com/s3/api"
@@ -62,13 +64,15 @@ type S3Oper struct {
 	Value string
 }
 
-func parseSindexdLog(linei string,idxMap map[string]CCidx, bucket string,bucketNumber int) (S3Oper){
+func parseSindexdLog(linei string,idxMap map[string]CCidx, bucket string,bucketNumber int) (error,S3Oper){
+
 	var (
 		value,buck string
 		line = strings.Split(linei, " ")
 		oper = line[3]
 		idxId = line[5]
 		key = line[7]
+		err error
 	)
 	gLog.Trace.Println(linei)
 	switch(oper){
@@ -91,9 +95,12 @@ func parseSindexdLog(linei string,idxMap map[string]CCidx, bucket string,bucketN
 				cc = "XP"
 			}
 			buck = setBucketName(cc, bucket, v.Idx)
+			err =nil
+		} else {
+			err = errors.New(fmt.Sprintf("Index-id %s is not found in the indexes Map",idxId))
 		}
 	}
-	return S3Oper {
+	return err,S3Oper {
 		Oper: oper,
 		Bucket : buck,
 		Key: key,

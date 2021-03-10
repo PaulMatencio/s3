@@ -416,7 +416,7 @@ func migToS3(index string) {
 
 func migToS3b(index string) {
 	var (
-		indSpecs = directory.GetIndexSpec(index)
+		indSpecs = directory.GetIndexSpec("BN")
 		svc = s3.New(api.CreateSession())
 		num,total,skip,error = 0,0,0,0// num =  number of loop , total = total number of k
 		mu,mue  sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
@@ -426,7 +426,7 @@ func migToS3b(index string) {
 		prefix = ""
 		i := indSpecs["OTHER"]
 		if i == nil {
-			gLog.Error.Printf("No OTHER entry in PD or PN Index specification tables")
+			gLog.Error.Printf("No OTHER entry for BN Index specification tables")
 			os.Exit(2)
 		}
 		gLog.Info.Printf("Indexd specification BN: %v", *i)

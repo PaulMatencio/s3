@@ -3,10 +3,9 @@
 package cmd
 
 import (
-
 	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/s3/iam/id"
 	"github.com/s3/gLog"
+	"github.com/s3/iam/id"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +21,6 @@ var getIAMPolicyCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(getIAMPolicyCmd)
-
 }
 
 
