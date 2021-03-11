@@ -472,8 +472,11 @@ func migToS3b(index string) {
 							SKIP := false
 							if index == "NB" {
 								pn := strings.Split(k, "/")[1]
+
 								if pn < "55000000" || pn >= "56000000" {
+									mu.Lock()
 									skip++
+									mu.Unlock()
 									SKIP = true
 								}
 							}
