@@ -456,12 +456,21 @@ func migToS3b(index string) {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
 			var wg sync.WaitGroup
-			wg.Add(len(resp.Fetched))
+			// wg.Add(len(resp.Fetched))
 
 			for k, v := range resp.Fetched {
 				if v1, err := json.Marshal(v); err == nil {
 					total ++
-					cc := strings.Split(k, "/")[0]
+					pn := strings.Split(k,"/")
+					cc := pn[0]
+					//cc := strings.Split(k, "/")[0]
+					if index == "NB" {
+						if pn[1] >= "55000000" && pn[1] < "56000000" {
+							skip ++
+							break
+						}
+					}
+					wg.Add(1)
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
 						var (

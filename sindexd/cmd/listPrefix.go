@@ -136,8 +136,9 @@ func listPref (prefix string)  {
 			prefix += v+"/"
 		}
 		iIndex = "NB"
+		// indSpecs = directory.GetIndexSpec("BN")
 	}
-	
+
 	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 
 	n:= 0
