@@ -469,50 +469,38 @@ func migToS3b(index string) {
 							write to S3 buckets of not run in check mode
 						*/
 						if !check {
-							SKIP := false
-							if index == "NB" {
-								pn := strings.Split(k, "/")[1]
 
-								if pn < "55000000" || pn >= "56000000" {
+							// if redo , bypass write to S3  if the object already existed
+							if redo {
+								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
+								if _, err := api.StatObject(stat); err == nil {
+									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
 									mu.Lock()
 									skip++
 									mu.Unlock()
-									SKIP = true
-								}
-							}
-							if !SKIP {
-
-								// if redo , bypass write to S3  if the object already existed
-								if redo {
-									stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
-									if _, err := api.StatObject(stat); err == nil {
-										gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
-										mu.Lock()
-										skip++
-										mu.Unlock()
+									return
+								} else {
+									if err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
+										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
+										mue.Lock()
+										error++
+										mue.Unlock()
 										return
-									} else {
-										if err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
-											gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
-											mue.Lock()
-											error++
-											mue.Unlock()
-											return
-										}
 									}
 								}
-
-								// write to S3
-								if r, err := writeToS3(svc, buck, k, value); err == nil {
-									gLog.Trace.Println(buck, *r.ETag, *r)
-
-								} else {
-									gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
-									mue.Lock()
-									error++
-									mue.Unlock()
-								}
 							}
+
+							// write to S3
+							if r, err := writeToS3(svc, buck, k, value); err == nil {
+								gLog.Trace.Println(buck, *r.ETag, *r)
+
+							} else {
+								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+								mue.Lock()
+								error++
+								mue.Unlock()
+							}
+
 						} else {
 							gLog.Trace.Printf("Checking mode: Writing key/value %s/%s - to bucket %s", k, value, buck)
 						}
