@@ -101,23 +101,22 @@ var (
 	}
 	// bucket_pd, bucket_pn string
 	maxLoop int
-	redo bool
+	redo    bool
 )
 
 type addRequest struct {
-	Service  *s3.S3
-	Bucket    string
-	Index     string
-	Resp      *sindexd.Response
-	Check     bool
-
+	Service *s3.S3
+	Bucket  string
+	Index   string
+	Resp    *sindexd.Response
+	Check   bool
 }
 
 type delRequest struct {
-	Service  *s3.S3
-	Bucket    string
-	Index     string
-	Key       string
+	Service *s3.S3
+	Bucket  string
+	Index   string
+	Key     string
 }
 
 func init() {
@@ -142,7 +141,7 @@ func initToS3Flags(cmd *cobra.Command) {
     moses-meta -> moses-meta-pn-xx   pn:publication number indexd xx:hashKey(country code)
     XP -> 05
 
- */
+*/
 func setBucketName(cc string, bucket string, index string) string {
 	buck := bucket + "-" + strings.ToLower(index)
 	if cc == "XP" {
@@ -154,18 +153,17 @@ func setBucketName(cc string, bucket string, index string) string {
 	return buck
 }
 
-
 /*
 	Write to S3  ( only meta data, empty object
 
- */
+*/
 func writeToS3(svc *s3.S3, bucket string, key string, meta []byte) (*s3.PutObjectOutput, error) {
 	var (
 		data = make([]byte, 0, 0) // empty byte array
 		err  error
 		r    *s3.PutObjectOutput
 	)
-	gLog.Trace.Printf("Writting key %s to bucket %s\n",key , bucket)
+	gLog.Trace.Printf("Writting key %s to bucket %s\n", key, bucket)
 	req := datatype.PutObjRequest{
 		Service: svc,
 		Bucket:  bucket,
@@ -197,7 +195,7 @@ func writeToS3(svc *s3.S3, bucket string, key string, meta []byte) (*s3.PutObjec
 }
 
 /*
-     migration  of sindexd tables to S3
+   migration  of sindexd tables to S3
 */
 
 func migrateToS3(cmd *cobra.Command, args []string) {
@@ -240,7 +238,7 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 		migToS3b(iIndex)
 	case "OM", "NP": /* all other countries or Cite NPL table */
 		migToS3(iIndex)
-	case "OB","NB":
+	case "OB", "NB":
 		migToS3b(iIndex)
 	case "XX-PN":
 		gLog.Warning.Printf("Please use the command incToS3 instead")
@@ -261,18 +259,18 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 
 func migToS3(index string) {
 	var (
-	indSpecs = directory.GetIndexSpec("PD")
-	indSpecs1 = directory.GetIndexSpec("PN")
+		indSpecs  = directory.GetIndexSpec("PD")
+		indSpecs1 = directory.GetIndexSpec("PN")
 
-	tos3 = datatype.CreateSession{
-		EndPoint:  viper.GetString("toS3.url"),
-		Region:    viper.GetString("toS3.region"),
-		AccessKey: viper.GetString("toS3.access_key_id"),
-		SecretKey: viper.GetString("toS3.secret_access_key"),
-	}
-	svc = s3.New(api.CreateSession2(tos3))
-	num,total,skip,error, error1 = 0,0,0,0,0 // num =  number of loop , total = total number of k
-	mu,mue,mue1  sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
+		tos3 = datatype.CreateSession{
+			EndPoint:  viper.GetString("toS3.url"),
+			Region:    viper.GetString("toS3.region"),
+			AccessKey: viper.GetString("toS3.access_key_id"),
+			SecretKey: viper.GetString("toS3.secret_access_key"),
+		}
+		svc                             = s3.New(api.CreateSession2(tos3))
+		num, total, skip, error, error1 = 0, 0, 0, 0, 0 // num =  number of loop , total = total number of k
+		mu, mue, mue1                   sync.Mutex      // mu = mutex for counter skip, mu1 mutex for counter total
 	)
 
 	switch index {
@@ -315,13 +313,13 @@ func migToS3(index string) {
 			for k, v := range resp.Fetched {
 
 				/*
-					Publication date
-				    key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
+						Publication date
+					    key  format  CC/YYYY/MM/DD/NNNNNNNNNN/KC ( no KC for Cite NPL )
 				*/
 
 				if v1, err := json.Marshal(v); err == nil {
 					cc := strings.Split(k, "/")[0]
-					total ++
+					total++
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
 						var (
@@ -351,7 +349,7 @@ func migToS3(index string) {
 									mu.Unlock()
 									return
 								} else {
-									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
+									if err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
 										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
 										return
 									}
@@ -397,7 +395,7 @@ func migToS3(index string) {
 			} else {
 				num++
 				marker = resp.Next_marker
-				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num,total,skip,error,time.Since(start))
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num, total, skip, error, time.Since(start))
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -408,20 +406,19 @@ func migToS3(index string) {
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %d/%d - Duration: %v",index,prefix,total,skip,error,error1,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %d/%d - Duration: %v", index, prefix, total, skip, error, error1, time.Since(start))
 }
 
 /*
 	Full  migration  of bn  sindexd tables to S3
 */
 
-
 func migToS3b(index string) {
 	var (
-		indSpecs = directory.GetIndexSpec("BN")
-		svc = s3.New(api.CreateSession())
-		num,total,skip,error = 0,0,0,0// num =  number of loop , total = total number of k
-		mu,mue  sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
+		indSpecs                = directory.GetIndexSpec("BN")
+		svc                     = s3.New(api.CreateSession())
+		num, total, skip, error = 0, 0, 0, 0 // num =  number of loop , total = total number of k
+		mu, mue                 sync.Mutex   // mu = mutex for counter skip, mu1 mutex for counter total
 	)
 	switch index {
 	case "OB":
@@ -435,11 +432,11 @@ func migToS3b(index string) {
 	case "NB":
 		prefix = "XP"
 		i := indSpecs["NP"]
-		if i == nil  {
+		if i == nil {
 			gLog.Error.Printf("No NP entry in BN Index spcification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Index-id  specification NB: %v",  *i)
+		gLog.Info.Printf("Index-id  specification NB: %v", *i)
 	default:
 	}
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ", index, prefix, marker)
@@ -456,21 +453,12 @@ func migToS3b(index string) {
 		if response = directory.GetSerialPrefix(index, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
 			resp := response.Response
 			var wg sync.WaitGroup
-			// wg.Add(len(resp.Fetched))
+			wg.Add(len(resp.Fetched))
 
 			for k, v := range resp.Fetched {
 				if v1, err := json.Marshal(v); err == nil {
-					total ++
-					pn := strings.Split(k,"/")
-					cc := pn[0]
-					//cc := strings.Split(k, "/")[0]
-					if index == "NB" {
-						if pn[1] < "55000000" ||  pn[1] >= "56000000" {
-							skip ++
-							break
-						}
-					}
-					wg.Add(1)
+					total++
+					cc := strings.Split(k, "/")[0]
 					go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 						defer wg.Done()
 						var (
@@ -481,34 +469,46 @@ func migToS3b(index string) {
 							write to S3 buckets of not run in check mode
 						*/
 						if !check {
-							// if redo , bypass write to S3  if the object already existed
-							if redo {
-								stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
-								if _, err := api.StatObject(stat); err == nil {
-									gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
-									mu.Lock()
-									skip ++
-									mu.Unlock()
-									return
-								} else {
-									if  err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
-										gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
-										mue.Lock()
-										error ++
-										mue.Unlock()
-										return
-									}
+							SKIP := false
+							if index == "NB" {
+								pn := strings.Split(k, "/")[1]
+								if pn < "55000000" || pn >= "56000000" {
+									skip++
+									SKIP = true
 								}
 							}
-							// write to S3
-							if r, err := writeToS3(svc, buck, k, value); err == nil {
-								gLog.Trace.Println(buck, *r.ETag, *r)
+							if !SKIP {
 
-							} else {
-								gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
-								mue.Lock()
-								error ++
-								mue.Unlock()
+								// if redo , bypass write to S3  if the object already existed
+								if redo {
+									stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
+									if _, err := api.StatObject(stat); err == nil {
+										gLog.Trace.Printf("Object %s already existed in the target Bucket %s", k, buck)
+										mu.Lock()
+										skip++
+										mu.Unlock()
+										return
+									} else {
+										if err.(awserr.Error).Code() == s3.ErrCodeNoSuchBucket {
+											gLog.Error.Printf("Bucket %s is not found - error %v", buck, err)
+											mue.Lock()
+											error++
+											mue.Unlock()
+											return
+										}
+									}
+								}
+
+								// write to S3
+								if r, err := writeToS3(svc, buck, k, value); err == nil {
+									gLog.Trace.Println(buck, *r.ETag, *r)
+
+								} else {
+									gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, k, buck)
+									mue.Lock()
+									error++
+									mue.Unlock()
+								}
 							}
 						} else {
 							gLog.Trace.Printf("Checking mode: Writing key/value %s/%s - to bucket %s", k, value, buck)
@@ -518,7 +518,7 @@ func migToS3b(index string) {
 				} else {
 					gLog.Error.Printf("Error %v - Marshalling %s:%v", err, k, v)
 					mue.Lock()
-					error ++
+					error++
 					mue.Unlock()
 					wg.Done()
 				}
@@ -532,7 +532,7 @@ func migToS3b(index string) {
 				marker = resp.Next_marker
 				num++
 				// gLog.Info.Printf("Next marker => %s %d", marker, num)
-				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num,total,skip,error,time.Since(start))
+				gLog.Info.Printf("Next marker => %s %d - Processed: %d - Skipped: %d - Errors: %d - Duration: %v ", marker, num, total, skip, error, time.Since(start))
 				// stop if number of iteration > maxLoop
 				if maxLoop != 0 && num >= maxLoop {
 					Nextmarker = false
@@ -543,18 +543,16 @@ func migToS3b(index string) {
 			Nextmarker = false
 		}
 	}
-	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %v - Duration: %v",index,prefix,total,skip,error,time.Since(start))
+	gLog.Info.Printf("Index/Prefix: %s/%s - Total processed: %d - Total skipped: %d - Total errors: %v - Duration: %v", index, prefix, total, skip, error, time.Since(start))
 }
-
-
 
 func incToS3(index string, index1 string) {
 	/*
 
-	Should not be used
-	it is replaced by sub command incToS3
+		Should not be used
+		it is replaced by sub command incToS3
 
-	 */
+	*/
 	var (
 		Key1      = []string{}
 		indSpecs  = directory.GetIndexSpec(index)  //should be XX
@@ -656,23 +654,23 @@ func incToS3(index string, index1 string) {
 					// there is no legacy BNS XP  tables
 					if v[0:2] != "XP" || index1 != "BN" {
 						if !check {
-							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
+							gLog.Warning.Printf("Deleting key %s from bucket %s at endpoint %s", v, bucket, tos3.EndPoint)
 							// deleting key from the target S3
-							var delreq = delRequest {Service: svc,Bucket: bucket, Key:v,Index:index1,}
-							if _,err := delFromS3(delreq); err == nil {
-								gLog.Info.Printf("Object %s is removed from %s",v,bucket)
+							var delreq = delRequest{Service: svc, Bucket: bucket, Key: v, Index: index1}
+							if _, err := delFromS3(delreq); err == nil {
+								gLog.Info.Printf("Object %s is removed from %s", v, bucket)
 							} else {
-								gLog.Error.Printf("%v",err)
+								gLog.Error.Printf("%v", err)
 							}
 						} else {
-							gLog.Info.Printf("Check Mode: Deleting key %s from bucket %s at endpoint %s",v,bucket, tos3.EndPoint)
+							gLog.Info.Printf("Check Mode: Deleting key %s from bucket %s at endpoint %s", v, bucket, tos3.EndPoint)
 						}
 					}
 				}
 				/*
-				     Add concurrently key=value to toS3
+				   Add concurrently key=value to toS3
 				*/
-				var addreq = addRequest {Service: svc,Bucket: bucket,Index: index1,Resp : r.Response,Check: check,}
+				var addreq = addRequest{Service: svc, Bucket: bucket, Index: index1, Resp: r.Response, Check: check}
 				addToS3(addreq)
 			}
 
@@ -697,7 +695,6 @@ func incToS3(index string, index1 string) {
 	}
 }
 
-
 func addToS3(req addRequest) {
 
 	var wg sync.WaitGroup
@@ -707,10 +704,10 @@ func addToS3(req addRequest) {
 			cc := strings.Split(k, "/")[0]
 			go func(svc *s3.S3, k string, cc string, value []byte, check bool) {
 				defer wg.Done()
-				buck:= setBucketName(cc, req.Bucket, req.Index)
+				buck := setBucketName(cc, req.Bucket, req.Index)
 				if !check {
 					//check if the object already exists
-					stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k,}
+					stat := datatype.StatObjRequest{Service: svc, Bucket: buck, Key: k}
 					if result, err := api.StatObject(stat); err == nil {
 						if len(*result.ETag) > 0 {
 							gLog.Warning.Printf("Object %s already existed in the target Bucket %s", k, buck)
@@ -726,7 +723,7 @@ func addToS3(req addRequest) {
 						if aerr, ok := err.(awserr.Error); ok {
 							switch aerr.Code() {
 							case s3.ErrCodeNoSuchBucket:
-								gLog.Error.Printf("Stat object %v - Bucket %s not found - error %v",k,buck,err)
+								gLog.Error.Printf("Stat object %v - Bucket %s not found - error %v", k, buck, err)
 							case s3.ErrCodeNoSuchKey:
 								if r, err := writeToS3(svc, buck, k, value); err == nil {
 									gLog.Trace.Println(buck, *r.ETag, *r)
@@ -750,15 +747,14 @@ func addToS3(req addRequest) {
 
 }
 
-func delFromS3(req delRequest) (*s3.DeleteObjectOutput,error){
+func delFromS3(req delRequest) (*s3.DeleteObjectOutput, error) {
 
 	cc := strings.Split(req.Key, "/")[0]
-	delreq:= datatype.DeleteObjRequest{
-		Service : req.Service,
+	delreq := datatype.DeleteObjRequest{
+		Service: req.Service,
 		Bucket:  setBucketName(cc, req.Bucket, req.Index),
-		Key: req.Key,
+		Key:     req.Key,
 	}
 	return api.DeleteObjects(delreq)
 
 }
-
