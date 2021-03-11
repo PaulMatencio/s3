@@ -135,7 +135,7 @@ func listPref (prefix string)  {
 		for _,v := range pref {
 			prefix += v+"/"
 		}
-		iIndex = "NB"
+		iIndex = "NP"
 		// indSpecs = directory.GetIndexSpec("BN")
 	}
 
