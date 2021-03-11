@@ -45,8 +45,9 @@ var (
             PN => Publication number index-ids
             PD => Publication date index-ids
             NP => Cite NPL index-id
+            NB => Cite NPL index-id for JSF
             XX => New loaded document id index-id	
-            BN => Legacy BNS id index-ids`,
+            BN => Legacy BNS id index-id for JSF`,
 		Run: func(cmd *cobra.Command, args []string) {
 			listPrefix(cmd,args)
 		},
@@ -127,6 +128,16 @@ func listPref (prefix string)  {
 		}
 		iIndex = "NP"
 	}
+
+	if pref := strings.Split(prefix,"/"); pref[0] == "NB" {
+		pref[0]= "XP"
+		prefix =""
+		for _,v := range pref {
+			prefix += v+"/"
+		}
+		iIndex = "NB"
+	}
+	
 	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 
 	n:= 0
