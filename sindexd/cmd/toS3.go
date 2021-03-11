@@ -47,9 +47,10 @@ var (
      Explanation of the --index flag 
         PN or PD => Full migration of Publication number and Publication data tables for a given country
         BN => Full migration of the Legacy BNS id table for a given country	
-        NP => Full migration of Cite NPL table
+        NP => Full migration of Cite NPL table ofr PN/PD
         OM => Full migration of publication number and publication date tables for other countries
         OB => Full migration of legacy BNS tables for other countries
+        NB => Full migration of Cite NPL table for BN ( legacy)
         XX-PN => Incremental migration of publication number tables ( every or specific country, XP and Cite NPL inclusive )
         XX-PD => Incremental migration of publication number tables ( every or specific country, XP and Cite NPL inclusive)
         XX-BN => Incremental migrattion of legacy BNS tables ( every country ,XP inclusive)
@@ -80,6 +81,7 @@ var (
 					
            - Cite NPL table 
                 sindexd toSindexd -i NP -m 1000
+				sindexd toSindexd -i NB -m 1000
      	
         - Incremental migration (!!!  IMPORTANT: Please use the incToS3 subcommand for the incremental migration !!!)  
                 
@@ -238,7 +240,7 @@ func migrateToS3(cmd *cobra.Command, args []string) {
 		migToS3b(iIndex)
 	case "OM", "NP": /* all other countries or Cite NPL table */
 		migToS3(iIndex)
-	case "OB":
+	case "OB","NB":
 		migToS3b(iIndex)
 	case "XX-PN":
 		gLog.Warning.Printf("Please use the command incToS3 instead")
@@ -426,10 +428,18 @@ func migToS3b(index string) {
 		prefix = ""
 		i := indSpecs["OTHER"]
 		if i == nil {
-			gLog.Error.Printf("No OTHER entry for BN Index specification tables")
+			gLog.Error.Printf("No OTHER entry in BN Index specification tables")
 			os.Exit(2)
 		}
-		gLog.Info.Printf("Indexd specification BN: %v", *i)
+		gLog.Info.Printf("Index-id  specification OB: %v", *i)
+	case "NB":
+		prefix = "XP"
+		i := indSpecs["NP"]
+		if i == nil  {
+			gLog.Error.Printf("No NP entry in BN Index spcification tables")
+			os.Exit(2)
+		}
+		gLog.Info.Printf("Index-id  specification NB: %v",  *i)
 	default:
 	}
 	gLog.Info.Printf("Index: %s - Prefix: %s - Start with key %s ", index, prefix, marker)
