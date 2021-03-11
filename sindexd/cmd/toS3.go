@@ -431,11 +431,13 @@ func migToS3b(index string) {
 		gLog.Info.Printf("Index-id  specification OB: %v", *i)
 	case "NB":
 		prefix = "XP"
-		i := indSpecs["NP"]
+		index = "NP"
+		i := indSpecs[index]
 		if i == nil {
 			gLog.Error.Printf("No NP entry in BN Index spcification tables")
 			os.Exit(2)
 		}
+
 		gLog.Info.Printf("Index-id  specification NB: %v", *i)
 	default:
 	}
