@@ -465,7 +465,7 @@ func migToS3b(index string) {
 					cc := pn[0]
 					//cc := strings.Split(k, "/")[0]
 					if index == "NB" {
-						if pn[1] >= "55000000" && pn[1] < "56000000" {
+						if pn[1] < "55000000" ||  pn[1] >= "56000000" {
 							skip ++
 							break
 						}
