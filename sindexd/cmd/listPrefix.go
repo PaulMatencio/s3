@@ -41,11 +41,12 @@ var (
 		Use:   "lsi",
 		Short: "List Scality Sindexd entries with prefix",
 		Long: `List Scality Sindexd entries with prefix: 
-            There are 5 set of index-ids: 
+
+            For CiteIPL, replace prefix country code by NP 
+
+            There are 4 set of index-ids:
             PN => Publication number index-ids
             PD => Publication date index-ids
-            NP => Cite NPL index-id
-            NB => Cite NPL index-id for JSF
             XX => New loaded document id index-id	
             BN => Legacy BNS id index-id for JSF`,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -58,7 +59,7 @@ func initLpFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&sindexUrl,"sindexd","s","","sindexd endpoint <url:port>")
 	cmd.Flags().StringVarP(&prefixs,"prefix","p","","prefix of the key separted by a comma")
 	// cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table <PN>/<PD>")
-	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [pn|pd|bn|np]")
+	cmd.Flags().StringVarP(&iIndex,"iIndex","i","","Index table [pn|pd|bn|xx]")
 	cmd.Flags().StringVarP(&marker, "marker", "k", "","Start with this Marker (Key) for the Get Prefix ")
 	cmd.Flags().StringVarP(&delimiter, "delimiter", "d", "","Delimiter of the list for the Get Prefix ")
 	cmd.Flags().IntVarP(&maxKey,"maxKey","m",100,"Limit number of keys to be processed concurrently")
@@ -87,7 +88,6 @@ func listPrefix(cmd *cobra.Command,args []string) {
 	} else {
 		iIndex= strings.ToUpper(iIndex)
 	}
-
 
 	// indSpecs := directory.GetIndexSpec(iIndex)
 
@@ -119,27 +119,26 @@ func listPref (prefix string)  {
 
 	indSpecs := directory.GetIndexSpec(iIndex)
 	// countrySpecs := directory.GetCountrySpec(indSpecs)
-
-	if pref := strings.Split(prefix,"/"); pref[0] == "NP" || pref[0] == "NB"{
-		pref[0]= "XP"
-		prefix =""
-		for _,v := range pref {
-			prefix += v+"/"
-		}
-		iIndex = "NP"
-	}
 	/*
-	if pref := strings.Split(prefix,"/"); pref[0] == "NB" {
+	if pref := strings.Split(prefix,"/"); pref[0] == "NP" {
 		pref[0]= "XP"
 		prefix =""
-		for _,v := range pref {
-			prefix += v+"/"
+		for k,v := range pref {
+			prefix += v
+			if k < len(pref) {
+				prefix += "/"
+			}
 		}
 		iIndex = "NP"
-		// indSpecs = directory.GetIndexSpec("BN")
 	}
 	*/
-	//p0 := strings.Split(prefix,"/")[0]
+
+	if prefix[0:2] == "NP" {
+		suff := prefix[2:]
+		prefix = prefix[0:2] + suff
+		iIndex = "NP"
+	}
+	
 	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 	n:= 0
 	for Nextmarker {
