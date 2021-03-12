@@ -139,8 +139,8 @@ func listPref (prefix string)  {
 		// indSpecs = directory.GetIndexSpec("BN")
 	}
 	*/
-	p0 := strings.Split(prefix,"/")[0]
-	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,*indSpecs[p0])
+	//p0 := strings.Split(prefix,"/")[0]
+	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 	n:= 0
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
