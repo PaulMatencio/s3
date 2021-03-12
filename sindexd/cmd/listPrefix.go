@@ -135,10 +135,10 @@ func listPref (prefix string)  {
 
 	if prefix[0:2] == "NP" {
 		suff := prefix[2:]
-		prefix = prefix[0:2] + suff
+		prefix = "XP" + suff
 		iIndex = "NP"
 	}
-	
+
 	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
 	n:= 0
 	for Nextmarker {
