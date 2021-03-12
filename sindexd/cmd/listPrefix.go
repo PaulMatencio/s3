@@ -139,7 +139,7 @@ func listPref (prefix string)  {
 		iIndex = "NP"
 	}
 
-	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,&indSpecs)
+	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,*indSpecs[iIndex])
 	n:= 0
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {

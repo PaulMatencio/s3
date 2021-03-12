@@ -35,7 +35,7 @@ var (
 		logFile string
 		logging int
 	*/
-
+	replace    bool
 	toS3IncCmd = &cobra.Command{
 		Use:   "incToS3",
 		Short: "Incremental migration of index-ids to S3",
@@ -61,6 +61,7 @@ func init() {
 	toS3IncCmd.Flags().IntVarP(&maxKey, "maxLine", "m", 50, "The maximum number of lines to be processed concurrently")
 	toS3IncCmd.Flags().StringVarP(&bucket, "bucket", "b", "", "The prefix of the S3  bucket names Ex: moses-meta-prod")
 	toS3IncCmd.Flags().BoolVarP(&check, "check", "v", false, "Run in Checking mode")
+	toS3IncCmd.Flags().BoolVarP(&replace, "replace", "r", false, "Replace existing objects")
 	// toS3IncCmd.Flags().IntVarP(&logging, "logging", "", 10000, "logging frequency")
 }
 
@@ -123,42 +124,61 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 							if oper.Oper == "ADD" {
 								gLog.Trace.Println(oper.Oper, oper.Bucket, oper.Key, oper.Value)
 								if !check {
-									//check if the object already exists
-									stat := datatype.StatObjRequest{Service: svc, Bucket: oper.Bucket, Key: oper.Key}
-									if _, err := api.StatObject(stat); err == nil {
-										gLog.Warning.Printf("Object %s already existed in the Bucket %s", oper.Key, oper.Bucket)
-										mu.Lock()
-										skip++
-										mu.Unlock()
+									if replace {
+										if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
+											gLog.Trace.Println(oper.Key, oper.Bucket, *r.ETag, *r)
+											mu2.Lock()
+											add++
+											mu2.Unlock()
+										} else {
+											gLog.Error.Printf("Error %v - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
+											mue.Lock()
+											error++
+											mue.Unlock()
+										}
 									} else {
-										if aerr, ok := err.(awserr.Error); ok {
-											switch aerr.Code() {
-											case s3.ErrCodeNoSuchBucket:
-												gLog.Error.Printf("Bucket %s is not found - error %v", oper.Bucket, err)
-											case s3.ErrCodeNoSuchKey:
-												if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
-													gLog.Trace.Println(oper.Key, oper.Bucket, *r.ETag, *r)
-													mu2.Lock()
-													add++
-													mu2.Unlock()
-												} else {
-													gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
-												}
-											default:
-												if strings.Contains(err.Error(), "NotFound") {
+										stat := datatype.StatObjRequest{Service: svc, Bucket: oper.Bucket, Key: oper.Key}
+										if _, err := api.StatObject(stat); err == nil {
+											gLog.Warning.Printf("Object %s already existed in the Bucket %s", oper.Key, oper.Bucket)
+											mu.Lock()
+											skip++
+											mu.Unlock()
+										} else {
+											if aerr, ok := err.(awserr.Error); ok {
+												switch aerr.Code() {
+												case s3.ErrCodeNoSuchBucket:
+													gLog.Error.Printf("Bucket %s is not found - error %v", oper.Bucket, err)
+												case s3.ErrCodeNoSuchKey:
 													if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
 														gLog.Trace.Println(oper.Key, oper.Bucket, *r.ETag, *r)
 														mu2.Lock()
 														add++
 														mu2.Unlock()
 													} else {
-														gLog.Error.Printf("Error %v - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
+														gLog.Error.Printf("Error %v  - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
+														mue.Lock()
+														error++
+														mue.Unlock()
 													}
-												} else {
-													gLog.Error.Printf("Error %v - Checking key %s in bucket %s", err.Error(), oper.Key, oper.Bucket)
-													mue.Lock()
-													error++
-													mue.Unlock()
+												default:
+													if strings.Contains(err.Error(), "NotFound") {
+														if r, err := writeToS3(svc, oper.Bucket, oper.Key, []byte(oper.Value)); err == nil {
+															gLog.Trace.Println(oper.Key, oper.Bucket, *r.ETag, *r)
+															mu2.Lock()
+															add++
+															mu2.Unlock()
+														} else {
+															gLog.Error.Printf("Error %v - Writing key %s to bucket %s", err, oper.Key, oper.Bucket)
+															mue.Lock()
+															error++
+															mue.Unlock()
+														}
+													} else {
+														gLog.Error.Printf("Error %v - Checking key %s in bucket %s", err.Error(), oper.Key, oper.Bucket)
+														mue.Lock()
+														error++
+														mue.Unlock()
+													}
 												}
 											}
 										}
@@ -193,7 +213,7 @@ func ToS3Inc(logFile string, maxKey int, bucket string, svc *s3.S3) {
 								}
 							}
 						} else {
-							gLog.Error.Printf("Error: %v while parsing sindexd log entry: %s",err,v)
+							gLog.Error.Printf("Error: %v while parsing sindexd log entry: %s", err, v)
 						}
 					}(v, svc)
 				}
