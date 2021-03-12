@@ -120,7 +120,7 @@ func listPref (prefix string)  {
 	indSpecs := directory.GetIndexSpec(iIndex)
 	// countrySpecs := directory.GetCountrySpec(indSpecs)
 
-	if pref := strings.Split(prefix,"/"); pref[0] == "NP" {
+	if pref := strings.Split(prefix,"/"); pref[0] == "NP" || pref[0] == "NB"{
 		pref[0]= "XP"
 		prefix =""
 		for _,v := range pref {
@@ -128,7 +128,7 @@ func listPref (prefix string)  {
 		}
 		iIndex = "NP"
 	}
-
+	/*
 	if pref := strings.Split(prefix,"/"); pref[0] == "NB" {
 		pref[0]= "XP"
 		prefix =""
@@ -138,8 +138,9 @@ func listPref (prefix string)  {
 		iIndex = "NP"
 		// indSpecs = directory.GetIndexSpec("BN")
 	}
-
-	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,*indSpecs[prefix])
+	*/
+	p0 := strings.Split(prefix,"/")[0]
+	gLog.Info.Printf("Prefix: %s - start with this key: %s - Index: %s - Index specification: %v", prefix,marker,iIndex,*indSpecs[p0])
 	n:= 0
 	for Nextmarker {
 		if response = directory.GetSerialPrefix(iIndex, prefix, delimiter, marker, maxKey, indSpecs); response.Err == nil {
