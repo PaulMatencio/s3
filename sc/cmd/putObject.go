@@ -20,6 +20,7 @@ var (
 	pfshort = "Command to upload a given file to a bucket"
 	poshort = "Command to upload a byte buffer to a bucket"
 	datafile,metafile string
+	absolute bool
 	fPutObjectCmd = &cobra.Command{
 		Use:   "fPutObject",
 		Short: pfshort,
@@ -55,6 +56,7 @@ func initPfFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVarP(&bucket,"bucket","b","","the name of  the bucket")
 	cmd.Flags().StringVarP(&datafile,"datafile","i","","the data file you 'd like to  upload")
+	cmd.Flags().BoolVarP(&absolute,"absolute","a",false,"key = absolute path name")
 	// cmd.Flags().StringVarP(&metafile,"metafile","m","","the meta file to upload")
 }
 
@@ -112,6 +114,9 @@ func fPutObj(svc *s3.S3 , datafile string) (*s3.PutObjectOutput,error) {
 		err error
 
 	)
+	if absolute {
+		key = datafile
+	}
 
 	if  usermd,err  = utils.ReadUsermd(metafile); err != nil  {
 		gLog.Error.Printf("Error %v reading meta data file %s",err,metafile)
