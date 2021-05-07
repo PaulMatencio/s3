@@ -115,7 +115,7 @@ func fPutObj(svc *s3.S3 , datafile string) (*s3.PutObjectOutput,error) {
 
 	)
 	if absolute {
-		key = "/" + datafile
+		key =  datafile
 	}
 	gLog.Info.Print(key)
 	if  usermd,err  = utils.ReadUsermd(metafile); err != nil  {
