@@ -155,6 +155,7 @@ func CreateSession2(req datatype.CreateSession) *session.Session {
 			Region:           aws.String(req.Region),
 			Endpoint:         aws.String(req.EndPoint),
 			Credentials:      credentials.NewStaticCredentials(req.AccessKey, req.SecretKey, ""),
+			DisableRestProtocolURICleaning: aws.Bool(true),
 			S3ForcePathStyle: aws.Bool(true),
 			LogLevel:         aws.LogLevel(loglevel),
 		})
