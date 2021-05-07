@@ -94,7 +94,7 @@ func fPutObject(cmd *cobra.Command, args []string) {
 	svc      = s3.New(api.CreateSession())
 
 	if result,err := fPutObj(svc ,datafile); err == nil {
-		gLog.Info.Printf("Successfuly upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
+		gLog.Info.Printf("Successfully upload file %s to  Bucket %s  - Etag : %s", datafile,bucket,*result.ETag)
 	} else {
 		gLog.Error.Printf("fail to upload %s - error: %v",datafile,err)
 	}
@@ -115,7 +115,7 @@ func fPutObj(svc *s3.S3 , datafile string) (*s3.PutObjectOutput,error) {
 
 	)
 	if absolute {
-		key = datafile
+		key = "/" + datafile
 	}
 
 	if  usermd,err  = utils.ReadUsermd(metafile); err != nil  {
