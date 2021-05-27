@@ -15,9 +15,9 @@
 package main
 
 import (
-	"github.com/s3/sindexd/cmd"
-	"github.com/s3/utils"
-	// "github.com/moses/sindexd/lib"
+	"github.com/paulmatencio/s3/sindexd/cmd"
+	"github.com/paulmatencio/s3/utils"
+	// "github.com/paulmatencio/moses/sindexd/lib"
 )
 
 func main() {

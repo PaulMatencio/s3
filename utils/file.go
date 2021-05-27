@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"io/ioutil"
 	"os"
 	"path/filepath"

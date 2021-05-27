@@ -3,7 +3,7 @@ package utils
 import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"io"
 	"io/ioutil"
 	"os"

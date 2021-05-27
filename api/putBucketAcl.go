@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/datatype"
+	"github.com/paulmatencio/s3/datatype"
 )
 
 func AddBucketAcl(req datatype.PutBucketAclRequest) (*s3.PutBucketAclOutput,error){

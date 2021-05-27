@@ -15,8 +15,8 @@
 package main
 
 import (
-	"github.com/s3/st33/cmd"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/st33/cmd"
+	"github.com/paulmatencio/s3/utils"
 )
 
 func main() {

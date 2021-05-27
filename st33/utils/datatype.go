@@ -38,7 +38,7 @@ type S3Error struct {
 	Err	    error
 }
 
-// import "github.com/s3/st33/utils"
+// import "github.com/paulmatencio/s3/st33/utils"
 
 type St33ToS3      struct {
 	Request  		 ToS3Request       `json:"request"`

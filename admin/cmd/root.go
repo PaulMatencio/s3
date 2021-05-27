@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/s3/gLog"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/gLog"
+	"github.com/paulmatencio/s3/utils"
 	"log"
 	"os"
 	"path/filepath"

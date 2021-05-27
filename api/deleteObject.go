@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/datatype"
+	"github.com/paulmatencio/s3/datatype"
 )
 
 func DeleteObjects(req datatype.DeleteObjRequest) (*s3.DeleteObjectOutput,error){

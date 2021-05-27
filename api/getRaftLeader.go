@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/s3/datatype"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/datatype"
+	"github.com/paulmatencio/s3/gLog"
 	"io/ioutil"
 	"net/http"
 	"time"

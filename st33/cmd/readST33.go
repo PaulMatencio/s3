@@ -2,8 +2,8 @@
 package cmd
 
 import (
-	"github.com/s3/gLog"
-	st33 "github.com/s3/st33/utils"
+	"github.com/paulmatencio/s3/gLog"
+	st33 "github.com/paulmatencio/s3/st33/utils"
 	"github.com/spf13/cobra"
 	"io"
 	"path/filepath"

@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/s3/admin/cmd"
+import "github.com/paulmatencio/s3/admin/cmd"
 
 func main() {
 	cmd.Execute()

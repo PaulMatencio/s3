@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"time"
 )
 

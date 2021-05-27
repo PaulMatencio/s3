@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"os"
 	"log"
 	homedir "github.com/mitchellh/go-homedir"

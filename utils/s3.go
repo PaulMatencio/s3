@@ -3,7 +3,7 @@ package utils
 import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 )
 
 func ProcS3Error(err error) {

@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"io/ioutil"
 	"os"
 )

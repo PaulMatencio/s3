@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/s3/gLog"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/gLog"
+	"github.com/paulmatencio/s3/utils"
 )
 
 type pxiBlob struct {

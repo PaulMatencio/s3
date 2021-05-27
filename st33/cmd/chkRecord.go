@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/s3/gLog"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/gLog"
+	"github.com/paulmatencio/s3/utils"
 	"github.com/spf13/cobra"
 	"io"
 	"path/filepath"

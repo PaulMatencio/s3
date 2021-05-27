@@ -7,8 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	// "github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/s3/datatype"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/datatype"
+	"github.com/paulmatencio/s3/gLog"
 )
 
 func CreateMultipartUpload(req datatype.CreateMultipartUploadRequest) (*s3.CreateMultipartUploadOutput, error) {

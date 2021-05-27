@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/s3/datatype"
+	"github.com/paulmatencio/s3/datatype"
 	"github.com/spf13/viper"
 )
 

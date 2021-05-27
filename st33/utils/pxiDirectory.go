@@ -4,7 +4,7 @@ package st33
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/utils"
 	"strings"
 )
 

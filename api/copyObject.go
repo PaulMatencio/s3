@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/datatype"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/datatype"
+	"github.com/paulmatencio/s3/gLog"
 )
 
 func CopyObject(req datatype.CopyObjRequest) (*s3.CopyObjectOutput,error){

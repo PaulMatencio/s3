@@ -17,10 +17,10 @@ package cmd
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/s3/api"
-	"github.com/s3/datatype"
-	"github.com/s3/gLog"
-	"github.com/s3/utils"
+	"github.com/paulmatencio/s3/api"
+	"github.com/paulmatencio/s3/datatype"
+	"github.com/paulmatencio/s3/gLog"
+	"github.com/paulmatencio/s3/utils"
 	"github.com/spf13/cobra"
 	"time"
 )

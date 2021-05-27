@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	directory "github.com/moses/directory/lib"
-	"github.com/s3/utils"
+	directory "github.com/paulmatencio/moses/directory/lib"
+	"github.com/paulmatencio/s3/utils"
 	"github.com/spf13/cobra"
 	"strings"
 )

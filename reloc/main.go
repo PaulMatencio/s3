@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/s3/reloc/cmd"
+import "github.com/paulmatencio/s3/reloc/cmd"
 
 func main() {
 	cmd.Execute()

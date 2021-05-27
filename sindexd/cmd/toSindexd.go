@@ -17,9 +17,9 @@ package cmd
 import (
 	"encoding/json"
 	hostpool "github.com/bitly/go-hostpool"
-	directory "github.com/moses/directory/lib"
-	sindexd "github.com/moses/sindexd/lib"
-	"github.com/s3/gLog"
+	directory "github.com/paulmatencio/moses/directory/lib"
+	sindexd "github.com/paulmatencio/moses/sindexd/lib"
+	"github.com/paulmatencio/s3/gLog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"net/url"

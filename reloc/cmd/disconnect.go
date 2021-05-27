@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"

@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/s3/acl/cmd"
+import "github.com/paulmatencio/s3/acl/cmd"
 
 func main() {
 	cmd.Execute()

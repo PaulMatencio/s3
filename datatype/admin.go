@@ -2,7 +2,7 @@ package datatype
 
 import (
 	"encoding/json"
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"os"
 )
 

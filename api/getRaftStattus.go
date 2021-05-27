@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/s3/gLog"
+	"github.com/paulmatencio/s3/gLog"
 	"io/ioutil"
 	"net/http"
 	"time"
